@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabaseClient';
 
+/**
+ * Middleware para validar el token de Supabase Auth
+ */
 export const authMiddleware = async (
-    req: any,
+    req: Request,
     res: Response,
     next: NextFunction
 ) => {
@@ -10,8 +13,10 @@ export const authMiddleware = async (
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
-            success: false,
-            message: 'No se proporcionó un token de autenticación',
+            error: {
+                code: 'UNAUTHORIZED',
+                message: 'No se proporcionó un token de autenticación (Bearer token esperado)'
+            }
         });
     }
 
@@ -22,15 +27,54 @@ export const authMiddleware = async (
 
         if (error || !user) {
             return res.status(401).json({
-                success: false,
-                message: 'Token inválido o expirado',
+                error: {
+                    code: 'UNAUTHORIZED',
+                    message: 'Token inválido o expirado'
+                }
             });
         }
 
-        // Inyectar el usuario en la request
-        req.user = user;
+        // Adjuntar en req.user un objeto tipado
+        req.user = {
+            id: user.id,
+            email: user.email,
+            role: (user.app_metadata?.role as string) || 'user'
+        };
+
         next();
     } catch (error) {
-        next(error);
+        return res.status(401).json({
+            error: {
+                code: 'UNAUTHORIZED',
+                message: 'Ocurrió un error al validar la identidad'
+            }
+        });
     }
+};
+
+/**
+ * Middleware para autorizar según roles
+ */
+export const requireRole = (allowedRoles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        if (!req.user) {
+            return res.status(401).json({
+                error: {
+                    code: 'UNAUTHORIZED',
+                    message: 'Autenticación requerida'
+                }
+            });
+        }
+
+        if (!allowedRoles.includes(req.user.role || '')) {
+            return res.status(403).json({
+                error: {
+                    code: 'FORBIDDEN',
+                    message: 'No tienes permisos suficientes para acceder a este recurso'
+                }
+            });
+        }
+
+        next();
+    };
 };

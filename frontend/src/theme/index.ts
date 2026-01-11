@@ -6,13 +6,28 @@ const config: ThemeConfig = {
 };
 
 const colors = {
+    brand: {
+        primary: "#357a62", // Muted forest green
+        primaryHover: "#265c49",
+        secondary: "#1f4037", // Dark green for footer/headings
+        accent: "#6ab04c", // Brighter green for progress bars/icons
+        bgBody: "#FDFCF8", // Warm off-white
+        bgCardLight: "#F1F8F6", // Very light green tint for cards
+        bgCardWhite: "#FFFFFF",
+        textMain: "#1f4037",
+        textMuted: "#636e72",
+        textLight: "#ffffff",
+        accentPurple: "#9b59b6",
+        accentYellow: "#f1c40f",
+        accentBlue: "#e3f2fd",
+    },
     eco: {
         50: '#e8f5e9',
         100: '#c8e6c9',
         200: '#a5d6a7',
         300: '#81c784',
         400: '#66bb6a',
-        500: '#4caf50', // Success/Green
+        500: '#4caf50',
         600: '#43a047',
         700: '#388e3c',
         800: '#2e7d32',
@@ -48,14 +63,39 @@ const theme = extendTheme({
     config,
     colors,
     fonts: {
-        heading: `'Inter', sans-serif`,
-        body: `'Inter', sans-serif`,
+        heading: `'Outfit', 'Inter', sans-serif`,
+        body: `'Outfit', 'Inter', sans-serif`,
     },
     styles: {
         global: {
             body: {
-                bg: 'gray.50',
-                color: 'gray.800',
+                bg: 'brand.bgBody',
+                color: 'brand.textMain',
+            },
+            html: {
+                scrollBehavior: "smooth",
+            },
+        },
+    },
+    components: {
+        Button: {
+            baseStyle: {
+                fontWeight: "600",
+                borderRadius: "8px",
+            },
+            variants: {
+                solid: {
+                    bg: "brand.primary",
+                    color: "white",
+                    _hover: {
+                        bg: "brand.primaryHover",
+                        transform: "translateY(-2px)",
+                        boxShadow: "lg",
+                    },
+                    _active: {
+                        transform: "translateY(0)",
+                    },
+                },
             },
         },
     },

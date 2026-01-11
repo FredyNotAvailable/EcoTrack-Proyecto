@@ -1,0 +1,41 @@
+import { supabase } from '../../config/supabaseClient';
+
+export class ProfileRepository {
+    async getById(id: string) {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 is 'no rows found'
+        return data;
+    }
+
+    async update(id: string, updateData: any) {
+        const { data, error } = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async create(profileData: any) {
+        console.log(`[ProfileRepository] Inserting profile data:`, profileData);
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert([profileData])
+            .select()
+            .single();
+
+        if (error) {
+            console.error(`[ProfileRepository] Error creating profile:`, error);
+            throw error;
+        }
+        return data;
+    }
+}
