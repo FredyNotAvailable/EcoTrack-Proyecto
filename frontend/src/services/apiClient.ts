@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from '../config/supabase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -11,8 +12,12 @@ const apiClient = axios.create({
 
 // Interceptor para añadir el JWT de Supabase en cada petición
 apiClient.interceptors.request.use(async (config) => {
-    // Aquí se obtendría la sesión desde el store/context de auth si fuera necesario
-    // Por ahora lo dejamos preparado para conectarse con la lógica de auth
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
     return config;
 }, (error) => {
     return Promise.reject(error);

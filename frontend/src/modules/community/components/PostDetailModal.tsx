@@ -1,0 +1,268 @@
+import {
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    Box,
+    Flex,
+    Image as ChakraImage,
+    Text,
+    Avatar,
+    IconButton,
+    Input,
+    VStack,
+    HStack,
+    Divider,
+    useColorModeValue,
+    Icon,
+    Button,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    useToast
+} from '@chakra-ui/react';
+import { FaHeart, FaRegHeart, FaRegComment, FaShare, FaRegBookmark, FaEllipsisH, FaTrash, FaPen } from 'react-icons/fa';
+import { useState } from 'react';
+import type { Post, Comment } from '../../posts/types'; // Correct import with type-only
+import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts'; // Reuse existing hooks
+import { useAuth } from '../../auth/AuthContext';
+
+interface PostDetailModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    post: Post;
+    onEdit?: () => void;
+    onDelete?: () => void;
+}
+
+export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: PostDetailModalProps) => {
+    const { user } = useAuth();
+    const bg = useColorModeValue('white', 'gray.800');
+    const borderColor = useColorModeValue('gray.100', 'gray.700');
+    const toast = useToast();
+
+    // Comments Logic
+    const { data: commentsData } = usePostComments(post.id);
+    const createComment = useCreateComment();
+    const deleteComment = useDeleteComment();
+    const [newComment, setNewComment] = useState('');
+
+    const handleDeleteComment = (commentId: string) => {
+        if (confirm("¿Eliminar comentario?")) {
+            deleteComment.mutate({ postId: post.id, commentId }, {
+                onSuccess: () => toast({ title: "Comentario eliminado", status: "success", duration: 2000 }),
+                onError: () => toast({ title: "Error al eliminar", status: "error" })
+            });
+        }
+    };
+
+    // Like Logic (Local state for optimistic UI or reusing hook data)
+    // We should ideally sync this state or rely on parent invalidation. 
+    // For specific UI like "Instagram", we need the button within this modal.
+    const likeMutation = useLikePost();
+    const isLiked = post.liked_by_me; // Note: this might be stale if we don't refetch post detail separately
+
+    const handleLike = () => {
+        likeMutation.mutate({ postId: post.id, liked: isLiked });
+    };
+
+    const handleSendComment = () => {
+        if (!newComment.trim()) return;
+        createComment.mutate(
+            { postId: post.id, content: newComment },
+            {
+                onSuccess: () => setNewComment('')
+            }
+        );
+    };
+
+    const comments = commentsData || [];
+    const isOwner = user?.id === post.user_id;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
+            <ModalOverlay backdropFilter="blur(10px)" bg="blackAlpha.600" />
+            <ModalContent bg={bg} overflow="hidden" borderRadius="xl" maxH="90vh" display="flex" flexDirection={{ base: 'column', md: 'row' }} m={4}>
+
+                {/* LEFT SIDE: MEDIA */}
+                <Box
+                    flex="1.5"
+                    bg="black"
+                    position="relative"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    minH="400px"
+                >
+                    {post.media_type === 'video' ? (
+                        <video src={post.media_url} controls style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    ) : (
+                        <ChakraImage
+                            src={post.media_url || 'https://via.placeholder.com/600'}
+                            objectFit="contain"
+                            maxH="100%"
+                            maxW="100%"
+                        />
+                    )}
+                </Box>
+
+                {/* RIGHT SIDE: INTERACTION */}
+                <Flex flex="1" direction="column" minW="350px" h={{ base: "auto", md: "700px" }}>
+                    {/* Header */}
+                    <Flex p={4} align="center" justify="space-between" borderBottom="1px solid" borderColor={borderColor}>
+                        <HStack>
+                            <Avatar size="sm" src={post.user?.avatar_url} name={post.user?.username} />
+                            <Text fontWeight="bold" fontSize="sm">{post.user?.username}</Text>
+                        </HStack>
+
+                        {isOwner ? (
+                            <Menu>
+                                <MenuButton
+                                    as={IconButton}
+                                    icon={<FaEllipsisH />}
+                                    variant="ghost"
+                                    size="sm"
+                                />
+                                <MenuList>
+                                    <MenuItem icon={<FaPen />} onClick={onEdit}>Editar</MenuItem>
+                                    <MenuItem icon={<FaTrash />} color="red.500" onClick={onDelete}>Eliminar</MenuItem>
+                                </MenuList>
+                            </Menu>
+                        ) : (
+                            <IconButton
+                                aria-label="Options"
+                                icon={<FaEllipsisH />}
+                                variant="ghost"
+                                size="sm"
+                            />
+                        )}
+                    </Flex>
+
+                    {/* Comments List */}
+                    <VStack flex="1" overflowY="auto" p={4} align="stretch" spacing={4}>
+                        {/* Caption as first comment */}
+                        <HStack align="start" spacing={3}>
+                            <Avatar size="xs" src={post.user?.avatar_url} name={post.user?.username} />
+                            <Box>
+                                <Text fontSize="sm">
+                                    <Text as="span" fontWeight="bold" mr={2}>{post.user?.username}</Text>
+                                    {post.descripcion}
+                                    {post.hashtags && post.hashtags.length > 0 && (
+                                        <Text as="span" color="blue.500" ml={2}>
+                                            {post.hashtags.map(tag => `#${tag}`).join(' ')}
+                                        </Text>
+                                    )}
+                                </Text>
+                                <Text fontSize="xs" color="gray.500" mt={1}>2h</Text>
+                            </Box>
+                        </HStack>
+
+                        <Divider />
+
+                        {/* Real Comments */}
+                        {comments.map((comment: Comment) => (
+                            <HStack key={comment.id} align="start" spacing={3}>
+                                <Avatar size="xs" src={comment.user?.avatar_url} name={comment.user?.username} />
+                                <Box>
+                                    <Text fontSize="sm">
+                                        <Text as="span" fontWeight="bold" mr={2}>{comment.user?.username}</Text>
+                                        {comment.content}
+                                    </Text>
+                                    {/* <Text fontSize="xs" color="gray.500" mt={1}>Reply</Text> */}
+                                </Box>
+
+                                {(user?.id === comment.user_id) && (
+                                    <Menu>
+                                        <MenuButton
+                                            as={IconButton}
+                                            icon={<FaEllipsisH />}
+                                            variant="ghost"
+                                            size="xs"
+                                            color="gray.400"
+                                            ml="auto"
+                                        />
+                                        <MenuList minW="100px">
+                                            <MenuItem
+                                                color="red.500"
+                                                fontSize="sm"
+                                                onClick={() => handleDeleteComment(comment.id)}
+                                            >
+                                                Eliminar
+                                            </MenuItem>
+                                        </MenuList>
+                                    </Menu>
+                                )}
+                            </HStack>
+                        ))}
+                    </VStack>
+
+                    {/* Actions Footer - Matching PostCard Style */}
+                    <Box p={4} borderTop="1px solid" borderColor={borderColor}>
+                        {/* Action Row */}
+                        <Flex justify="space-between" align="center" mb={3}>
+                            <HStack spacing={5}>
+                                <IconButton
+                                    aria-label="Like"
+                                    icon={isLiked ? <FaHeart size={22} color="#E53E3E" /> : <FaRegHeart size={22} />}
+                                    variant="unstyled"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    _hover={{ color: "red.400" }}
+                                    color={isLiked ? "red.400" : "inherit"}
+                                    onClick={handleLike}
+                                />
+                                {/* Comment Icon Removed */}
+                                <IconButton
+                                    aria-label="Share"
+                                    icon={<FaShare size={20} />}
+                                    variant="unstyled"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    _hover={{ color: "brand.primary" }}
+                                />
+                            </HStack>
+                            <IconButton
+                                aria-label="Save"
+                                icon={<FaRegBookmark size={20} />}
+                                variant="unstyled"
+                                color="gray.400"
+                            />
+                        </Flex>
+
+                        <Text fontWeight="bold" fontSize="sm" mb={1}>
+                            {post._count?.likes?.toLocaleString() || 0} Me gusta
+                        </Text>
+                        <Text fontSize="xs" color="gray.500" mb={3}>
+                            {new Date(post.created_at).toLocaleDateString()}
+                        </Text>
+
+                        {/* Add Comment Input */}
+                        <HStack>
+                            <Input
+                                variant="unstyled"
+                                placeholder="Añadir un comentario..."
+                                fontSize="sm"
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
+                            />
+                            <Button
+                                variant="ghost"
+                                colorScheme="blue"
+                                size="sm"
+                                fontSize="sm"
+                                isDisabled={!newComment.trim()}
+                                onClick={handleSendComment}
+                                isLoading={createComment.isPending}
+                            >
+                                Publicar
+                            </Button>
+                        </HStack>
+                    </Box>
+                </Flex>
+            </ModalContent>
+        </Modal>
+    );
+};

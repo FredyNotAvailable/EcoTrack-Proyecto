@@ -101,7 +101,7 @@ const LandingPage = () => {
                                 h="54px"
                                 fontSize="1.1rem"
                                 rightIcon={<Icon as={FaArrowRight} />}
-                                onClick={() => navigate("/onboarding")}
+                                onClick={() => navigate("/login")}
                             >
                                 Comienza ahora
                             </Button>
