@@ -42,6 +42,11 @@ export class PostsService {
 
         const createdPost = await this.repository.create(initialPostData);
 
+        // Log points: +15 for creating a post
+        const { PuntosService } = await import('../puntos/puntos.service');
+        const puntosService = new PuntosService();
+        await puntosService.logPoints(userId, 15, 'post', createdPost.id);
+
         return {
             post: createdPost
         };
@@ -103,11 +108,18 @@ export class PostsService {
         const post = await this.repository.findById(postId);
         if (!post) throw new ApiError(404, 'Post not found', 'NOT_FOUND');
 
-        return this.repository.createComment({
+        const comment = await this.repository.createComment({
             post_id: postId,
             user_id: userId,
             content: data.content
         });
+
+        // Log points: +5 for creating a comment
+        const { PuntosService } = await import('../puntos/puntos.service');
+        const puntosService = new PuntosService();
+        await puntosService.logPoints(userId, 5, 'comentario', comment.id);
+
+        return comment;
     }
 
     async updateComment(userId: string, commentId: string, content: string): Promise<void> {

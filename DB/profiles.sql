@@ -8,14 +8,6 @@ create table public.profiles (
   avatar_url text,
   bio text,
 
-  puntos_totales int default 0,
-  nivel int default 1,
-
-  rol text default 'usuario',
-
-  is_verified boolean default false,
-  is_completed boolean default false,
-
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );

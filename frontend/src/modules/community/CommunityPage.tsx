@@ -115,19 +115,6 @@ const CommunityPage = () => {
     return (
         <Box animation={`${fadeInUp} 0.6s ease-out`} pb={20} bg="brand.bgBody" minH="100vh">
             {/* Header Section */}
-            <Box bg="white" py={8} mb={6} borderBottom="1px solid" borderColor="gray.100">
-                <Container maxW="container.md">
-                    <VStack align="start" spacing={1}>
-                        <Heading size="lg" color="brand.secondary" letterSpacing="tight">
-                            Comunidad
-                        </Heading>
-                        <Text color="brand.textMuted" fontSize="md">
-                            Conecta con otros defensores del planeta
-                        </Text>
-                    </VStack>
-                </Container>
-            </Box>
-
             <Container maxW="container.sm" px={{ base: 4, md: 0 }}>
                 <CreatePostForm />
 
