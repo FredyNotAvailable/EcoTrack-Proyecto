@@ -60,6 +60,23 @@ export class MisionesService {
             const { PuntosService } = await import('../puntos/puntos.service');
             const puntosService = new PuntosService();
             await puntosService.logPoints(userId, mission.puntos, 'mision', mission.id);
+
+            // 5. Log KgCO2
+            if (mission.kg_co2_ahorrado && mission.kg_co2_ahorrado > 0) {
+                const { KgCo2Service } = await import('../kgco2/kgco2.service');
+                const kgCo2Service = new KgCo2Service();
+                await kgCo2Service.logKgCo2(userId, mission.kg_co2_ahorrado, 'mision', mission.id);
+            }
+
+            // 6. Update Streak (Racha)
+            const { RachasService } = await import('../rachas/rachas.service');
+            const rachasService = new RachasService();
+            await rachasService.updateStreak(userId);
+
+            // 7. Update User Stats
+            const { UserStatsService } = await import('../user-stats/user-stats.service');
+            const userStatsService = new UserStatsService();
+            await userStatsService.updateMissionStats(userId, mission.puntos, mission.kg_co2_ahorrado || 0);
         }
     }
 }

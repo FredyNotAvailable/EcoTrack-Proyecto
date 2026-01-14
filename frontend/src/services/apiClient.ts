@@ -23,4 +23,19 @@ apiClient.interceptors.request.use(async (config) => {
     return Promise.reject(error);
 });
 
+// Interceptor para manejar errores de respuesta (401)
+apiClient.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        if (error.response?.status === 401) {
+            // Token inválido o expirado.
+            // Cerramos sesión en Supabase para limpiar el almacenamiento local
+            // y que el AuthContext detecte el cambio (session = null),
+            // redirigiendo así al usuario al login.
+            await supabase.auth.signOut();
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default apiClient;

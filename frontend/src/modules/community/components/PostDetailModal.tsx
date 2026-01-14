@@ -13,19 +13,21 @@ import {
     HStack,
     Divider,
     useColorModeValue,
-    Icon,
     Button,
     Menu,
     MenuButton,
     MenuList,
     MenuItem,
-    useToast
+    useToast,
+    useDisclosure
 } from '@chakra-ui/react';
-import { FaHeart, FaRegHeart, FaRegComment, FaShare, FaRegBookmark, FaEllipsisH, FaTrash, FaPen } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaRegBookmark, FaEllipsisH, FaTrash, FaPen } from 'react-icons/fa';
 import { useState } from 'react';
-import type { Post, Comment } from '../../posts/types'; // Correct import with type-only
-import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts'; // Reuse existing hooks
+import type { Post, Comment } from '../../posts/types';
+import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts';
 import { useAuth } from '../../auth/AuthContext';
+import { ConfirmationModal } from './ConfirmationModal';
+// import { useNavigate } from "react-router-dom";
 
 interface PostDetailModalProps {
     isOpen: boolean;
@@ -37,9 +39,19 @@ interface PostDetailModalProps {
 
 export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: PostDetailModalProps) => {
     const { user } = useAuth();
+    // const navigate = useNavigate();
     const bg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
     const toast = useToast();
+
+    // User Navigation Removed
+    /*
+    const handleUserClick = (userId?: string) => {
+        if (!userId) return;
+        onClose(); 
+        navigate(`/app/perfil/${userId}`);
+    };
+    */
 
     // Comments Logic
     const { data: commentsData } = usePostComments(post.id);
@@ -47,13 +59,28 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
     const deleteComment = useDeleteComment();
     const [newComment, setNewComment] = useState('');
 
-    const handleDeleteComment = (commentId: string) => {
-        if (confirm("¿Eliminar comentario?")) {
-            deleteComment.mutate({ postId: post.id, commentId }, {
-                onSuccess: () => toast({ title: "Comentario eliminado", status: "success", duration: 2000 }),
-                onError: () => toast({ title: "Error al eliminar", status: "error" })
-            });
-        }
+    // Comment Deletion Logic
+    const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
+    const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+
+    const handleDeleteClick = (commentId: string) => {
+        setDeleteCommentId(commentId);
+        onDeleteOpen();
+    };
+
+    const confirmDeleteComment = () => {
+        if (!deleteCommentId) return;
+
+        deleteComment.mutate({ postId: post.id, commentId: deleteCommentId }, {
+            onSuccess: () => {
+                toast({ title: "Comentario eliminado", status: "success", duration: 2000 });
+                onDeleteClose();
+                setDeleteCommentId(null);
+            },
+            onError: () => {
+                toast({ title: "Error al eliminar", status: "error" });
+            }
+        });
     };
 
     // Like Logic (Local state for optimistic UI or reusing hook data)
@@ -112,7 +139,9 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                     <Flex p={4} align="center" justify="space-between" borderBottom="1px solid" borderColor={borderColor}>
                         <HStack>
                             <Avatar size="sm" src={post.user?.avatar_url} name={post.user?.username} />
-                            <Text fontWeight="bold" fontSize="sm">{post.user?.username}</Text>
+                            <Text fontWeight="bold" fontSize="sm">
+                                {post.user?.username}
+                            </Text>
                         </HStack>
 
                         {isOwner ? (
@@ -162,10 +191,20 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                         {/* Real Comments */}
                         {comments.map((comment: Comment) => (
                             <HStack key={comment.id} align="start" spacing={3}>
-                                <Avatar size="xs" src={comment.user?.avatar_url} name={comment.user?.username} />
+                                <Avatar
+                                    size="xs"
+                                    src={comment.user?.avatar_url}
+                                    name={comment.user?.username}
+                                />
                                 <Box>
                                     <Text fontSize="sm">
-                                        <Text as="span" fontWeight="bold" mr={2}>{comment.user?.username}</Text>
+                                        <Text
+                                            as="span"
+                                            fontWeight="bold"
+                                            mr={2}
+                                        >
+                                            {comment.user?.username}
+                                        </Text>
                                         {comment.content}
                                     </Text>
                                     {/* <Text fontSize="xs" color="gray.500" mt={1}>Reply</Text> */}
@@ -185,7 +224,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                             <MenuItem
                                                 color="red.500"
                                                 fontSize="sm"
-                                                onClick={() => handleDeleteComment(comment.id)}
+                                                onClick={() => handleDeleteClick(comment.id)}
                                             >
                                                 Eliminar
                                             </MenuItem>
@@ -211,16 +250,6 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                     _hover={{ color: "red.400" }}
                                     color={isLiked ? "red.400" : "inherit"}
                                     onClick={handleLike}
-                                />
-                                {/* Comment Icon Removed */}
-                                <IconButton
-                                    aria-label="Share"
-                                    icon={<FaShare size={20} />}
-                                    variant="unstyled"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    _hover={{ color: "brand.primary" }}
                                 />
                             </HStack>
                             <IconButton
@@ -263,6 +292,20 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                     </Box>
                 </Flex>
             </ModalContent>
-        </Modal>
+
+            <ConfirmationModal
+                isOpen={isDeleteOpen}
+                onClose={() => {
+                    onDeleteClose();
+                    setDeleteCommentId(null);
+                }}
+                onConfirm={confirmDeleteComment}
+                title="Eliminar comentario"
+                message="¿Estás seguro de eliminar este comentario?"
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                isLoading={deleteComment.isPending}
+            />
+        </Modal >
     );
 };

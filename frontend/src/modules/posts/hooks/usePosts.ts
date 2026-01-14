@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { PostsService } from '../services/posts.service';
 import type { CreatePostPayload } from '../types';
 
@@ -10,9 +10,17 @@ export const POSTS_KEYS = {
 };
 
 export const usePostsFeed = () => {
-    return useQuery({
+    return useInfiniteQuery({
         queryKey: POSTS_KEYS.feed(),
-        queryFn: () => PostsService.getPosts(),
+        initialPageParam: 1,
+        queryFn: ({ pageParam = 1 }) => PostsService.getPosts({ page: pageParam as number, limit: 5 }),
+        getNextPageParam: (lastPage, allPages) => {
+            // Check if there are more pages based on metadata
+            const hasMore = lastPage?.meta?.currentPage < lastPage?.meta?.totalPages;
+            return hasMore ? lastPage.meta.currentPage + 1 : undefined;
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes cache
+        refetchOnWindowFocus: false
     });
 };
 
@@ -23,6 +31,7 @@ export const useCreatePost = () => {
         mutationFn: (payload: CreatePostPayload) => PostsService.createPost(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.feed() });
+            queryClient.invalidateQueries({ queryKey: ['userStats'] });
         },
     });
 };
@@ -59,6 +68,7 @@ export const useCreateComment = () => {
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.comments(postId) });
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.detail(postId) }); // Update comment count
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.feed() });
+            queryClient.invalidateQueries({ queryKey: ['userStats'] });
         },
     });
 };

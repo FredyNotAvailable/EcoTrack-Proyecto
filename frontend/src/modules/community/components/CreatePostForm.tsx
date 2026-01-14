@@ -61,7 +61,8 @@ export const CreatePostForm = () => {
                 is_public: true,
                 ubicacion: data.ubicacion,
                 media_url: finalMediaUrl, // Added media_url
-                media_type: data.mediaType
+                media_type: data.mediaType,
+                hashtags: data.hashtags
             },
             {
                 onSuccess: () => {

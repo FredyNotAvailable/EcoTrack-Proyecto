@@ -19,7 +19,7 @@ import {
     useColorModeValue
 } from "@chakra-ui/react";
 import { useState, useRef } from "react";
-import { FaGoogle, FaLeaf, FaCamera } from "react-icons/fa";
+import { FaGoogle, FaLeaf, FaCamera, FaArrowLeft } from "react-icons/fa";
 import { useAuth } from "../../auth/AuthContext";
 import { convertToWebP, fileToBase64 } from "../../../utils/ImageConverter";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -162,7 +162,17 @@ const OnboardingPage = () => {
     };
 
     return (
-        <Box minH="100vh" bg={bg} py={20}>
+        <Box minH="100vh" bg={bg} py={20} position="relative">
+            <IconButton
+                icon={<Icon as={FaArrowLeft} />}
+                aria-label="Volver al login"
+                position="absolute"
+                top={4}
+                left={4}
+                onClick={() => navigate('/auth/login')}
+                variant="ghost"
+                color="gray.600"
+            />
             <Container maxW="md">
                 <VStack spacing={8}>
                     <Icon as={FaLeaf} w={12} h={12} color="brand.primary" />
@@ -257,12 +267,12 @@ const OnboardingPage = () => {
                                 color="white"
                                 _hover={{ bg: "brand.primaryHover" }}
                                 borderRadius="12px"
-                                leftIcon={user ? undefined : <Icon as={FaGoogle} />}
+                                // leftIcon={user ? undefined : <Icon as={FaGoogle} />}
                                 onClick={handleContinue}
                                 mt={4}
                                 isLoading={isSubmitting}
                             >
-                                {user ? "Completar Registro" : "Crear cuenta con Google"}
+                                {user ? "Completar Registro" : "Crear cuenta"}
                             </Button>
                         </VStack>
                     </Box>

@@ -14,12 +14,14 @@ import {
     MenuItem,
     useColorModeValue,
 } from "@chakra-ui/react";
-import { FaShare, FaEllipsisH, FaRegHeart, FaRegComment, FaRegBookmark, FaHeart } from "react-icons/fa";
+import { FaEllipsisH, FaRegHeart, FaRegComment, FaRegBookmark, FaHeart } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
+// import { useNavigate } from "react-router-dom";
 
 export interface PostCardProps {
-    id: string; // Added ID for callbacks
+    id: string;
     user: {
+        id: string; // Added user ID for navigation
         name: string;
         avatar: string;
         verified?: boolean;
@@ -28,13 +30,13 @@ export interface PostCardProps {
     content: {
         image?: string;
         text: string;
-        hashtags?: string[]; // Added hashtags
+        hashtags?: string[];
         timeAgo: string;
     };
     stats: {
         likes: number;
         comments: number;
-        likedBy?: string[]; // Array of avatar URLs
+        likedBy?: string[];
     };
     isLiked?: boolean;
     onLike?: (id: string) => void;
@@ -44,6 +46,9 @@ export interface PostCardProps {
     onDelete?: (id: string) => void;
     isOwner?: boolean;
 }
+
+// Removed useNavigate imports
+// Removed handleUserClick logic
 
 export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment, onEdit, onDelete, isOwner }: PostCardProps) => {
     // Premium Design Tokens
@@ -177,16 +182,6 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                             _hover={{ color: "brand.primary" }}
                             color="brand.textMain"
                             onClick={() => onComment && onComment(id)}
-                        />
-                        <IconButton
-                            aria-label="Share"
-                            icon={<FaShare size={20} />}
-                            variant="unstyled"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            _hover={{ color: "brand.primary" }}
-                            color="brand.textMain"
                         />
                     </HStack>
                     <IconButton

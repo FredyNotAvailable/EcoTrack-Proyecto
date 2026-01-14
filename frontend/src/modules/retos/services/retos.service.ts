@@ -1,57 +1,48 @@
-import { supabase } from '../../../config/supabase';
+import apiClient from '../../../services/apiClient';
 
-const API_URL = 'http://localhost:3001/api';
+export interface RetoTarea {
+    id: string;
+    reto_id: string;
+    titulo: string;
+    descripcion: string;
+    recompensa_puntos: number;
+    recompensa_kg_co2: number;
+    tipo: 'manual' | 'post' | 'event';
+    cantidad_meta: number;
+    completed: boolean;
+    current_progress: number;
+    can_upload_media?: boolean;
+}
 
 export interface Reto {
     id: string;
     titulo: string;
     descripcion: string;
-    puntos_recompensa: number;
-    categoria: string;
-    nivel_dificultad: 'Fácil' | 'Intermedio' | 'Difícil';
-    activo: boolean;
+    fecha_inicio: string;
+    fecha_fin: string;
+    recompensa_puntos: number;
+    recompensa_kg_co2: number;
+    imagen_url?: string;
+    created_at: string;
+    status: 'joined' | 'completed' | undefined;
+    joined: boolean;
+    progress: number;
+    tasks: RetoTarea[];
 }
 
-export const RetosAPIService = {
-    async getAll() {
-        const response = await fetch(`${API_URL}/retos`);
-        if (!response.ok) throw new Error('Error al obtener los retos');
-        const result = await response.json();
-        return result.data as Reto[];
+export const retosService = {
+    getMyChallenges: async (): Promise<Reto[]> => {
+        const response = await apiClient.get<Reto[]>('/retos/me');
+        return response.data;
     },
 
-    async getMyChallenges() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/retos/me`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-        });
-
-        if (!response.ok) throw new Error('Error al obtener mis retos');
-        const result = await response.json();
-        return result.data;
+    joinChallenge: async (retoId: string): Promise<any> => {
+        const response = await apiClient.post(`/retos/${retoId}/join`);
+        return response.data;
     },
 
-    async join(retoId: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/retos/${retoId}/join`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al inscribirse en el reto');
-        }
-
-        const result = await response.json();
-        return result.data;
+    completeTask: async (retoId: string, taskId: string): Promise<any> => {
+        const response = await apiClient.post(`/retos/${retoId}/tasks/${taskId}/complete`);
+        return response.data;
     }
 };

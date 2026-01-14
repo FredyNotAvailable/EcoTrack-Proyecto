@@ -47,6 +47,17 @@ export class PostsService {
         const puntosService = new PuntosService();
         await puntosService.logPoints(userId, 15, 'post', createdPost.id);
 
+        // Update Streak (Racha)
+        const { RachasService } = await import('../rachas/rachas.service');
+        const rachasService = new RachasService();
+        await rachasService.updateStreak(userId);
+
+        // Update User Stats
+        const { UserStatsService } = await import('../user-stats/user-stats.service');
+        const userStatsService = new UserStatsService();
+        await userStatsService.updatePostStats(userId, 15);
+
+
         return {
             post: createdPost
         };
@@ -92,8 +103,16 @@ export class PostsService {
 
         if (action === 'like') {
             await this.repository.addLike(postId, userId);
+            // Update User Stats (increment like for post owner)
+            const { UserStatsService } = await import('../user-stats/user-stats.service');
+            const userStatsService = new UserStatsService();
+            await userStatsService.updateLikeStats(post.user_id, true);
         } else {
             await this.repository.removeLike(postId, userId);
+            // Update User Stats (decrement like for post owner)
+            const { UserStatsService } = await import('../user-stats/user-stats.service');
+            const userStatsService = new UserStatsService();
+            await userStatsService.updateLikeStats(post.user_id, false);
         }
     }
 
@@ -118,6 +137,16 @@ export class PostsService {
         const { PuntosService } = await import('../puntos/puntos.service');
         const puntosService = new PuntosService();
         await puntosService.logPoints(userId, 5, 'comentario', comment.id);
+
+        // Update Streak (Racha)
+        const { RachasService } = await import('../rachas/rachas.service');
+        const rachasService = new RachasService();
+        await rachasService.updateStreak(userId);
+
+        // Update User Stats
+        const { UserStatsService } = await import('../user-stats/user-stats.service');
+        const userStatsService = new UserStatsService();
+        await userStatsService.updateCommentStats(userId, 5);
 
         return comment;
     }

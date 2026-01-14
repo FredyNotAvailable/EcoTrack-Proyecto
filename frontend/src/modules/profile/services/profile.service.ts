@@ -22,6 +22,25 @@ export const ProfileAPIService = {
         return result;
     },
 
+    async getProfileById(userId: string) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('No hay sesión activa');
+
+        const response = await fetch(`${API_URL}/profile/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al obtener el perfil');
+        }
+
+        const result = await response.json();
+        return result;
+    },
+
     async updateMe(profileData: any) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('No hay sesión activa');

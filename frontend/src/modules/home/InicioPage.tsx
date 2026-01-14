@@ -28,6 +28,7 @@ import {
 } from "react-icons/fa6";
 import { motion } from "framer-motion";
 import { keyframes } from "@emotion/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { consejosService } from "./services/consejos.service";
 import type { DailyTip } from "./services/consejos.service";
@@ -35,23 +36,36 @@ import { misionesService } from "./services/misiones.service";
 import type { DailyMission } from "./services/misiones.service";
 import { MissionModal } from "./components/MissionModal";
 import { useDisclosure } from "@chakra-ui/react";
+import { useUserStats } from "../../hooks/useUserStats";
+import type { UserStats } from "../../services/userStatsService";
+import { userRachasService } from "../../services/userRachasService";
+import type { UserRacha } from "../../services/userRachasService";
+import { useAuth } from "../auth/AuthContext";
 
 // --- Visual Components (Cloned from Dashboard) ---
 
 const MotionBox = motion(Box);
 
-const DashboardHeaderVisual = () => {
+const DashboardHeaderVisual = ({ username }: { username: string }) => {
     return (
         <Box mb={6} pt={2}>
             <Heading as="h1" fontSize={{ base: "2.5rem", md: "3.5rem" }} mb={2} lineHeight="1.2" color="brand.secondary">
-                Hola, <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" display="inline-block"> FredyEco </Text> 👋
+                Hola, <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" display="inline-block"> {username} </Text> 👋
             </Heading>
             <Text color="brand.textMuted" fontSize="1.1rem">Aquí tienes un resumen de tu impacto ecológico hoy.</Text>
         </Box>
     );
 };
 
-const StatsOverviewVisual = () => {
+const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, racha?: UserRacha | null, loading: boolean }) => {
+    if (loading) {
+        return (
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={5} mb={8} bg="white" p={6} borderRadius="16px" boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)">
+                {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height="80px" borderRadius="12px" />)}
+            </SimpleGrid>
+        );
+    }
+
     return (
         <MotionBox
             initial={{ opacity: 0, y: 20 }}
@@ -70,21 +84,21 @@ const StatsOverviewVisual = () => {
                 {/* Stat 1 */}
                 <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.primary">
                     <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Puntos Totales</Text>
-                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">2,450</Text>
+                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">{stats?.puntos_totales || 0}</Text>
                     <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">xp acumulados</Text>
                 </Flex>
 
                 {/* Stat 2 */}
                 <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.secondary">
                     <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Nivel Actual</Text>
-                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">Lvl. 5</Text>
+                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">Lvl. {stats?.nivel || 1}</Text>
                     <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">Explorador Eco</Text>
                 </Flex>
 
                 {/* Stat 3: CO2 Impact */}
                 <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="green.400">
                     <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>CO₂ Ahorrado</Text>
-                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">125.40 kg</Text>
+                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">{stats?.kg_co2_ahorrado || 0} kg</Text>
                     <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">Impacto Real</Text>
                 </Flex>
 
@@ -93,12 +107,13 @@ const StatsOverviewVisual = () => {
                     <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Eco Racha</Text>
                     <Flex align="center" gap={2}>
                         <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">
-                            12 días
+                            {/* We don't have racha in user_stats yet, maybe pass it separately or use misiones_diarias for now */}
+                            {racha?.racha_actual || 0}
                         </Text>
                         <Text fontSize="1.2rem">🔥</Text>
                     </Flex>
                     <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">
-                        Max: 15 días
+                        Días seguidos
                     </Text>
                 </Flex>
 
@@ -106,9 +121,15 @@ const StatsOverviewVisual = () => {
                 <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.accentPurple">
                     <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Próximo Nivel</Text>
                     <Box mt="5px" h="8px" w="100%" bg="#f1f2f6" borderRadius="full" overflow="hidden">
-                        <Box h="100%" w="75%" bgGradient="linear(to-r, #9b59b6, #8e44ad)" />
+                        <Box h="100%" w={`${stats?.progress?.progreso_porcentaje || 0}%`} bgGradient="linear(to-r, #9b59b6, #8e44ad)" />
                     </Box>
-                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">75% completado</Text>
+                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">
+                        {stats?.progress?.experiencia_relativa || 0} / {
+                            stats?.progress?.puntos_siguiente_nivel
+                                ? (stats.progress.puntos_siguiente_nivel - stats.progress.puntos_nivel_actual)
+                                : 'Max'
+                        } exp ({stats?.progress?.progreso_porcentaje || 0}%)
+                    </Text>
                 </Flex>
             </SimpleGrid>
         </MotionBox>
@@ -328,15 +349,26 @@ const fadeInUp = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+import { ProfileAPIService } from "../profile/services/profile.service";
+
+// ... existing imports
+
 export const InicioPage = () => {
+    const { user } = useAuth();
     const [dailyTip, setDailyTip] = useState<DailyTip | null>(null);
     const [loadingTip, setLoadingTip] = useState(true);
+
+    const [racha, setRacha] = useState<UserRacha | null>(null);
+    const [profile, setProfile] = useState<any>(null);
 
     // Missions State
     const [missions, setMissions] = useState<DailyMission[]>([]);
     const [loadingMissions, setLoadingMissions] = useState(true);
     const [selectedMission, setSelectedMission] = useState<DailyMission | null>(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
+
+    // Use User Stats Hook
+    const { data: stats, isLoading: loadingStats } = useUserStats();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -347,14 +379,20 @@ export const InicioPage = () => {
                 // Fetch Missions & Completed IDs
                 const missionsPromise = misionesService.getDailyMissions();
                 const completedPromise = misionesService.getCompletedMissions();
+                const rachaPromise = userRachasService.getMyRacha();
+                const profilePromise = ProfileAPIService.getMe();
 
-                const [tip, rawMissions, completedIds] = await Promise.all([
+                const [tip, rawMissions, completedIds, rachaData, profileData] = await Promise.all([
                     tipPromise,
                     missionsPromise,
-                    completedPromise
+                    completedPromise,
+                    rachaPromise,
+                    profilePromise
                 ]);
 
                 setDailyTip(tip);
+                setRacha(rachaData);
+                setProfile(profileData);
 
                 // Merge completed state
                 const mergedMissions = rawMissions.map(m => ({
@@ -384,6 +422,8 @@ export const InicioPage = () => {
         onOpen();
     };
 
+    const queryClient = useQueryClient();
+
     const handleCompleteMission = async (missionId: string) => {
         await misionesService.completeMission(missionId);
 
@@ -394,6 +434,10 @@ export const InicioPage = () => {
             );
             return updated.sort((a, b) => Number(a.completed) - Number(b.completed));
         });
+
+        // Invalidate stats to refresh points/level immediately
+        queryClient.invalidateQueries({ queryKey: ['userStats'] });
+        queryClient.invalidateQueries({ queryKey: ['communityPosts'] }); // Just in case
     };
 
     return (
@@ -418,12 +462,13 @@ export const InicioPage = () => {
             >
                 {/* Header */}
                 <Box mb={3}>
-                    <DashboardHeaderVisual />
+                    <DashboardHeaderVisual username={profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Usuario'} />
                 </Box>
 
                 {/* Stats */}
+                {/* Stats */}
                 <Box mb={4}>
-                    <StatsOverviewVisual />
+                    <StatsOverviewVisual stats={stats} racha={racha} loading={loadingStats} />
                 </Box>
 
                 {/* Main Grid */}

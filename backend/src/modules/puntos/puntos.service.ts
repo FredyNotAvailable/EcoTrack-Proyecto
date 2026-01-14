@@ -7,7 +7,7 @@ export class PuntosService {
         this.repository = new PuntosRepository();
     }
 
-    async logPoints(userId: string, puntos: number, origen: 'mision' | 'reto' | 'post' | 'comentario', referenciaId?: string) {
+    async logPoints(userId: string, puntos: number, origen: 'mision' | 'reto' | 'post' | 'comentario' | 'tarea_reto' | 'reto_completado', referenciaId?: string) {
         return this.repository.logPoints(userId, puntos, origen, referenciaId);
     }
 

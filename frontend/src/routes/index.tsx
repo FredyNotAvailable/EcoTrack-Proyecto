@@ -37,7 +37,7 @@ export const AppRouter = () => {
                     <Route path="comunidad" element={<CommunityPage />} />
                     <Route path="retos" element={<RetosPage />} />
                     <Route path="ranking" element={<RankingPage />} />
-                    <Route path="perfil" element={<ProfilePage />} />
+                    <Route path="perfil/:userId?" element={<ProfilePage />} />
                 </Route>
             </Route>
 

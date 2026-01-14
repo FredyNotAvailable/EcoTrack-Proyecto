@@ -18,7 +18,6 @@ import {
     FaPlus,
     FaMagic,
     FaArrowUp,
-    FaVideo,
     FaRegImage
 } from "react-icons/fa";
 // Removed Microphone icon as requested
@@ -121,7 +120,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
             <Flex justify="space-between" align="center" mb={4}>
                 <IconButton
                     icon={<FaTimes />}
-                    aria-label="Close"
+                    aria-label="Cerrar"
                     variant="ghost"
                     size="sm"
                     borderRadius="full"
@@ -129,23 +128,17 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
                     color="gray.500"
                 />
                 <Text fontWeight="600" fontSize="sm" color="gray.500">
-                    Drafts
+                    Borrador
                 </Text>
             </Flex>
 
-            {/* Content Preview (Images/Video) */}
+            {/* Content Preview (Images) */}
             {mediaPreview && (
                 <Box mb={4} borderRadius="xl" overflow="hidden" position="relative" maxH="200px">
-                    {mediaType === 'video' ? (
-                        <Box bg="black" h="200px" display="flex" alignItems="center" justifyContent="center">
-                            <Icon as={FaVideo} color="white" boxSize={8} />
-                        </Box>
-                    ) : (
-                        <ChakraImage src={mediaPreview} w="100%" h="200px" objectFit="cover" />
-                    )}
+                    <ChakraImage src={mediaPreview} w="100%" h="200px" objectFit="cover" />
                     <IconButton
                         icon={<FaTimes />}
-                        aria-label="Remove media"
+                        aria-label="Eliminar imagen"
                         size="xs"
                         position="absolute"
                         top={2}
@@ -161,7 +154,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
 
             {/* Text Input */}
             <Textarea
-                placeholder="Use the storyboard uploaded to create..."
+                placeholder="¿Qué estás pensando? comparte tu progreso..."
                 variant="unstyled"
                 fontSize="lg"
                 minH="120px"
@@ -176,7 +169,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
             {showOptions && (
                 <VStack spacing={3} mb={4} align="stretch">
                     <Input
-                        placeholder="Add location"
+                        placeholder="Ubicación"
                         variant="filled"
                         size="sm"
                         borderRadius="lg"
@@ -185,7 +178,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
                         onChange={(e) => setLocation(e.target.value)}
                     />
                     <Input
-                        placeholder="Hashtags (space separated)"
+                        placeholder="Etiquetas (separadas por espacio)"
                         variant="filled"
                         size="sm"
                         borderRadius="lg"
@@ -210,7 +203,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
                     {/* Plus Button - Toggles Options */}
                     <IconButton
                         icon={<FaPlus />}
-                        aria-label="Add options"
+                        aria-label="Opciones"
                         size="lg"
                         borderRadius="2xl"
                         bg={showOptions ? "gray.200" : btnRawBg}
@@ -219,7 +212,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
                         onClick={() => setShowOptions(!showOptions)}
                     />
 
-                    {/* AI Magic Button */}
+                    {/* AI Magic Button (Optional, keeping as decoration or future feature) */}
                     <IconButton
                         icon={<FaMagic />}
                         aria-label="AI Magic"
@@ -230,42 +223,20 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, onClose, initialDat
                         _hover={{ bg: "gray.100" }}
                     />
 
-                    {/* Image/Video Toggle Pill */}
-                    <HStack
+                    {/* Image Button Only (No Video) */}
+                    <Button
+                        size="md"
+                        borderRadius="2xl"
+                        variant="ghost"
                         bg={btnRawBg}
-                        p={1}
-                        borderRadius="xl"
-                        spacing={0}
+                        leftIcon={<Icon as={FaRegImage} />}
+                        onClick={() => handleFileSelect('image')}
+                        px={4}
+                        color="gray.600"
+                        _hover={{ bg: "gray.100" }}
                     >
-                        <Button
-                            size="sm"
-                            borderRadius="lg"
-                            variant={mediaType === 'image' ? 'solid' : 'ghost'}
-                            bg={mediaType === 'image' ? 'white' : 'transparent'}
-                            boxShadow={mediaType === 'image' ? 'sm' : 'none'}
-                            leftIcon={<Icon as={FaRegImage} />} // Using Outline image icon for style
-                            onClick={() => handleFileSelect('image')}
-                            px={4}
-                            color={mediaType === 'image' ? 'black' : 'gray.500'}
-                            _hover={{ bg: mediaType === 'image' ? 'white' : 'gray.100' }}
-                        >
-                            Image
-                        </Button>
-                        <Button
-                            size="sm"
-                            borderRadius="lg"
-                            variant={mediaType === 'video' ? 'solid' : 'ghost'}
-                            bg={mediaType === 'video' ? 'white' : 'transparent'}
-                            boxShadow={mediaType === 'video' ? 'sm' : 'none'}
-                            leftIcon={<Icon as={FaVideo} />}
-                            onClick={() => handleFileSelect('video')}
-                            px={4}
-                            color={mediaType === 'video' ? 'black' : 'gray.500'}
-                            _hover={{ bg: mediaType === 'video' ? 'white' : 'gray.100' }}
-                        >
-                            Video
-                        </Button>
-                    </HStack>
+                        Imagen
+                    </Button>
                 </HStack>
 
                 <HStack spacing={3}>

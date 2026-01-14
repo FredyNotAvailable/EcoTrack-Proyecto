@@ -21,6 +21,21 @@ export class ProfileController {
         }
     };
 
+    getProfileById = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.params.id as string;
+            console.log(`[ProfileController] getProfileById requested for userId: ${userId}`);
+            const profile = await this.service.getProfile(userId);
+            if (!profile) {
+                res.status(404).json({ success: false, message: 'Perfil no encontrado' });
+                return;
+            }
+            res.json(profile);
+        } catch (error) {
+            next(error);
+        }
+    };
+
     createMe = async (req: any, res: Response, next: NextFunction) => {
         try {
             const userId = req.user.id;

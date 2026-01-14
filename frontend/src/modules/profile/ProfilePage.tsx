@@ -12,7 +12,6 @@ import {
     Card,
     Button,
     useColorModeValue,
-    Divider,
     Modal,
     ModalOverlay,
     ModalContent,
@@ -40,7 +39,7 @@ import {
 } from "react-icons/fa";
 import { keyframes } from "@emotion/react";
 import { useAuth } from "../auth/AuthContext";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { ProfileAPIService } from "./services/profile.service";
 import { StorageService } from "../shared/services/storage.service";
 import { convertToWebP } from "../../utils/ImageConverter";
@@ -51,36 +50,59 @@ const fadeInUp = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+// React Query for fetching stats
+import { userStatsService } from "../../services/userStatsService";
+import { userRachasService } from "../../services/userRachasService";
+
 const ProfilePage = () => {
     const { user } = useAuth();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const toast = useToast();
+    const queryClient = useQueryClient();
+
+    // Form State
     const [editForm, setEditForm] = useState({ username: "", bio: "" });
     const [avatarFile, setAvatarFile] = useState<Blob | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [profile, setProfile] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+
     const cardBg = useColorModeValue("white", "gray.800");
 
-    useEffect(() => {
-        const loadProfile = async () => {
-            try {
-                const data = await ProfileAPIService.getMe();
-                setProfile(data);
-                setEditForm({
-                    username: data.username || "",
-                    bio: data.bio || ""
-                });
-            } catch (error) {
-                console.error("Error loading profile:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        loadProfile();
-    }, []);
+    // Replace manual fetch with useQuery
+    const { data: profile, isLoading } = useQuery({
+        queryKey: ['profile', user?.id],
+        queryFn: ProfileAPIService.getMe,
+        enabled: !!user?.id,
+        staleTime: 1000 * 60 * 5, // 5 minutes cache
+    });
+
+    const { data: stats } = useQuery({
+        queryKey: ['userStats', user?.id],
+        queryFn: () => userStatsService.getUserStats(),
+        enabled: !!user?.id,
+    });
+
+    const { data: racha } = useQuery({
+        queryKey: ['userRacha', user?.id],
+        queryFn: () => userRachasService.getMyRacha(),
+        enabled: !!user?.id,
+    });
+
+    const isMe = true;
+
+
+    // Initialize form when opening modal
+    const handleOpenEdit = () => {
+        if (profile) {
+            setEditForm({
+                username: profile.username || "",
+                bio: profile.bio || ""
+            });
+        }
+        onOpen();
+    };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -130,8 +152,12 @@ const ProfilePage = () => {
                 updatedData.avatar_url = url;
             }
 
-            const updated = await ProfileAPIService.updateMe(updatedData);
-            setProfile(updated);
+            // Update profile
+            await ProfileAPIService.updateMe(updatedData);
+
+            // Invalidate query to refetch data
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
+
             toast({
                 title: "Perfil actualizado",
                 status: "success",
@@ -163,25 +189,31 @@ const ProfilePage = () => {
         );
     }
 
-    // Perfil dinámico (Solo DB)
+    // Process Real Stats
+    const currentPoints = stats?.puntos_totales || 0;
+    const currentLevel = stats?.nivel || 1;
+    const xpForNextLevel = 1000;
+    // If stats don't provide precise XP, estimate:
+    const currentLevelXp = currentPoints % 1000;
+    const progressPercent = (currentLevelXp / xpForNextLevel) * 100;
+
     const profileData = {
         name: profile?.username || "Usuario",
         username: profile?.username ? `@${profile.username}` : "",
         avatar_url: profile?.avatar_url || "",
         bio: profile?.bio ?? "Sin biografía.",
-        level: 8,
-        xp: 750,
-        nextLevelXp: 1000,
+        level: currentLevel,
+        xp: currentLevelXp,
+        nextLevelXp: xpForNextLevel,
         stats: [
-            { label: "Puntos Totales", value: "2,450", icon: FaTrophy, color: "brand.accentPurple" },
-            { label: "CO₂ Ahorrado", value: "85 kg", icon: FaGlobeAmericas, color: "brand.primary" },
-            { label: "Racha Actual", value: "12 días", icon: FaFire, color: "orange.400" },
-            { label: "Retos Completados", value: "34", icon: FaLeaf, color: "brand.accent" },
+            { label: "Puntos Totales", value: currentPoints.toLocaleString(), icon: FaTrophy, color: "brand.accentPurple" },
+            { label: "CO₂ Ahorrado", value: `${(stats?.kg_co2_ahorrado || 0).toFixed(1)} kg`, icon: FaGlobeAmericas, color: "brand.primary" },
+            { label: "Retos Completados", value: (stats?.retos_completados || 0).toString(), icon: FaLeaf, color: "brand.accent" },
+            // Racha placeholdler
+            { label: "Racha Actual", value: `${racha?.racha_actual || 0} días`, icon: FaFire, color: "orange.400" },
         ],
         badges: [
             { name: "Primer Paso", icon: FaSeedling, color: "green.400" },
-            { name: "Ahorrador Vital", icon: FaGlobeAmericas, color: "blue.400" },
-            { name: "Constancia", icon: FaFire, color: "orange.400" },
         ]
     };
 
@@ -225,20 +257,22 @@ const ProfilePage = () => {
                                 </Text>
                             </VStack>
 
-                            {/* Action Button */}
-                            <Button
-                                variant="outline"
-                                borderRadius="12px"
-                                px={6}
-                                fontWeight="600"
-                                borderColor="gray.200"
-                                _hover={{ bg: "gray.50" }}
-                                fontSize="sm"
-                                leftIcon={<Icon as={FaUserEdit} />}
-                                onClick={onOpen}
-                            >
-                                Editar perfil
-                            </Button>
+                            {/* Action Button - Only if isMe */}
+                            {isMe && (
+                                <Button
+                                    variant="outline"
+                                    borderRadius="12px"
+                                    px={6}
+                                    fontWeight="600"
+                                    borderColor="gray.200"
+                                    _hover={{ bg: "gray.50" }}
+                                    fontSize="sm"
+                                    leftIcon={<Icon as={FaUserEdit} />}
+                                    onClick={handleOpenEdit}
+                                >
+                                    Editar perfil
+                                </Button>
+                            )}
                         </Flex>
 
                         {/* Bio moved here */}
@@ -299,14 +333,16 @@ const ProfilePage = () => {
                             </Text>
                         </Flex>
                         <Progress
-                            value={(profileData.xp / profileData.nextLevelXp) * 100}
+                            value={progressPercent}
                             borderRadius="full"
                             size="lg"
                             colorScheme="green"
                             bg="brand.bgCardLight"
                         />
                         <Text mt={3} fontSize="sm" color="brand.textMuted">
-                            ¡Te faltan {(profileData.nextLevelXp - profileData.xp)} XP para el Nivel {profileData.level + 1}!
+                            {isMe
+                                ? `¡Te faltan ${xpForNextLevel - currentLevelXp} XP para el Nivel ${profileData.level + 1}!`
+                                : `Progreso: ${Math.round(progressPercent)}% hacia el siguiente nivel`}
                         </Text>
                     </Card>
 

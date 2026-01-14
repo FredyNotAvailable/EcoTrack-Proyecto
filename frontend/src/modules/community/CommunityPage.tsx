@@ -1,6 +1,5 @@
 import {
     Box,
-    Heading,
     Text,
     VStack,
     Container,
@@ -8,7 +7,10 @@ import {
     Spinner,
     Center,
     useToast,
-    useDisclosure
+    useDisclosure,
+    Grid,
+    GridItem,
+    Button
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { FaLeaf } from "react-icons/fa";
@@ -20,15 +22,42 @@ import { PostDetailModal } from "./components/PostDetailModal";
 import { usePostsFeed, useLikePost, useDeletePost } from "../posts/hooks/usePosts";
 import { useAuth } from "../auth/AuthContext";
 import type { Post } from "../posts/types";
+import { GlobalImpactWidget } from "./components/GlobalImpactWidget";
+import { LeaderboardWidget } from "./components/LeaderboardWidget";
+import { ConfirmationModal } from "./components/ConfirmationModal";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
+const getTimeAgo = (dateString: string | undefined) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return 'Hace unos segundos';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `Hace ${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Hace ${hours} hora${hours !== 1 ? 's' : ''}`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `Hace ${days} día${days !== 1 ? 's' : ''}`;
+
+    return date.toLocaleDateString();
+};
+
 const CommunityPage = () => {
     const { user } = useAuth();
-    const { data: feedData, isLoading, error } = usePostsFeed();
+    const {
+        data: feedData,
+        isLoading,
+        error,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = usePostsFeed();
     const likeMutation = useLikePost();
     const deleteMutation = useDeletePost();
     const toast = useToast();
@@ -41,8 +70,15 @@ const CommunityPage = () => {
     const [viewPostId, setViewPostId] = useState<string | null>(null);
     const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
 
+    // Delete Confirmation State
+    const [deletePostId, setDeletePostId] = useState<string | null>(null);
+    const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+
+    // Flatten pages to get all posts
+    const allPosts = feedData?.pages.flatMap(page => page.data) || [];
+
     // Derived state for reactive updates
-    const detailPost = feedData?.data.find((p: Post) => p.id === viewPostId) || null;
+    const detailPost = allPosts.find((p: Post) => p.id === viewPostId) || null;
 
     const handleLike = (postId: string, isLiked: boolean) => {
         likeMutation.mutate({ postId, liked: isLiked }, {
@@ -57,7 +93,7 @@ const CommunityPage = () => {
     };
 
     const handleEdit = (postId: string) => {
-        const post = feedData?.data.find((p: Post) => p.id === postId);
+        const post = allPosts.find((p: Post) => p.id === postId);
         if (post) {
             setEditingPost(post);
             onEditOpen();
@@ -69,29 +105,36 @@ const CommunityPage = () => {
         onDetailOpen();
     };
 
-    const handleDelete = (postId: string) => {
-        if (confirm("¿Estás seguro de eliminar esta publicación?")) {
-            deleteMutation.mutate(postId, {
-                onSuccess: () => {
-                    toast({
-                        title: 'Publicación eliminada',
-                        status: 'success',
-                        duration: 3000,
-                    });
-                    if (viewPostId === postId) {
-                        onDetailClose();
-                        setViewPostId(null);
-                    }
-                },
-                onError: () => {
-                    toast({
-                        title: 'Error al eliminar publicación',
-                        status: 'error',
-                        duration: 3000,
-                    });
+    const handleDeleteClick = (postId: string) => {
+        setDeletePostId(postId);
+        onDeleteOpen();
+    };
+
+    const confirmDelete = () => {
+        if (!deletePostId) return;
+
+        deleteMutation.mutate(deletePostId, {
+            onSuccess: () => {
+                toast({
+                    title: 'Publicación eliminada',
+                    status: 'success',
+                    duration: 3000,
+                });
+                if (viewPostId === deletePostId) {
+                    onDetailClose();
+                    setViewPostId(null);
                 }
-            });
-        }
+                onDeleteClose();
+                setDeletePostId(null);
+            },
+            onError: () => {
+                toast({
+                    title: 'Error al eliminar publicación',
+                    status: 'error',
+                    duration: 3000,
+                });
+            }
+        });
     };
 
     if (isLoading) {
@@ -110,52 +153,87 @@ const CommunityPage = () => {
         );
     }
 
-    const posts = feedData?.data || [];
+
 
     return (
         <Box animation={`${fadeInUp} 0.6s ease-out`} pb={20} bg="brand.bgBody" minH="100vh">
-            {/* Header Section */}
-            <Container maxW="container.sm" px={{ base: 4, md: 0 }}>
-                <CreatePostForm />
+            <Container maxW="container.xl" pt={8} px={{ base: 4, md: 8 }}>
+                <Grid
+                    templateColumns={{ base: "1fr", lg: "1fr 350px" }}
+                    gap={8}
+                    alignItems="start"
+                >
+                    {/* Main Feed - Centered/Left */}
+                    <GridItem order={{ base: 2, lg: 1 }}>
+                        <Container maxW="container.sm" px={0}>
+                            <CreatePostForm />
 
-                <VStack spacing={8} align="stretch">
-                    {posts.map((post: Post) => (
-                        <PostCard
-                            key={post.id}
-                            id={post.id}
-                            user={{
-                                name: post.user?.username || 'Usuario',
-                                avatar: post.user?.avatar_url || '',
-                                verified: post.user?.is_verified,
-                                location: post.ubicacion
-                            }}
-                            content={{
-                                image: post.media_url,
-                                text: post.descripcion,
-                                hashtags: post.hashtags,
-                                timeAgo: new Date(post.created_at).toLocaleDateString()
-                            }}
-                            stats={{
-                                likes: post._count?.likes || 0,
-                                comments: post._count?.comments || 0,
-                                likedBy: []
-                            }}
-                            isLiked={post.liked_by_me}
-                            isOwner={user?.id === post.user_id}
-                            onLike={(id) => handleLike(id, post.liked_by_me)}
-                            onComment={() => handleCommentClick(post.id)}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                        />
-                    ))}
+                            <VStack spacing={8} align="stretch" mt={8}>
+                                {allPosts.map((post: Post) => (
+                                    <PostCard
+                                        key={post.id}
+                                        id={post.id}
+                                        user={{
+                                            id: post.user_id, // Use root user_id as user ID
+                                            name: post.user?.username || 'Usuario',
+                                            avatar: post.user?.avatar_url || '',
+                                            verified: post.user?.is_verified,
+                                            location: post.ubicacion
+                                        }}
+                                        content={{
+                                            image: post.media_url,
+                                            text: post.descripcion,
+                                            hashtags: post.hashtags,
+                                            timeAgo: getTimeAgo(post.created_at)
+                                        }}
+                                        stats={{
+                                            likes: post._count?.likes || 0,
+                                            comments: post._count?.comments || 0,
+                                            likedBy: []
+                                        }}
+                                        isLiked={post.liked_by_me}
+                                        isOwner={user?.id === post.user_id}
+                                        onLike={(id) => handleLike(id, post.liked_by_me)}
+                                        onComment={() => handleCommentClick(post.id)}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDeleteClick}
+                                    />
+                                ))}
 
-                    {posts.length === 0 && (
-                        <Box textAlign="center" py={10}>
-                            <Icon as={FaLeaf} color="brand.primary" fontSize="3xl" mb={4} opacity={0.3} />
-                            <Text color="gray.400" fontSize="sm">No hay publicaciones aún</Text>
+                                {/* Load More Button */}
+                                {hasNextPage && (
+                                    <Center py={4}>
+                                        <Button
+                                            onClick={() => fetchNextPage()}
+                                            isLoading={isFetchingNextPage}
+                                            variant="outline"
+                                            colorScheme="green"
+                                            borderRadius="full"
+                                            size="md"
+                                        >
+                                            Cargar más publicaciones
+                                        </Button>
+                                    </Center>
+                                )}
+
+                                {allPosts.length === 0 && !isLoading && (
+                                    <Box textAlign="center" py={10}>
+                                        <Icon as={FaLeaf} color="brand.primary" fontSize="3xl" mb={4} opacity={0.3} />
+                                        <Text color="gray.400" fontSize="sm">No hay publicaciones aún</Text>
+                                    </Box>
+                                )}
+                            </VStack>
+                        </Container>
+                    </GridItem>
+
+                    {/* Sidebar - Right Stats & Rankings */}
+                    <GridItem order={{ base: 1, lg: 2 }} display={{ base: "block", lg: "block" }}>
+                        <Box position="sticky" top="100px">
+                            <GlobalImpactWidget />
+                            <LeaderboardWidget />
                         </Box>
-                    )}
-                </VStack>
+                    </GridItem>
+                </Grid>
             </Container>
 
             {/* Edit Modal */}
@@ -180,9 +258,24 @@ const CommunityPage = () => {
                     }}
                     post={detailPost}
                     onEdit={() => handleEdit(detailPost.id)}
-                    onDelete={() => handleDelete(detailPost.id)}
+                    onDelete={() => handleDeleteClick(detailPost.id)}
                 />
             )}
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isDeleteOpen}
+                onClose={() => {
+                    onDeleteClose();
+                    setDeletePostId(null);
+                }}
+                onConfirm={confirmDelete}
+                title="Eliminar publicación"
+                message="¿Estás seguro de que deseas eliminar esta publicación?"
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                isLoading={deleteMutation.isPending}
+            />
         </Box>
     );
 };
