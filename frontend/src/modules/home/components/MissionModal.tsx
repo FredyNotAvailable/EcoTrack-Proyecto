@@ -15,8 +15,9 @@ import {
     Badge,
     useToast
 } from "@chakra-ui/react";
-import { FaLeaf, FaBolt, FaClock, FaCircleCheck } from "react-icons/fa6";
+import { FaLeaf, FaBolt, FaClock, FaCircleCheck, FaTrophy } from "react-icons/fa6";
 import { useEffect, useState } from "react";
+import confetti from 'canvas-confetti';
 import type { DailyMission } from "../services/misiones.service";
 
 interface MissionModalProps {
@@ -29,19 +30,30 @@ interface MissionModalProps {
 export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionModalProps) => {
     const [canComplete, setCanComplete] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [countdown, setCountdown] = useState(3);
     const toast = useToast();
 
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen && mission && !mission.completed) {
             setCanComplete(false);
-            const timer = setTimeout(() => {
-                setCanComplete(true);
-            }, 3000); // 3 seconds timer
+            setCountdown(3);
 
-            return () => clearTimeout(timer);
+            const timer = setInterval(() => {
+                setCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setCanComplete(true);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            return () => clearInterval(timer);
         } else if (isOpen && mission?.completed) {
-            setCanComplete(true); // Already completed, button hidden anyway but safety reset
+            setCanComplete(true);
+            setCountdown(0);
         }
     }, [isOpen, mission]);
 
@@ -50,14 +62,35 @@ export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionMo
         setIsSubmitting(true);
         try {
             await onComplete(mission.id);
-            toast({
-                title: "¡Misión completada!",
-                description: `Has ganado ${mission.puntos} puntos.`,
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-                position: "top-right"
+
+            // Celebration!
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#2E7D32', '#4CAF50', '#81C784', '#FFD700']
             });
+
+            // Rewards Notification
+            toast({
+                position: 'top',
+                render: () => (
+                    <Box color="white" p={4} bg="brand.secondary" borderRadius="16px" boxShadow="xl">
+                        <VStack align="start" spacing={1}>
+                            <HStack>
+                                <Icon as={FaTrophy} color="brand.primary" />
+                                <Text fontWeight="bold">¡Misión Cumplida!</Text>
+                            </HStack>
+                            <Text fontSize="sm">
+                                Has ganado **{mission.puntos} puntos** {mission.kg_co2_ahorrado ? `y ahorrado **${mission.kg_co2_ahorrado}kg de CO₂**` : ''}.
+                            </Text>
+                        </VStack>
+                    </Box>
+                ),
+                duration: 5000,
+                isClosable: true,
+            });
+
             onClose();
         } catch (error) {
             toast({
@@ -135,7 +168,7 @@ export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionMo
                             {!canComplete ? (
                                 <HStack>
                                     <Icon as={FaClock} />
-                                    <Text>Lee la misión (3s)...</Text>
+                                    <Text>Lee la misión ({countdown}s)...</Text>
                                 </HStack>
                             ) : (
                                 "Completar Misión"

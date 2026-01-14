@@ -197,6 +197,14 @@ const ProfilePage = () => {
     const currentLevelXp = currentPoints % 1000;
     const progressPercent = (currentLevelXp / xpForNextLevel) * 100;
 
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return "Cargando...";
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
+            .format(date)
+            .replace(/^\w/, (c) => c.toUpperCase());
+    };
+
     const profileData = {
         name: profile?.username || "Usuario",
         username: profile?.username ? `@${profile.username}` : "",
@@ -205,6 +213,7 @@ const ProfilePage = () => {
         level: currentLevel,
         xp: currentLevelXp,
         nextLevelXp: xpForNextLevel,
+        memberSince: formatDate(profile?.created_at),
         stats: [
             { label: "Puntos Totales", value: currentPoints.toLocaleString(), icon: FaTrophy, color: "brand.accentPurple" },
             { label: "CO₂ Ahorrado", value: `${(stats?.kg_co2_ahorrado || 0).toFixed(1)} kg`, icon: FaGlobeAmericas, color: "brand.primary" },
@@ -282,7 +291,7 @@ const ProfilePage = () => {
 
                         <HStack pt={2} spacing={2} color="gray.500" fontSize="sm">
                             <Icon as={FaSeedling} color="brand.primary" />
-                            <Text fontWeight="medium">Miembro desde: Enero 2024</Text>
+                            <Text fontWeight="medium">Miembro desde: {profileData.memberSince}</Text>
                         </HStack>
                     </VStack>
                 </Flex>
