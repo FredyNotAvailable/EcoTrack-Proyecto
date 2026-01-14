@@ -9,25 +9,18 @@ import {
     Icon,
     Skeleton,
     SkeletonText,
-    Card,
     VStack,
-    HStack,
     Button,
 
 } from "@chakra-ui/react";
 import {
     FaLeaf,
     FaArrowRight,
-    FaChartLine,
-    FaBicycle,
-    FaClock,
-    FaBasketShopping,
     FaLightbulb,
     FaCircleCheck,
     FaCloud
 } from "react-icons/fa6";
 import { motion } from "framer-motion";
-import { keyframes } from "@emotion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { consejosService } from "./services/consejos.service";
@@ -41,6 +34,9 @@ import type { UserStats } from "../../services/userStatsService";
 import { userRachasService } from "../../services/userRachasService";
 import type { UserRacha } from "../../services/userRachasService";
 import { useAuth } from "../auth/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useRetos } from "../retos/hooks/useRetos";
+import type { Reto } from "../retos/services/retos.service";
 
 // --- Visual Components (Cloned from Dashboard) ---
 
@@ -136,7 +132,10 @@ const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, rac
     );
 };
 
-const ActiveChallengesVisual = () => {
+const ActiveChallengesVisual = ({ challenges, loading }: { challenges: Reto[], loading: boolean }) => {
+    const navigate = useNavigate();
+    const joinedChallenges = challenges.filter(r => r.joined && r.status !== 'completed').slice(0, 2);
+
     return (
         <Box
             p={6}
@@ -148,59 +147,67 @@ const ActiveChallengesVisual = () => {
         >
             <Flex justify="space-between" align="center" mb={5}>
                 <Text fontSize="1.2rem" fontWeight="700">Retos Activos</Text>
-                <Text fontSize="0.9rem" color="brand.primary" fontWeight="600" cursor="pointer" _hover={{ textDecoration: "underline" }}>Ver todos</Text>
+                <Button
+                    variant="link"
+                    color="brand.primary"
+                    fontSize="0.9rem"
+                    fontWeight="600"
+                    rightIcon={<Icon as={FaArrowRight} />}
+                    onClick={() => navigate('/app/retos')}
+                >
+                    Ver más
+                </Button>
             </Flex>
 
-            {/* Challenge 1 */}
-            <Flex
-                align="center"
-                gap={4}
-                p={4}
-                border="1px solid #f1f2f6"
-                borderRadius="8px"
-                mb={4}
-                transition="transform 0.2s"
-                _hover={{ transform: "translateX(5px)", borderColor: "brand.primary" }}
-            >
-                <Flex w="40px" h="40px" borderRadius="full" bg="#e3f2fd" color="brand.primary" align="center" justify="center" shrink={0}>
-                    <Icon as={FaBicycle} />
-                </Flex>
-                <Box flex={1}>
-                    <Text fontSize="0.95rem" fontWeight="600" mb={1}>Semana en Bici</Text>
-                    <Box h="6px" w="100%" bg="#f1f2f6" borderRadius="full" mb={2}>
-                        <Box h="100%" w="45%" bg="brand.primary" borderRadius="full" />
-                    </Box>
-                    <Flex fontSize="0.8rem" color="brand.textMuted" gap={3}>
-                        <Flex align="center" gap={1}><Icon as={FaClock} /> 3 días restantes</Flex>
-                        <Flex align="center" gap={1}><Icon as={FaLeaf} /> 15kg CO₂</Flex>
+            {loading ? (
+                <VStack spacing={4} align="stretch">
+                    <Skeleton height="70px" borderRadius="12px" />
+                    <Skeleton height="70px" borderRadius="12px" />
+                </VStack>
+            ) : joinedChallenges.length > 0 ? (
+                joinedChallenges.map((reto) => (
+                    <Flex
+                        key={reto.id}
+                        align="center"
+                        gap={4}
+                        p={4}
+                        border="1px solid #f1f2f6"
+                        borderRadius="12px"
+                        mb={3}
+                        transition="all 0.2s"
+                        cursor="pointer"
+                        _hover={{ transform: "translateX(5px)", borderColor: "brand.primary", bg: "brand.bgCardLight" }}
+                        onClick={() => navigate('/app/retos')}
+                    >
+                        <Flex w="40px" h="40px" borderRadius="full" bg="brand.bgCardLight" color="brand.primary" align="center" justify="center" shrink={0}>
+                            <Icon as={FaLeaf} />
+                        </Flex>
+                        <Box flex={1}>
+                            <Text fontSize="0.95rem" fontWeight="600" mb={1}>{reto.titulo}</Text>
+                            <Box h="6px" w="100%" bg="#f1f2f6" borderRadius="full" mb={2} overflow="hidden">
+                                <Box h="100%" w={`${reto.progress}%`} bg="brand.primary" borderRadius="full" />
+                            </Box>
+                            <Flex fontSize="0.8rem" color="brand.textMuted" gap={3}>
+                                <Flex align="center" gap={1}><Icon as={FaLeaf} /> {reto.recompensa_kg_co2}kg CO₂</Flex>
+                                <Text fontWeight="bold" color="brand.primary">{Math.round(reto.progress)}%</Text>
+                            </Flex>
+                        </Box>
                     </Flex>
-                </Box>
-            </Flex>
-
-            {/* Challenge 2 */}
-            <Flex
-                align="center"
-                gap={4}
-                p={4}
-                border="1px solid #f1f2f6"
-                borderRadius="8px"
-                transition="transform 0.2s"
-                _hover={{ transform: "translateX(5px)", borderColor: "brand.primary" }}
-            >
-                <Flex w="40px" h="40px" borderRadius="full" bg="#f3e5f5" color="#9b59b6" align="center" justify="center" shrink={0}>
-                    <Icon as={FaBasketShopping} />
-                </Flex>
-                <Box flex={1}>
-                    <Text fontSize="0.95rem" fontWeight="600" mb={1}>Cero Plásticos</Text>
-                    <Box h="6px" w="100%" bg="#f1f2f6" borderRadius="full" mb={2}>
-                        <Box h="100%" w="70%" bg="#9b59b6" borderRadius="full" />
-                    </Box>
-                    <Flex fontSize="0.8rem" color="brand.textMuted" gap={3}>
-                        <Flex align="center" gap={1}><Icon as={FaClock} /> 5 días restantes</Flex>
-                        <Flex align="center" gap={1}><Icon as={FaLeaf} /> 5kg CO₂</Flex>
-                    </Flex>
-                </Box>
-            </Flex>
+                ))
+            ) : (
+                <VStack py={4} spacing={2} opacity={0.7}>
+                    <Text fontSize="sm" color="gray.500">No tienes retos activos actualmente.</Text>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        colorScheme="green"
+                        borderRadius="full"
+                        onClick={() => navigate('/app/retos')}
+                    >
+                        Descubrir retos
+                    </Button>
+                </VStack>
+            )}
         </Box>
     );
 };
@@ -343,15 +350,8 @@ const DailyMissionsWidgetVisual = ({
     );
 };
 
-// --- Animations for Legacy Content ---
-const fadeInUp = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
+// --- Component ---
 import { ProfileAPIService } from "../profile/services/profile.service";
-
-// ... existing imports
 
 export const InicioPage = () => {
     const { user } = useAuth();
@@ -369,6 +369,8 @@ export const InicioPage = () => {
 
     // Use User Stats Hook
     const { data: stats, isLoading: loadingStats } = useUserStats();
+    // Use Retos Hook
+    const { challenges, isLoading: loadingRetos } = useRetos();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -395,13 +397,13 @@ export const InicioPage = () => {
                 setProfile(profileData);
 
                 // Merge completed state
-                const mergedMissions = rawMissions.map(m => ({
+                const mergedMissions = rawMissions.map((m: any) => ({
                     ...m,
                     completed: completedIds.includes(m.id)
                 }));
 
                 // Sort: Active first, Completed last
-                const sortedMissions = mergedMissions.sort((a, b) => {
+                const sortedMissions = mergedMissions.sort((a: any, b: any) => {
                     return Number(a.completed) - Number(b.completed);
                 });
 
@@ -479,7 +481,7 @@ export const InicioPage = () => {
                     {/* Main Content */}
                     <GridItem>
                         <Box mb={3}>
-                            <ActiveChallengesVisual />
+                            <ActiveChallengesVisual challenges={challenges} loading={loadingRetos} />
                         </Box>
                         <DailyTipVisual tip={dailyTip} loading={loadingTip} />
                     </GridItem>
@@ -494,60 +496,6 @@ export const InicioPage = () => {
                     </GridItem>
                 </Grid>
             </motion.div>
-
-            {/* --- DIVIDER --- */}
-            <Box h="2px" bg="gray.100" my={12} />
-
-            {/* --- LEGACY CONTENT START --- */}
-            <Box animation={`${fadeInUp} 0.6s ease-out`} pb={10}>
-                <VStack align="start" spacing={2} mb={10}>
-                    <Heading size="xl" color="brand.secondary">¡Hola de nuevo! (Legacy) 👋</Heading>
-                    <Text color="brand.textMuted" fontSize="lg">
-                        Hoy es un gran día para seguir salvando el planeta.
-                    </Text>
-                </VStack>
-
-                <SimpleGrid columns={{ base: 1, md: 2 }} gap={8} mb={10}>
-                    <Card p={8} borderRadius="30px" bgGradient="linear(to-br, brand.primary, #45b08c)" color="white">
-                        <VStack align="start" spacing={4}>
-                            <Icon as={FaLeaf} fontSize="4xl" />
-                            <Heading size="lg">Progreso Semanal</Heading>
-                            <Text opacity={0.9}>Has ahorrado un 15% más de CO₂ que la semana pasada. ¡Increíble!</Text>
-                            <Button bg="white" color="brand.primary" _hover={{ bg: "gray.100" }} borderRadius="12px">
-                                Ver estadísticas
-                            </Button>
-                        </VStack>
-                    </Card>
-
-                    <Card p={8} borderRadius="30px" bg="white" border="1px solid" borderColor="gray.100" boxShadow="lg">
-                        <VStack align="start" spacing={4}>
-                            <Icon as={FaChartLine} fontSize="4xl" color="brand.accentPurple" />
-                            <Heading size="lg" color="brand.secondary">Tu Impacto</Heading>
-                            <Text color="brand.textMuted">Equivale a haber plantado 4 árboles este mes.</Text>
-                            <Button variant="outline" borderColor="brand.accentPurple" color="brand.accentPurple" borderRadius="12px">
-                                Compartir logro
-                            </Button>
-                        </VStack>
-                    </Card>
-                </SimpleGrid>
-
-                <Heading size="md" mb={6} color="brand.secondary">Actividad sugerida</Heading>
-                <Card p={6} borderRadius="24px" border="1px dashed" borderColor="gray.300" bg="gray.50" _hover={{ borderColor: "brand.primary", bg: "white", transform: "scale(1.02)" }} transition="all 0.2s" cursor="pointer">
-                    <HStack justify="space-between">
-                        <HStack spacing={4}>
-                            <Flex p={3} bg="white" borderRadius="12px" boxShadow="sm">
-                                <Icon as={FaLeaf} color="brand.primary" />
-                            </Flex>
-                            <VStack align="start" spacing={0}>
-                                <Text fontWeight="bold">Nuevo reto disponible: Ducha de 5 minutos</Text>
-                                <Text fontSize="sm" color="brand.textMuted">Gana 100 puntos extra hoy.</Text>
-                            </VStack>
-                        </HStack>
-                        <Icon as={FaArrowRight} />
-                    </HStack>
-                </Card>
-            </Box>
-            {/* --- LEGACY CONTENT END --- */}
 
         </Box>
     );

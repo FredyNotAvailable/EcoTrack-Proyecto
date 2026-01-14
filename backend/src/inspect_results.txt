@@ -1,0 +1,16 @@
+
+--- Inspecting table: retos_semanales ---
+Columns in retos_semanales: ["id","nombre","descripcion","categoria","puntos_totales","kgco2_total","activo","created_at"]
+Sample row: {"id":"465fd61d-ce44-4544-86ad-469fd764ffdb","nombre":"Movilidad sostenible semanal","descripcion":"Reducir el uso de transporte motorizado en trayectos cortos.","categoria":"transporte","puntos_totales":120,"kgco2_total":6.5,"activo":true,"created_at":"2026-01-12T16:20:06.247602+00:00"}
+
+--- Inspecting table: retos_semanales_tareas ---
+Columns in retos_semanales_tareas: ["id","reto_semanal_id","nombre","descripcion","dia_orden","puntos","kgco2","created_at"]
+Sample row: {"id":"c2f50273-29c1-4134-8dbf-f783419131b9","reto_semanal_id":"5e47b3ea-078f-4694-8a16-15ed655bcf65","nombre":"Apagar luces y equipos","descripcion":"Apagar luces y equipos al salir de una habitación.","dia_orden":1,"puntos":15,"kgco2":0.4,"created_at":"2026-01-14T16:20:40.131331+00:00"}
+
+--- Inspecting table: usuarios_retos_semanales ---
+Columns in usuarios_retos_semanales: ["id","user_id","reto_semanal_id","estado","progreso","started_at","completed_at"]
+Sample row: {"id":"75378b9b-8976-4fe5-b375-112e41d7f3a6","user_id":"ceb8b7e9-38be-4ed7-86dc-710283955582","reto_semanal_id":"5e47b3ea-078f-4694-8a16-15ed655bcf65","estado":"joined","progreso":0,"started_at":"2026-01-14T17:00:34.587764+00:00","completed_at":null}
+
+--- Inspecting table: usuarios_retos_tareas ---
+Table usuarios_retos_tareas is empty.
+Working columns in usuarios_retos_tareas (detected individually): ["id","tarea_id","completado"]

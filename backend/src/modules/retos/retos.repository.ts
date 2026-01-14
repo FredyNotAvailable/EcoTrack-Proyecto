@@ -50,7 +50,8 @@ export class RetosRepository {
             recompensa_puntos: t.puntos,
             recompensa_kg_co2: t.kgco2,
             tipo: 'manual',
-            cantidad_meta: 1
+            cantidad_meta: 1,
+            dia_orden: t.dia_orden
         }));
     }
 
@@ -116,65 +117,52 @@ export class RetosRepository {
     }
 
     // Tasks Management
-    async getUserTask(userId: string, taskId: string): Promise<UserRetoTarea | null> {
+    async getUserTask(userRetoId: string, taskId: string): Promise<UserRetoTarea | null> {
         const { data, error } = await supabase
             .from('usuarios_retos_tareas')
             .select('*')
-            .eq('user_id', userId)
+            .eq('user_reto_id', userRetoId)
             .eq('tarea_id', taskId)
             .single();
 
         if (error) return null;
         return {
             id: data.id,
-            user_id: data.user_id,
-            reto_id: data.reto_semanal_id || '', // Might be missing or differently named
+            user_id: '', // Not in this table, will be filled by service if needed
+            reto_id: data.user_reto_id,
             tarea_id: data.tarea_id,
             completado: data.completado,
-            progreso_actual: data.progreso_actual || 0,
-            fecha_completado: data.fecha_completado
+            progreso_actual: 0,
+            fecha_completado: data.completed_at
         };
     }
 
-    async getUserTasksByChallenge(userId: string, retoId: string): Promise<UserRetoTarea[]> {
-        // Warning: if usuarios_retos_tareas doesn't have reto_id, this filter fails.
-        // But usually it would. If not, we might need to filter by scanning tasks... but that's inefficient.
-        // Let's assume reto_semanal_id exists or we filter by task IDs belonging to the challenge?
-        // Better: Join? Supabase basic client doesn't do deep joins easily.
-
-        // Let's assume reto_semanal_id column exists
+    async getUserTasksByChallenge(userRetoId: string): Promise<UserRetoTarea[]> {
         const { data, error } = await supabase
             .from('usuarios_retos_tareas')
             .select('*')
-            .eq('user_id', userId)
-            .eq('reto_semanal_id', retoId);
+            .eq('user_reto_id', userRetoId);
 
-        if (error) {
-            // Fallback: If column doesn't exist, we might return empty or handle error.
-            // But for now, throw (so we know)
-            throw error;
-        }
+        if (error) throw error;
 
         return (data || []).map((d: any) => ({
             id: d.id,
-            user_id: d.user_id,
-            reto_id: d.reto_semanal_id,
+            user_id: '',
+            reto_id: d.user_reto_id,
             tarea_id: d.tarea_id,
             completado: d.completado,
-            progreso_actual: d.progreso_actual || 0,
-            fecha_completado: d.fecha_completado
+            progreso_actual: 0,
+            fecha_completado: d.completed_at
         }));
     }
 
-    async createUserTask(userId: string, retoId: string, taskId: string): Promise<UserRetoTarea> {
+    async createUserTask(userRetoId: string, taskId: string): Promise<UserRetoTarea> {
         const { data, error } = await supabase
             .from('usuarios_retos_tareas')
             .insert({
-                user_id: userId,
-                reto_semanal_id: retoId,
+                user_reto_id: userRetoId,
                 tarea_id: taskId,
-                completado: false,
-                progreso_actual: 0
+                completado: false
             })
             .select()
             .single();
@@ -182,25 +170,24 @@ export class RetosRepository {
         if (error) throw error;
         return {
             id: data.id,
-            user_id: data.user_id,
-            reto_id: data.reto_semanal_id,
+            user_id: '',
+            reto_id: data.user_reto_id,
             tarea_id: data.tarea_id,
             completado: data.completado,
-            progreso_actual: data.progreso_actual,
-            fecha_completado: data.fecha_completado
+            progreso_actual: 0,
+            fecha_completado: data.completed_at
         };
     }
 
-    async updateUserTask(userId: string, taskId: string, updates: Partial<UserRetoTarea>): Promise<UserRetoTarea> {
-        const dbUpdates: any = { ...updates };
-        // Clean up
-        delete dbUpdates.reto_id; // Don't update relations usually
-        delete dbUpdates.id;
+    async updateUserTask(userRetoId: string, taskId: string, updates: Partial<UserRetoTarea>): Promise<UserRetoTarea> {
+        const dbUpdates: any = {};
+        if (updates.completado !== undefined) dbUpdates.completado = updates.completado;
+        if (updates.fecha_completado !== undefined) dbUpdates.completed_at = updates.fecha_completado;
 
         const { data, error } = await supabase
             .from('usuarios_retos_tareas')
             .update(dbUpdates)
-            .eq('user_id', userId)
+            .eq('user_reto_id', userRetoId)
             .eq('tarea_id', taskId)
             .select()
             .single();
@@ -208,14 +195,15 @@ export class RetosRepository {
         if (error) throw error;
         return {
             id: data.id,
-            user_id: data.user_id,
-            reto_id: data.reto_semanal_id,
+            user_id: '',
+            reto_id: data.user_reto_id,
             tarea_id: data.tarea_id,
             completado: data.completado,
-            progreso_actual: data.progreso_actual,
-            fecha_completado: data.fecha_completado
+            progreso_actual: 0,
+            fecha_completado: data.completed_at
         };
     }
+
 
     // Helper
     private mapRetoFromDB(r: any): Reto {

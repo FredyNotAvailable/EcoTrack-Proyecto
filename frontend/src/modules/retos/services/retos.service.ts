@@ -12,6 +12,7 @@ export interface RetoTarea {
     completed: boolean;
     current_progress: number;
     can_upload_media?: boolean;
+    dia_orden: number;
 }
 
 export interface Reto {

@@ -19,6 +19,7 @@ export interface RetoTarea {
     recompensa_kg_co2: number;
     tipo: 'manual' | 'post' | 'event';
     cantidad_meta: number;
+    dia_orden: number;
 }
 
 export interface UserReto {

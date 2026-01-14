@@ -32,7 +32,7 @@ export class RetosService {
             // Calculate progress if joined
             let userTasks: any[] = [];
             if (userReto) {
-                userTasks = await this.repository.getUserTasksByChallenge(userId, reto.id);
+                userTasks = await this.repository.getUserTasksByChallenge(userReto.id);
             }
 
             results.push({
@@ -74,18 +74,18 @@ export class RetosService {
         if (!task) throw new ApiError(404, 'Tarea no encontrada');
 
         // 3. Check if already completed
-        let userTask = await this.repository.getUserTask(userId, taskId);
+        let userTask = await this.repository.getUserTask(userReto.id, taskId);
         if (userTask?.completado) {
             // Already completed
             return userTask;
         }
 
         if (!userTask) {
-            userTask = await this.repository.createUserTask(userId, retoId, taskId);
+            userTask = await this.repository.createUserTask(userReto.id, taskId);
         }
 
         // 4. Mark complete locally
-        const updatedTask = await this.repository.updateUserTask(userId, taskId, {
+        const updatedTask = await this.repository.updateUserTask(userReto.id, taskId, {
             completado: true,
             fecha_completado: new Date().toISOString(),
             progreso_actual: task.cantidad_meta
@@ -109,7 +109,10 @@ export class RetosService {
     }
 
     private async checkChallengeCompletion(userId: string, retoId: string, allTasks: any[]) {
-        const userTasks = await this.repository.getUserTasksByChallenge(userId, retoId);
+        const userReto = await this.repository.getUserChallenge(userId, retoId);
+        if (!userReto) return;
+
+        const userTasks = await this.repository.getUserTasksByChallenge(userReto.id);
 
         // Count how many tasks are completed
         const completedCount = userTasks.filter(ut => ut.completado).length;
