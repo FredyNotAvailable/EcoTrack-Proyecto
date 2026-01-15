@@ -27,6 +27,10 @@ export class PostsRepository {
             query = query.lt('created_at', options.cursor);
         }
 
+        if (options.hashtag) {
+            query = query.contains('hashtags', [options.hashtag]);
+        }
+
         // Note: my_like filtering needs to happen carefully. 
         // Supabase select filtering on joined tables usually filters the parent row if join is inner.
         // For 'left' join it just returns null if no match.
@@ -212,6 +216,32 @@ export class PostsRepository {
             .eq('id', id);
 
         if (error) throw error;
+    }
+
+    // --- Hashtags ---
+
+    async getPopularHashtags(): Promise<{ hashtag: string, count: number }[]> {
+        const { data, error } = await supabase
+            .rpc('get_popular_hashtags');
+
+        if (error) {
+            console.error('Error fetching popular hashtags:', error);
+            return [];
+        }
+
+        return data || [];
+    }
+
+    async searchHashtags(query: string): Promise<{ hashtag: string, count: number }[]> {
+        const { data, error } = await supabase
+            .rpc('search_hashtags', { search_query: query });
+
+        if (error) {
+            console.error('Error searching hashtags:', error);
+            return [];
+        }
+
+        return data || [];
     }
 
     // Helper to map post data including "liked_by_me" extraction from left join

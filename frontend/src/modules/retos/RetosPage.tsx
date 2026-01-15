@@ -10,7 +10,8 @@ import {
     Center,
     Spinner,
     useToast,
-    Badge
+    Badge,
+    CloseButton,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useState, useEffect } from 'react';
@@ -89,8 +90,9 @@ export const RetosPage = () => {
             if (selectedTask) {
                 toast({
                     position: 'top',
-                    render: () => (
-                        <Box color="white" p={4} bg="brand.secondary" borderRadius="16px" boxShadow="xl">
+                    render: ({ onClose }) => (
+                        <Box color="white" p={4} bg="brand.secondary" borderRadius="16px" boxShadow="xl" position="relative" pr={8}>
+                            <CloseButton position="absolute" right="2" top="2" onClick={onClose} color="white" />
                             <VStack align="start" spacing={1}>
                                 <HStack>
                                     <Icon as={FaTrophy} color="brand.primary" />

@@ -49,4 +49,17 @@ export class ProfileRepository {
         }
         return data;
     }
+
+    async searchProfiles(query: string) {
+        console.log(`[ProfileRepo] Searching profiles with query: "${query}"`);
+        const { data, error } = await supabase
+            .rpc('search_profiles', { search_query: query });
+
+        if (error) {
+            console.error('[ProfileRepo] Error searching profiles:', error);
+            return [];
+        }
+        console.log(`[ProfileRepo] Found ${data?.length} profiles`);
+        return data || [];
+    }
 }

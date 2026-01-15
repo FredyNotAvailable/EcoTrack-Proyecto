@@ -40,6 +40,8 @@ const optionalAuth = async (req: any, res: any, next: any) => {
 // The user said "Si falta algo mínimo ... créalo". I will do that.
 
 router.get('/', optionalAuth, postsController.getFeed);
+router.get('/search/hashtags', postsController.searchHashtags);
+router.get('/hashtags/popular', postsController.getPopularHashtags);
 router.get('/:id', optionalAuth, postsController.getPost);
 
 import { uploadMiddleware } from '../../middlewares/upload.middleware';

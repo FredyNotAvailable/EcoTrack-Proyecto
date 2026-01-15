@@ -2,9 +2,21 @@ import apiClient from '../../../services/apiClient';
 import type { Post, Comment, CreatePostPayload, CreateCommentPayload } from '../types';
 
 export const PostsService = {
-    async getPosts(params?: { page?: number; limit?: number; authorId?: string }) {
+    async getPosts(params?: { page?: number; limit?: number; authorId?: string; hashtag?: string }) {
         const { data } = await apiClient.get<{ data: Post[]; meta: any }>('/posts', { params });
-        return data; // Returns { data: Post[], meta: ... }
+        return data;
+    },
+
+    async getPopularHashtags() {
+        const { data } = await apiClient.get<{ data: { hashtag: string; count: number }[] }>('/posts/hashtags/popular');
+        return data.data;
+    },
+
+    async searchHashtags(query: string) {
+        const { data } = await apiClient.get<{ data: { hashtag: string; count: number }[] }>('/posts/search/hashtags', {
+            params: { query }
+        });
+        return data.data;
     },
 
     async getPostById(id: string) {
@@ -13,9 +25,6 @@ export const PostsService = {
     },
 
     async createPost(payload: CreatePostPayload) {
-        // If there's a file upload needed, it should be handled before or here using the signed URL flow.
-        // For now, assume payload has media_url if uploaded.
-        // The backend `POST /posts` accepts the payload directly.
         const { data } = await apiClient.post<{ data: { post: Post } }>('/posts', payload);
         return data.data.post;
     },
@@ -52,10 +61,9 @@ export const PostsService = {
 
     async deleteComment(commentId: string) {
         const { data } = await apiClient.delete('/comments/' + commentId);
-        return data; // assumes success returns { data: { success: true } } or similar
+        return data;
     },
 
-    // Helper for media upload (simplified)
     async uploadMedia(file: File) {
         const formData = new FormData();
         formData.append('file', file);

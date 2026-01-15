@@ -9,14 +9,15 @@ import { mediaService } from './media.service';
 
 export const getFeed = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { limit, cursor, authorId } = req.query;
+        const { limit, cursor, authorId, hashtag } = req.query;
         const userId = req.user?.id; // Optional auth
 
         const posts = await service.getFeed({
             limit: limit ? Number(limit) : 10,
             cursor: cursor as string,
             userId,
-            authorId: authorId as string
+            authorId: authorId as string,
+            hashtag: hashtag as string
         });
 
         res.json({ data: posts });
@@ -175,6 +176,25 @@ export const deleteComment = async (req: Request, res: Response, next: NextFunct
 
         await service.deleteComment(req.user.id, id as string);
         res.json({ data: { success: true } });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getPopularHashtags = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const hashtags = await service.getPopularHashtags();
+        res.json({ data: hashtags });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const searchHashtags = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const query = req.query.query as string;
+        const hashtags = await service.searchHashtags(query);
+        res.json({ data: hashtags });
     } catch (error) {
         next(error);
     }

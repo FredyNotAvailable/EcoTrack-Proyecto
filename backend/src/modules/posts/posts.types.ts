@@ -55,6 +55,7 @@ export interface PostListOptions {
     cursor?: string; // Timestamptz string
     userId?: string; // To check liked_by_me
     authorId?: string; // To filter by specific user
+    hashtag?: string; // To filter by hashtag
 }
 
 export interface UploadResponse {

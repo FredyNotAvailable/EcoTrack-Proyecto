@@ -45,10 +45,11 @@ export interface PostCardProps {
     onShare?: (id: string) => void;
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onHashtagClick?: (hashtag: string) => void;
     isOwner?: boolean;
 }
 
-export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment, onEdit, onDelete, isOwner }: PostCardProps) => {
+export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment, onEdit, onDelete, onHashtagClick, isOwner }: PostCardProps) => {
     const navigate = useNavigate();
     const cardBg = useColorModeValue("white", "gray.800");
     const borderColor = useColorModeValue("gray.100", "gray.700");
@@ -67,7 +68,6 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
             borderColor={borderColor}
             overflow="hidden"
             boxShadow="sm"
-            mb={6}
             className="post-card"
         >
             {/* Header */}
@@ -91,37 +91,34 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                                 <Icon as={MdVerified} color={verifiedColor} boxSize={3.5} />
                             )}
                         </HStack>
-                        {user.location && (
-                            <Text fontSize="xs" color="gray.400" fontWeight="500">
-                                {user.location}
-                            </Text>
-                        )}
+                        <HStack spacing={1} fontSize="xs" color="gray.400" fontWeight="500">
+                            {user.location && (
+                                <>
+                                    <Text>{user.location}</Text>
+                                    <Text>•</Text>
+                                </>
+                            )}
+                            <Text>{content.timeAgo}</Text>
+                        </HStack>
                     </Box>
                 </HStack>
 
-                <Menu>
-                    <MenuButton
-                        as={IconButton}
-                        aria-label="Options"
-                        icon={<Icon as={FaEllipsisH} />}
-                        variant="ghost"
-                        color="gray.400"
-                        size="sm"
-                    />
-                    <MenuList>
-                        {isOwner ? (
-                            <>
-                                <MenuItem onClick={() => onEdit && onEdit(id)}>Editar</MenuItem>
-                                <MenuItem onClick={() => onDelete && onDelete(id)} color="red.500">Eliminar</MenuItem>
-                            </>
-                        ) : (
-                            <>
-                                <MenuItem>Reportar</MenuItem>
-                                <MenuItem>Dejar de seguir</MenuItem>
-                            </>
-                        )}
-                    </MenuList>
-                </Menu>
+                {isOwner && (
+                    <Menu>
+                        <MenuButton
+                            as={IconButton}
+                            aria-label="Options"
+                            icon={<Icon as={FaEllipsisH} />}
+                            variant="ghost"
+                            color="gray.400"
+                            size="sm"
+                        />
+                        <MenuList>
+                            <MenuItem onClick={() => onEdit && onEdit(id)}>Editar</MenuItem>
+                            <MenuItem onClick={() => onDelete && onDelete(id)} color="red.500">Eliminar</MenuItem>
+                        </MenuList>
+                    </Menu>
+                )}
             </Flex>
 
             {/* Media */}
@@ -185,12 +182,12 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                             onClick={() => onComment && onComment(id)}
                         />
                     </HStack>
-                    <IconButton
+                    {/* <IconButton
                         aria-label="Save"
                         icon={<FaRegBookmark size={20} />}
                         variant="unstyled"
                         color="brand.textMuted"
-                    />
+                    /> */}
                 </Flex>
 
                 {/* Likes Stats */}
@@ -215,17 +212,30 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                     <Text as="span" fontSize="sm" color="brand.textMain">
                         {content.text}
                         {content.hashtags && content.hashtags.length > 0 && (
-                            <Text as="span" color="blue.500" ml={2}>
-                                {content.hashtags.map(tag => `#${tag}`).join(' ')}
+                            <Text as="span" ml={2}>
+                                {content.hashtags.map((tag, idx) => (
+                                    <Text
+                                        key={`${tag}-${idx}`}
+                                        as="span"
+                                        color="blue.500"
+                                        cursor="pointer"
+                                        _hover={{ textDecoration: 'underline', color: 'blue.600' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onHashtagClick && onHashtagClick(tag);
+                                        }}
+                                        mr={1}
+                                    >
+                                        #{tag}
+                                    </Text>
+                                ))}
                             </Text>
                         )}
                     </Text>
                 </Text>
 
                 {/* Timestamp */}
-                <Text fontSize="xs" color="gray.400" mt={2} textTransform="uppercase" letterSpacing="0.5px">
-                    {content.timeAgo}
-                </Text>
+
             </Box>
         </Box>
     );

@@ -8,20 +8,25 @@ export const POSTS_KEYS = {
     userPosts: (userId: string) => [...POSTS_KEYS.all, 'user', userId] as const,
     detail: (id: string) => [...POSTS_KEYS.all, 'detail', id] as const,
     comments: (id: string) => [...POSTS_KEYS.all, 'comments', id] as const,
+    trending: () => [...POSTS_KEYS.all, 'trending'] as const,
 };
 
-export const usePostsFeed = () => {
+export const usePostsFeed = (hashtag?: string) => {
     return useInfiniteQuery({
-        queryKey: POSTS_KEYS.feed(),
+        queryKey: hashtag ? [...POSTS_KEYS.feed(), { hashtag }] : POSTS_KEYS.feed(),
         initialPageParam: 1,
-        queryFn: ({ pageParam = 1 }) => PostsService.getPosts({ page: pageParam as number, limit: 5 }),
+        queryFn: ({ pageParam = 1 }) =>
+            PostsService.getPosts({
+                page: pageParam as number,
+                limit: 5,
+                hashtag
+            }),
         getNextPageParam: (lastPage) => {
-            // Check if there are more pages based on metadata
             const hasMore = lastPage?.meta?.currentPage < lastPage?.meta?.totalPages;
             return hasMore ? lastPage.meta.currentPage + 1 : undefined;
         },
-        staleTime: 1000 * 60 * 5, // 5 minutes cache
-        refetchOnWindowFocus: false
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
     });
 };
 

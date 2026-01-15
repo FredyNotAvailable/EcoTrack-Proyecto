@@ -10,7 +10,9 @@ import {
     useDisclosure,
     Grid,
     GridItem,
-    Button
+    Button,
+    Flex,
+    HStack
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { FaLeaf } from "react-icons/fa";
@@ -25,16 +27,20 @@ import type { Post } from "../posts/types";
 import { GlobalImpactWidget } from "./components/GlobalImpactWidget";
 import { LeaderboardWidget } from "./components/LeaderboardWidget";
 import { ConfirmationModal } from "./components/ConfirmationModal";
+import { TrendingHashtags } from "./components/TrendingHashtags";
+import { CommunitySearch } from "./components/CommunitySearch";
+import { getTimeAgo } from "../../utils/dateUtils";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-import { getTimeAgo } from "../../utils/dateUtils";
-
 const CommunityPage = () => {
     const { user } = useAuth();
+    // Hashtag State
+    const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null);
+
     const {
         data: feedData,
         isLoading,
@@ -42,7 +48,7 @@ const CommunityPage = () => {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = usePostsFeed();
+    } = usePostsFeed(selectedHashtag || undefined);
     const likeMutation = useLikePost();
     const deleteMutation = useDeletePost();
     const toast = useToast();
@@ -122,13 +128,6 @@ const CommunityPage = () => {
         });
     };
 
-    if (isLoading) {
-        return (
-            <Center minH="100vh" bg="brand.bgBody">
-                <Spinner size="xl" color="brand.primary" />
-            </Center>
-        );
-    }
 
     if (error) {
         return (
@@ -138,85 +137,113 @@ const CommunityPage = () => {
         );
     }
 
-
-
     return (
         <Box animation={`${fadeInUp} 0.6s ease-out`} pb={20} bg="brand.bgBody" minH="100vh">
-            <Container maxW="container.xl" pt={8} px={{ base: 4, md: 8 }}>
+            <Container maxW="container.xl" pt={4} px={{ base: 4, md: 8 }}>
                 <Grid
-                    templateColumns={{ base: "1fr", lg: "1fr 350px" }}
+                    templateColumns={{ base: "1fr", lg: "280px 1fr 320px" }}
                     gap={8}
-                    alignItems="start"
                 >
-                    {/* Main Feed - Centered/Left */}
-                    <GridItem order={{ base: 2, lg: 1 }}>
+                    {/* Left Sidebar - Search & Hashtags */}
+                    <GridItem order={{ base: 1, lg: 1 }} display={{ base: "none", lg: "block" }}>
+                        <Box position="sticky" top="120px" maxH="calc(100vh - 120px)" overflowY="auto" css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                            <Box mb={6}>
+                                <CommunitySearch onHashtagClick={(h) => setSelectedHashtag(h)} />
+                            </Box>
+                            <Box mb={6}>
+                                <TrendingHashtags
+                                    onSelectHashtag={(h) => setSelectedHashtag(h || null)}
+                                    selectedHashtag={selectedHashtag}
+                                />
+                            </Box>
+                        </Box>
+                    </GridItem>
+
+                    {/* Main Feed - Center */}
+                    <GridItem order={{ base: 2, lg: 2 }} minW={0}> {/* minW=0 prevents grid blowout */}
                         <Container maxW="container.sm" px={0}>
+                            {/* Mobile View: Show Search/Tags here if needed, or rely on desktop sidebar hidden */}
+                            <Box display={{ base: "block", lg: "none" }} mb={6}>
+                                <CommunitySearch onHashtagClick={(h) => setSelectedHashtag(h)} />
+                            </Box>
+
                             <CreatePostForm />
 
-                            <VStack spacing={8} align="stretch" mt={8}>
-                                {allPosts.map((post: Post) => (
-                                    <PostCard
-                                        key={post.id}
-                                        id={post.id}
-                                        user={{
-                                            id: post.user_id,
-                                            username: post.user?.username || 'usuario',
-                                            name: post.user?.full_name || post.user?.username || 'Usuario',
-                                            avatar: post.user?.avatar_url || '',
-                                            verified: post.user?.is_verified,
-                                            location: post.ubicacion
-                                        }}
-                                        content={{
-                                            image: post.media_url,
-                                            text: post.descripcion,
-                                            hashtags: post.hashtags,
-                                            timeAgo: getTimeAgo(post.created_at)
-                                        }}
-                                        stats={{
-                                            likes: post._count?.likes || 0,
-                                            comments: post._count?.comments || 0,
-                                            likedBy: []
-                                        }}
-                                        isLiked={post.liked_by_me}
-                                        isOwner={user?.id === post.user_id}
-                                        onLike={(id) => handleLike(id, post.liked_by_me)}
-                                        onComment={() => handleCommentClick(post.id)}
-                                        onEdit={handleEdit}
-                                        onDelete={handleDeleteClick}
-                                    />
-                                ))}
-
-                                {/* Load More Button */}
-                                {hasNextPage && (
-                                    <Center py={4}>
-                                        <Button
-                                            onClick={() => fetchNextPage()}
-                                            isLoading={isFetchingNextPage}
-                                            variant="outline"
-                                            colorScheme="green"
-                                            borderRadius="full"
-                                            size="md"
-                                        >
-                                            Cargar más publicaciones
-                                        </Button>
+                            <VStack spacing={4} align="stretch" mt={6}>
+                                {isLoading ? (
+                                    <Center py={10}>
+                                        <Spinner size="xl" thickness="4px" speed="0.65s" emptyColor="gray.200" color="brand.primary" />
                                     </Center>
-                                )}
+                                ) : (
+                                    <>
+                                        {allPosts.map((post: Post) => (
+                                            <PostCard
+                                                key={post.id}
+                                                id={post.id}
+                                                user={{
+                                                    id: post.user_id,
+                                                    username: post.user?.username || 'usuario',
+                                                    name: post.user?.full_name || post.user?.username || 'Usuario',
+                                                    avatar: post.user?.avatar_url || '',
+                                                    verified: post.user?.is_verified,
+                                                    location: post.ubicacion
+                                                }}
+                                                content={{
+                                                    image: post.media_url,
+                                                    text: post.descripcion,
+                                                    hashtags: post.hashtags,
+                                                    timeAgo: getTimeAgo(post.created_at)
+                                                }}
+                                                stats={{
+                                                    likes: post._count?.likes || 0,
+                                                    comments: post._count?.comments || 0,
+                                                    likedBy: []
+                                                }}
+                                                isLiked={post.liked_by_me}
+                                                isOwner={user?.id === post.user_id}
+                                                onLike={(id) => handleLike(id, post.liked_by_me)}
+                                                onComment={() => handleCommentClick(post.id)}
+                                                onEdit={handleEdit}
+                                                onDelete={handleDeleteClick}
+                                                onHashtagClick={(h) => setSelectedHashtag(h)}
+                                            />
+                                        ))}
 
-                                {allPosts.length === 0 && !isLoading && (
-                                    <Box textAlign="center" py={10}>
-                                        <Icon as={FaLeaf} color="brand.primary" fontSize="3xl" mb={4} opacity={0.3} />
-                                        <Text color="gray.400" fontSize="sm">No hay publicaciones aún</Text>
-                                    </Box>
+                                        {/* Load More Button */}
+                                        {hasNextPage && (
+                                            <Center py={4}>
+                                                <Button
+                                                    onClick={() => fetchNextPage()}
+                                                    isLoading={isFetchingNextPage}
+                                                    variant="outline"
+                                                    colorScheme="green"
+                                                    borderRadius="full"
+                                                    size="md"
+                                                >
+                                                    Cargar más publicaciones
+                                                </Button>
+                                            </Center>
+                                        )}
+
+                                        {allPosts.length === 0 && (
+                                            <Box textAlign="center" py={10}>
+                                                <Icon as={FaLeaf} color="brand.primary" fontSize="3xl" mb={4} opacity={0.3} />
+                                                <Text color="gray.400" fontSize="sm">No hay publicaciones aún</Text>
+                                            </Box>
+                                        )}
+                                    </>
                                 )}
                             </VStack>
                         </Container>
                     </GridItem>
 
-                    {/* Sidebar - Right Stats & Rankings */}
-                    <GridItem order={{ base: 1, lg: 2 }} display={{ base: "block", lg: "block" }}>
-                        <Box position="sticky" top="100px">
+                    {/* Right Sidebar - Widgets */}
+                    <GridItem order={{ base: 3, lg: 3 }} display={{ base: "none", lg: "block" }}>
+                        <Box position="sticky" top="120px" maxH="calc(100vh - 120px)" overflowY="auto" css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
                             <GlobalImpactWidget />
-                            <LeaderboardWidget />
+                            <Box mt={6}>
+                                <LeaderboardWidget />
+                            </Box>
                         </Box>
                     </GridItem>
                 </Grid>
@@ -245,6 +272,11 @@ const CommunityPage = () => {
                     post={detailPost}
                     onEdit={() => handleEdit(detailPost.id)}
                     onDelete={() => handleDeleteClick(detailPost.id)}
+                    onHashtagClick={(h) => {
+                        setSelectedHashtag(h);
+                        onDetailClose();
+                        setViewPostId(null);
+                    }}
                 />
             )}
 

@@ -172,4 +172,13 @@ export class PostsService {
 
         await this.repository.deleteComment(commentId);
     }
+
+    async getPopularHashtags(): Promise<{ hashtag: string, count: number }[]> {
+        return this.repository.getPopularHashtags();
+    }
+
+    async searchHashtags(query: string): Promise<{ hashtag: string, count: number }[]> {
+        if (!query || query.trim() === '') return [];
+        return this.repository.searchHashtags(query);
+    }
 }

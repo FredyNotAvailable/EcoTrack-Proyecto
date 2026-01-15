@@ -13,7 +13,8 @@ import {
     Icon,
     Box,
     Badge,
-    useToast
+    useToast,
+    CloseButton
 } from "@chakra-ui/react";
 import { FaLeaf, FaBolt, FaClock, FaCircleCheck, FaTrophy, FaDroplet, FaBus, FaTrashCan } from "react-icons/fa6";
 import { useEffect, useState } from "react";
@@ -74,8 +75,9 @@ export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionMo
             // Rewards Notification
             toast({
                 position: 'top',
-                render: () => (
-                    <Box color="white" p={4} bg="brand.secondary" borderRadius="16px" boxShadow="xl">
+                render: ({ onClose }) => (
+                    <Box color="white" p={4} bg="brand.secondary" borderRadius="16px" boxShadow="xl" position="relative" pr={8}>
+                        <CloseButton position="absolute" right="2" top="2" onClick={onClose} color="white" />
                         <VStack align="start" spacing={1}>
                             <HStack>
                                 <Icon as={FaTrophy} color="brand.primary" />

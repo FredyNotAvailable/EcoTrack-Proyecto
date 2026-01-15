@@ -58,4 +58,9 @@ export class ProfileService {
             throw error;
         }
     }
+
+    async searchProfiles(query: string) {
+        if (!query || query.trim() === '') return [];
+        return await this.repository.searchProfiles(query);
+    }
 }

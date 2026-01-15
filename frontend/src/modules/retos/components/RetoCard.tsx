@@ -10,16 +10,12 @@ import {
     Icon,
     Flex,
     useColorModeValue,
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-    AccordionIcon,
     Tooltip,
     Spinner,
     IconButton,
 } from '@chakra-ui/react';
-import { FaTrophy, FaLeaf, FaClock, FaCircleCheck, FaCircleInfo, FaBolt, FaDroplet, FaTruck, FaTrash } from 'react-icons/fa6';
+import { useState } from 'react';
+import { FaTrophy, FaLeaf, FaClock, FaCircleCheck, FaCircleInfo, FaBolt, FaDroplet, FaTruck, FaTrash, FaChevronDown, FaChevronUp } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Reto, RetoTarea } from '../services/retos.service';
 
@@ -68,6 +64,7 @@ export const RetoCard = ({
     };
 
     const catConfig = getCategoryConfig(reto.categoria);
+    const [showTasks, setShowTasks] = useState(false);
 
     return (
         <Box
@@ -82,7 +79,6 @@ export const RetoCard = ({
             _hover={{ transform: "translateY(-4px)", boxShadow: "0 20px 40px -15px rgba(31, 64, 55, 0.2)" }}
             display="flex"
             flexDirection="column"
-            height="100%"
             opacity={isJoined && !isCompleted ? 0.95 : 1}
         >
             <AnimatePresence>
@@ -131,7 +127,7 @@ export const RetoCard = ({
                 </Box>
             )}
 
-            <VStack align="stretch" spacing={5} flex={1}>
+            <VStack align="stretch" spacing={5}>
                 <Box>
                     <HStack justify="space-between" mb={3}>
                         <HStack spacing={2}>
@@ -176,7 +172,7 @@ export const RetoCard = ({
                     </Text>
                 </Box>
 
-                <Box flex={1} /> {/* Spacer to push action area to the bottom */}
+
 
                 <VStack spacing={3} align="stretch" pt={2}>
                     <HStack spacing={3} color="brand.primary">
@@ -218,24 +214,27 @@ export const RetoCard = ({
                             <Progress value={reto.progress} h="8px" colorScheme="green" borderRadius="full" bg="white" />
                         </VStack>
 
-                        <Accordion allowToggle>
-                            <AccordionItem border="none">
-                                <AccordionButton
-                                    px={0}
-                                    py={1}
-                                    _hover={{ bg: 'transparent' }}
-                                    display="flex"
-                                    justifyContent="space-between"
-                                >
-                                    <HStack spacing={2}>
-                                        <Icon as={FaLeaf} boxSize={3} color="brand.primary" />
-                                        <Text fontSize="xs" fontWeight="bold" color="gray.600">
-                                            TAREAS ({reto.tasks.filter(t => t.completed).length}/{reto.tasks.length})
-                                        </Text>
-                                    </HStack>
-                                    <AccordionIcon />
-                                </AccordionButton>
-                                <AccordionPanel pb={0} px={0} pt={2}>
+                        <Box>
+                            <Button
+                                onClick={() => setShowTasks(!showTasks)}
+                                variant="ghost"
+                                width="full"
+                                justifyContent="space-between"
+                                px={0}
+                                py={2}
+                                _hover={{ bg: 'transparent' }}
+                                rightIcon={<Icon as={showTasks ? FaChevronUp : FaChevronDown} />}
+                            >
+                                <HStack spacing={2}>
+                                    <Icon as={FaLeaf} boxSize={3} color="brand.primary" />
+                                    <Text fontSize="xs" fontWeight="bold" color="gray.600">
+                                        TAREAS ({reto.tasks.filter(t => t.completed).length}/{reto.tasks.length})
+                                    </Text>
+                                </HStack>
+                            </Button>
+
+                            {showTasks && (
+                                <Box pt={2} animation="fade-in 0.2s">
                                     <VStack align="stretch" spacing={2.5}>
                                         {reto.tasks.map((task: RetoTarea) => {
                                             const isAvailableToday = task.dia_orden === currentDayOrden;
@@ -308,9 +307,9 @@ export const RetoCard = ({
                                             );
                                         })}
                                     </VStack>
-                                </AccordionPanel>
-                            </AccordionItem>
-                        </Accordion>
+                                </Box>
+                            )}
+                        </Box>
                     </VStack>
                 )}
             </VStack>

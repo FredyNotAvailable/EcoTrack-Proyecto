@@ -36,9 +36,10 @@ interface PostDetailModalProps {
     post: Post;
     onEdit?: () => void;
     onDelete?: () => void;
+    onHashtagClick?: (hashtag: string) => void;
 }
 
-export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: PostDetailModalProps) => {
+export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHashtagClick }: PostDetailModalProps) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const bg = useColorModeValue('white', 'gray.800');
@@ -159,7 +160,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                             </VStack>
                         </HStack>
 
-                        {isOwner ? (
+                        {isOwner && (
                             <Menu>
                                 <MenuButton
                                     as={IconButton}
@@ -172,13 +173,6 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                     <MenuItem icon={<FaTrash />} color="red.500" onClick={onDelete}>Eliminar</MenuItem>
                                 </MenuList>
                             </Menu>
-                        ) : (
-                            <IconButton
-                                aria-label="Options"
-                                icon={<FaEllipsisH />}
-                                variant="ghost"
-                                size="sm"
-                            />
                         )}
                     </Flex>
 
@@ -192,8 +186,20 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                     <Text as="span" fontWeight="bold" mr={2} cursor="pointer" onClick={() => handleUserClick(post.user?.username)}>{post.user?.username}</Text>
                                     {post.descripcion}
                                     {post.hashtags && post.hashtags.length > 0 && (
-                                        <Text as="span" color="blue.500" ml={2}>
-                                            {post.hashtags.map(tag => `#${tag}`).join(' ')}
+                                        <Text as="span" ml={2}>
+                                            {post.hashtags.map((tag, idx) => (
+                                                <Text
+                                                    key={`${tag}-${idx}`}
+                                                    as="span"
+                                                    color="blue.500"
+                                                    cursor="pointer"
+                                                    _hover={{ textDecoration: 'underline', color: 'blue.600' }}
+                                                    onClick={() => onHashtagClick && onHashtagClick(tag)}
+                                                    mr={1}
+                                                >
+                                                    #{tag}
+                                                </Text>
+                                            ))}
                                         </Text>
                                     )}
                                 </Text>
@@ -269,12 +275,12 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                     onClick={handleLike}
                                 />
                             </HStack>
-                            <IconButton
+                            {/* <IconButton
                                 aria-label="Save"
                                 icon={<FaRegBookmark size={20} />}
                                 variant="unstyled"
                                 color="gray.400"
-                            />
+                            /> */}
                         </Flex>
 
                         <Text fontWeight="bold" fontSize="sm" mb={1}>

@@ -73,4 +73,14 @@ export class ProfileController {
             next(error);
         }
     };
+
+    search = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const query = req.query.query as string;
+            const profiles = await this.service.searchProfiles(query);
+            res.json(profiles);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
