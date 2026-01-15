@@ -16,12 +16,13 @@ import {
 } from "@chakra-ui/react";
 import { FaEllipsisH, FaRegHeart, FaRegComment, FaRegBookmark, FaHeart } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export interface PostCardProps {
     id: string;
     user: {
-        id: string; // Added user ID for navigation
+        id: string;
+        username: string; // Added username for profile routing
         name: string;
         avatar: string;
         verified?: boolean;
@@ -47,14 +48,16 @@ export interface PostCardProps {
     isOwner?: boolean;
 }
 
-// Removed useNavigate imports
-// Removed handleUserClick logic
-
 export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment, onEdit, onDelete, isOwner }: PostCardProps) => {
-    // Premium Design Tokens
+    const navigate = useNavigate();
     const cardBg = useColorModeValue("white", "gray.800");
     const borderColor = useColorModeValue("gray.100", "gray.700");
     const verifiedColor = "blue.400";
+
+    const handleUserClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/app/perfil/${user.username}`);
+    };
 
     return (
         <Box
@@ -70,7 +73,7 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
             {/* Header */}
             <Flex align="center" justify="space-between" p={4}>
                 <HStack spacing={3}>
-                    <Box position="relative">
+                    <Box position="relative" cursor="pointer" onClick={handleUserClick}>
                         <Avatar
                             size="md"
                             name={user.name}
@@ -78,13 +81,11 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                             border="2px solid"
                             borderColor="brand.primary"
                         />
-                        {/* Status Indicator dot if needed */}
-                        {/* <Box position="absolute" bottom={0} right={0} w={3} h={3} bg="green.400" borderRadius="full" border="2px solid white" /> */}
                     </Box>
                     <Box>
-                        <HStack spacing={1}>
+                        <HStack spacing={1} cursor="pointer" onClick={handleUserClick}>
                             <Text fontWeight="700" fontSize="sm" color="brand.textMain">
-                                {user.name}
+                                {user.username}
                             </Text>
                             {user.verified && (
                                 <Icon as={MdVerified} color={verifiedColor} boxSize={3.5} />
@@ -209,7 +210,7 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                 {/* Caption */}
                 <Text fontSize="sm" color="brand.textMuted" noOfLines={2} lineHeight="1.5">
                     <Text as="span" fontWeight="700" color="brand.textMain" mr={2}>
-                        {user.name}
+                        {user.username}
                     </Text>
                     <Text as="span" fontSize="sm" color="brand.textMain">
                         {content.text}

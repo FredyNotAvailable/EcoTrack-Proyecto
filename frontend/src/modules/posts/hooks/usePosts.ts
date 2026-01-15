@@ -5,6 +5,7 @@ import type { CreatePostPayload } from '../types';
 export const POSTS_KEYS = {
     all: ['posts'] as const,
     feed: () => [...POSTS_KEYS.all, 'feed'] as const,
+    userPosts: (userId: string) => [...POSTS_KEYS.all, 'user', userId] as const,
     detail: (id: string) => [...POSTS_KEYS.all, 'detail', id] as const,
     comments: (id: string) => [...POSTS_KEYS.all, 'comments', id] as const,
 };
@@ -14,13 +15,32 @@ export const usePostsFeed = () => {
         queryKey: POSTS_KEYS.feed(),
         initialPageParam: 1,
         queryFn: ({ pageParam = 1 }) => PostsService.getPosts({ page: pageParam as number, limit: 5 }),
-        getNextPageParam: (lastPage, allPages) => {
+        getNextPageParam: (lastPage) => {
             // Check if there are more pages based on metadata
             const hasMore = lastPage?.meta?.currentPage < lastPage?.meta?.totalPages;
             return hasMore ? lastPage.meta.currentPage + 1 : undefined;
         },
         staleTime: 1000 * 60 * 5, // 5 minutes cache
         refetchOnWindowFocus: false
+    });
+};
+
+export const useUserPosts = (userId?: string) => {
+    return useInfiniteQuery({
+        queryKey: userId ? POSTS_KEYS.userPosts(userId) : [],
+        initialPageParam: 1,
+        queryFn: ({ pageParam = 1 }) =>
+            PostsService.getPosts({
+                page: pageParam as number,
+                limit: 9, // Grid usually looks better with 3x3
+                authorId: userId
+            }),
+        getNextPageParam: (lastPage) => {
+            const hasMore = lastPage?.meta?.currentPage < lastPage?.meta?.totalPages;
+            return hasMore ? lastPage.meta.currentPage + 1 : undefined;
+        },
+        enabled: !!userId,
+        staleTime: 1000 * 60 * 5,
     });
 };
 
@@ -77,7 +97,7 @@ export const useDeleteComment = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ postId, commentId }: { postId: string; commentId: string }) =>
+        mutationFn: ({ commentId }: { postId: string; commentId: string }) =>
             PostsService.deleteComment(commentId),
         onSuccess: (_, { postId }) => {
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.comments(postId) });

@@ -10,7 +10,9 @@ import {
     Center,
     Spinner,
     useToast,
+    Badge
 } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
@@ -21,6 +23,11 @@ import { RetoCard } from './components/RetoCard';
 import { RetoDetailsModal } from './components/RetoDetailsModal';
 import { TaskConfirmationModal } from './components/TaskConfirmationModal';
 import type { Reto, RetoTarea } from './services/retos.service';
+
+const fadeInUp = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 export const RetosPage = () => {
     const { challenges, isLoading, joinChallengeAsync, completeTaskAsync, isCompletingTask } = useRetos();
@@ -148,50 +155,54 @@ export const RetosPage = () => {
     );
 
     return (
-        <Box animation="fadeIn 0.5s ease-out" pb={20} bg="brand.bgBody" minH="100vh">
+        <Box animation={`${fadeInUp} 0.5s ease-out`} pb={4} bg="brand.bgBody">
             {/* ... Header and Tabs (kept same, just ensuring context) ... */}
-            <Box mb={8} pt={4}>
-                <Heading as="h1" fontSize={{ base: "2rem", md: "3rem" }} mb={2} lineHeight="1.2" color="brand.secondary">
-                    Retos <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text">Semanales</Text> 🏁
+            <Box mb={6} pt={2}>
+                <Heading as="h1" fontSize={{ base: "2.5rem", md: "3.5rem" }} mb={2} lineHeight="1.2" color="brand.secondary">
+                    Retos <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" display="inline-block"> Semanales </Text> 🏁
                 </Heading>
-                <Text color="brand.textMuted" fontSize="1.1rem">
-                    Completa desafíos, reduce tu huella y sube de nivel.
-                </Text>
+                <Text color="brand.textMuted" fontSize="1.1rem">Completa desafíos, reduce tu huella y sube de nivel.</Text>
             </Box>
 
             {/* Navigation Sections */}
-            <HStack spacing={4} mb={8} overflowX="auto" py={2}>
+            <HStack spacing={3} mb={8} overflowX="auto" py={2} css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
                 {[
-                    { label: "Disponibles", icon: FaFlag, count: availableChallenges.length },
-                    { label: "Mis Retos", icon: FaListCheck, count: joinedChallenges.length },
-                    { label: "Completados", icon: FaTrophy, count: completedChallenges.length },
+                    { label: "Disponibles", icon: FaFlag, count: availableChallenges.length, color: "brand" },
+                    { label: "Mis Retos", icon: FaListCheck, count: joinedChallenges.length, color: "brand" },
+                    { label: "Completados", icon: FaTrophy, count: completedChallenges.length, color: "brand" },
                 ].map((tab, index) => {
                     const isActive = activeTab === index;
                     return (
                         <Button
                             key={index}
                             onClick={() => handleTabChange(index)}
-                            variant={isActive ? "solid" : "ghost"}
-                            bg={isActive ? "brand.accent" : "transparent"} // Lighter Green Active
+                            variant={isActive ? "solid" : "outline"}
+                            colorScheme={isActive ? tab.color : "gray"}
+                            bg={isActive ? (tab.color === 'brand' ? 'brand.primary' : `${tab.color}.500`) : "white"}
                             color={isActive ? "white" : "gray.500"}
-                            _hover={{ bg: isActive ? "brand.accent" : "gray.100" }}
+                            borderColor={isActive ? "transparent" : "gray.200"}
+                            _hover={{
+                                bg: isActive ? (tab.color === 'brand' ? 'brand.primaryHover' : `${tab.color}.600`) : "gray.50",
+                                transform: "translateY(-1px)"
+                            }}
                             borderRadius="full"
                             px={6}
+                            height="45px"
+                            transition="all 0.2s"
                             leftIcon={<Icon as={tab.icon} />}
-                            boxShadow={isActive ? "0 4px 12px rgba(106, 176, 76, 0.4)" : "none"}
                         >
                             {tab.label}
                             {tab.count > 0 && (
-                                <Box
+                                <Badge
                                     ml={2}
-                                    bg={isActive ? "white" : "gray.200"}
-                                    color={isActive ? "brand.accent" : "gray.600"}
+                                    bg={isActive ? "white" : "gray.100"}
+                                    color={isActive ? (tab.color === 'brand' ? 'brand.primary' : `${tab.color}.500`) : "gray.600"}
                                     fontSize="xs"
                                     borderRadius="full"
                                     px={2}
                                 >
                                     {tab.count}
-                                </Box>
+                                </Badge>
                             )}
                         </Button>
                     );

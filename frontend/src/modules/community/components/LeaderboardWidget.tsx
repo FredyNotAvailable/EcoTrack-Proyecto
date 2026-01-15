@@ -56,7 +56,13 @@ export const LeaderboardWidget = () => {
                         p={2}
                         transition="all 0.2s"
                     >
-                        <Flex align="center" gap={3}>
+                        <Flex
+                            align="center"
+                            gap={3}
+                            cursor="pointer"
+                            onClick={() => leader.user?.username && navigate(`/app/perfil/${leader.user.username}`)}
+                            _hover={{ opacity: 0.8 }}
+                        >
                             <Flex
                                 w="24px" h="24px"
                                 align="center" justify="center"

@@ -15,7 +15,7 @@ import {
     Badge,
     useToast
 } from "@chakra-ui/react";
-import { FaLeaf, FaBolt, FaClock, FaCircleCheck, FaTrophy } from "react-icons/fa6";
+import { FaLeaf, FaBolt, FaClock, FaCircleCheck, FaTrophy, FaDroplet, FaBus, FaTrashCan } from "react-icons/fa6";
 import { useEffect, useState } from "react";
 import confetti from 'canvas-confetti';
 import type { DailyMission } from "../services/misiones.service";
@@ -137,6 +137,26 @@ export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionMo
                         )}
 
                         <HStack spacing={4} w="100%" pt={2}>
+                            <VStack align="start" flex={1} bg="gray.50" p={3} borderRadius="10px">
+                                <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">Categoría</Text>
+                                <HStack spacing={1}>
+                                    <Icon
+                                        as={
+                                            mission.categoria === 'energia' ? FaBolt :
+                                                mission.categoria === 'agua' ? FaDroplet :
+                                                    mission.categoria === 'transporte' ? FaBus :
+                                                        FaTrashCan
+                                        }
+                                        color={
+                                            mission.categoria === 'energia' ? 'orange.400' :
+                                                mission.categoria === 'agua' ? 'blue.400' :
+                                                    mission.categoria === 'transporte' ? 'purple.400' :
+                                                        'green.400'
+                                        }
+                                    />
+                                    <Text fontSize="sm" fontWeight="600" textTransform="capitalize">{mission.categoria}</Text>
+                                </HStack>
+                            </VStack>
                             <VStack align="start" flex={1} bg="gray.50" p={3} borderRadius="10px">
                                 <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">Impacto</Text>
                                 <Text fontSize="sm" fontWeight="600">{mission.impacto || "Positivo"}</Text>

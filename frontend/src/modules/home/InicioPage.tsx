@@ -11,7 +11,7 @@ import {
     SkeletonText,
     VStack,
     Button,
-
+    Badge
 } from "@chakra-ui/react";
 import {
     FaLeaf,
@@ -21,7 +21,7 @@ import {
     FaCloud
 } from "react-icons/fa6";
 import { motion } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { consejosService } from "./services/consejos.service";
 import type { DailyTip } from "./services/consejos.service";
@@ -44,23 +44,35 @@ const MotionBox = motion(Box);
 
 const DashboardHeaderVisual = ({ username }: { username: string }) => {
     return (
-        <Box mb={6} pt={2}>
-            <Heading as="h1" fontSize={{ base: "2.5rem", md: "3.5rem" }} mb={2} lineHeight="1.2" color="brand.secondary">
+        <Flex
+            direction={{ base: "column", md: "row" }}
+            align={{ base: "start", md: "flex-end" }}
+            justify="space-between"
+            mb={3}
+            mt={-3}
+            pt={2}
+            gap={2}
+        >
+            <Heading as="h1" fontSize={{ base: "2rem", md: "2.8rem" }} lineHeight="1.1" color="brand.secondary">
                 Hola, <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" display="inline-block"> {username} </Text> 👋
             </Heading>
-            <Text color="brand.textMuted" fontSize="1.1rem">Aquí tienes un resumen de tu impacto ecológico hoy.</Text>
-        </Box>
+            <Text color="brand.textMuted" fontSize="1rem" mb={1} fontWeight="500">
+                Tu impacto ecológico de hoy resumido aquí.
+            </Text>
+        </Flex>
     );
 };
 
 const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, racha?: UserRacha | null, loading: boolean }) => {
     if (loading) {
         return (
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={5} mb={8} bg="white" p={6} borderRadius="16px" boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)">
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={5} mb={4} bg="white" p={6} borderRadius="16px" boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)">
                 {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height="80px" borderRadius="12px" />)}
             </SimpleGrid>
         );
     }
+
+    const isRachaActive = racha?.ultima_fecha && racha.ultima_fecha === new Date().toISOString().split('T')[0];
 
     return (
         <MotionBox
@@ -71,7 +83,7 @@ const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, rac
             <SimpleGrid
                 columns={{ base: 2, md: 3, lg: 5 }}
                 spacing={5}
-                mb={8}
+                mb={4}
                 bg="white"
                 p={6}
                 borderRadius="16px"
@@ -103,10 +115,15 @@ const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, rac
                     <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Eco Racha</Text>
                     <Flex align="center" gap={2}>
                         <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">
-                            {/* We don't have racha in user_stats yet, maybe pass it separately or use misiones_diarias for now */}
                             {racha?.racha_actual || 0}
                         </Text>
-                        <Text fontSize="1.2rem">🔥</Text>
+                        <Text
+                            fontSize="1.2rem"
+                            filter={isRachaActive ? "none" : "grayscale(1) opacity(0.5)"}
+                            title={isRachaActive ? "Racha activa hoy" : "Haz una misión para activar tu racha"}
+                        >
+                            🔥
+                        </Text>
                     </Flex>
                     <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">
                         Días seguidos
@@ -216,12 +233,12 @@ const DailyTipVisual = ({ tip, loading }: { tip: DailyTip | null, loading: boole
     return (
         <Box
             p={6}
+            bg="white"
             borderRadius="16px"
             boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)"
             mb={8}
             border="1px solid rgba(0, 0, 0, 0.05)"
-            bgGradient="linear(135deg, #e0f2f1 0%, #ffffff 100%)"
-            borderLeft="5px solid"
+            borderLeft="6px solid"
             borderLeftColor="brand.primary"
         >
             <Flex align="center" gap={2} mb={3} color="brand.primary" fontSize="1.2rem" fontWeight="700">
@@ -279,7 +296,22 @@ const MissionCardVisual = ({ mission, onClick }: { mission: DailyMission, onClic
                     >
                         {mission.titulo}
                     </Text>
-                    <Flex gap={3} fontSize="0.8rem" color="gray.500" align="center">
+                    <Flex gap={3} fontSize="0.8rem" color="gray.500" align="center" flexWrap="wrap">
+                        <Badge
+                            variant="subtle"
+                            colorScheme={
+                                mission.categoria === 'energia' ? 'orange' :
+                                    mission.categoria === 'agua' ? 'blue' :
+                                        mission.categoria === 'transporte' ? 'purple' :
+                                            'green' // residuos
+                            }
+                            fontSize="0.7rem"
+                            borderRadius="full"
+                            px={2}
+                            textTransform="capitalize"
+                        >
+                            {mission.categoria}
+                        </Badge>
                         <Flex align="center" gap={1}>
                             <Icon as={FaLeaf} color="brand.primary" />
                             <Text>+{mission.puntos} pts</Text>
@@ -355,60 +387,58 @@ import { ProfileAPIService } from "../profile/services/profile.service";
 
 export const InicioPage = () => {
     const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [selectedMission, setSelectedMission] = useState<DailyMission | null>(null);
+
     const [dailyTip, setDailyTip] = useState<DailyTip | null>(null);
     const [loadingTip, setLoadingTip] = useState(true);
 
-    const [racha, setRacha] = useState<UserRacha | null>(null);
-    const [profile, setProfile] = useState<any>(null);
+    // Stats, Racha and Profile with React Query
+    const { data: stats, isLoading: loadingStats } = useUserStats();
+    const { data: racha } = useQuery({
+        queryKey: ['racha', 'me'],
+        queryFn: () => userRachasService.getMyRacha(),
+        staleTime: 1000 * 60 * 5,
+    });
+    const { data: profile } = useQuery({
+        queryKey: ['profile', 'me'],
+        queryFn: () => ProfileAPIService.getMe(),
+        staleTime: 1000 * 60 * 10,
+    });
+
+    // Use Retos Hook
+    const { challenges, isLoading: loadingRetos } = useRetos();
 
     // Missions State
     const [missions, setMissions] = useState<DailyMission[]>([]);
     const [loadingMissions, setLoadingMissions] = useState(true);
-    const [selectedMission, setSelectedMission] = useState<DailyMission | null>(null);
-    const { isOpen, onOpen, onClose } = useDisclosure();
-
-    // Use User Stats Hook
-    const { data: stats, isLoading: loadingStats } = useUserStats();
-    // Use Retos Hook
-    const { challenges, isLoading: loadingRetos } = useRetos();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch Tip
                 const tipPromise = consejosService.getDailyTip();
-
-                // Fetch Missions & Completed IDs
                 const missionsPromise = misionesService.getDailyMissions();
                 const completedPromise = misionesService.getCompletedMissions();
-                const rachaPromise = userRachasService.getMyRacha();
-                const profilePromise = ProfileAPIService.getMe();
 
-                const [tip, rawMissions, completedIds, rachaData, profileData] = await Promise.all([
+                const [tip, rawMissions, completedIds] = await Promise.all([
                     tipPromise,
                     missionsPromise,
                     completedPromise,
-                    rachaPromise,
-                    profilePromise
                 ]);
 
                 setDailyTip(tip);
-                setRacha(rachaData);
-                setProfile(profileData);
 
-                // Merge completed state
                 const mergedMissions = rawMissions.map((m: any) => ({
                     ...m,
                     completed: completedIds.includes(m.id)
                 }));
 
-                // Sort: Active first, Completed last
                 const sortedMissions = mergedMissions.sort((a: any, b: any) => {
                     return Number(a.completed) - Number(b.completed);
                 });
 
                 setMissions(sortedMissions);
-
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
             } finally {
@@ -424,30 +454,27 @@ export const InicioPage = () => {
         onOpen();
     };
 
-    const queryClient = useQueryClient();
-
     const handleCompleteMission = async (missionId: string) => {
         await misionesService.completeMission(missionId);
 
-        // Update local state and re-sort
         setMissions(prev => {
             const updated = prev.map(m =>
                 m.id === missionId ? { ...m, completed: true } : m
             );
-            return updated.sort((a, b) => Number(a.completed) - Number(b.completed));
+            return [...updated].sort((a, b) => Number(a.completed) - Number(b.completed));
         });
 
-        // Invalidate stats to refresh points/level immediately
+        // Refresh stats and racha
         queryClient.invalidateQueries({ queryKey: ['userStats'] });
-        queryClient.invalidateQueries({ queryKey: ['communityPosts'] }); // Just in case
+        queryClient.invalidateQueries({ queryKey: ['racha', 'me'] });
     };
+
+
 
     return (
         <Box
             maxW="1200px"
             mx="auto"
-            px={0}
-            py={0}
         >
             <MissionModal
                 mission={selectedMission}
@@ -460,7 +487,6 @@ export const InicioPage = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                style={{ margin: 0, padding: 0 }}
             >
                 {/* Header */}
                 <Box mb={3}>

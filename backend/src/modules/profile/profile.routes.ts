@@ -10,6 +10,7 @@ const controller = new ProfileController();
 router.get('/me', authMiddleware, controller.getMe);
 router.post('/me', authMiddleware, controller.createMe);
 router.put('/me', authMiddleware, controller.updateMe);
+router.get('/username/:username', authMiddleware, controller.getProfileByUsername);
 router.get('/:id', authMiddleware, controller.getProfileById);
 
 export default router;

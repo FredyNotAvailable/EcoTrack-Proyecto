@@ -5,10 +5,13 @@ export class RetosRepository {
 
     // Find active challenges (based on 'activo' flag)
     async findActiveChallenges(): Promise<Reto[]> {
+        const now = new Date().toISOString();
         const { data, error } = await supabase
             .from('retos_semanales')
             .select('*')
-            .eq('activo', true);
+            .eq('activo', true)
+            .lte('fecha_inicio', now)
+            .gte('fecha_fin', now);
 
         if (error) throw error;
         return (data || []).map(this.mapRetoFromDB);
@@ -211,11 +214,11 @@ export class RetosRepository {
             id: r.id,
             titulo: r.nombre,
             descripcion: r.descripcion,
+            categoria: r.categoria,
             recompensa_puntos: r.puntos_totales,
             recompensa_kg_co2: r.kgco2_total,
-            fecha_inicio: r.created_at,
-            // Mock end date: created_at + 7 days
-            fecha_fin: new Date(new Date(r.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            fecha_inicio: r.fecha_inicio,
+            fecha_fin: r.fecha_fin,
             imagen_url: undefined, // Or check if DB has it
             created_at: r.created_at
         };

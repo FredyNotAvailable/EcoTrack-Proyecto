@@ -14,6 +14,7 @@ create table if not exists public.misiones_diarias (
   puntos int not null,
 
   dificultad text, -- 'Fácil', 'Media', 'Difícil' (opcional)
+  categoria text not null check (categoria in ('energia', 'agua', 'transporte', 'residuos')),
   activa boolean default true,
 
   created_at timestamp with time zone default now()

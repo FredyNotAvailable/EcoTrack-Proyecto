@@ -31,22 +31,7 @@ const fadeInUp = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const getTimeAgo = (dateString: string | undefined) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (seconds < 60) return 'Hace unos segundos';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Hace ${minutes} minuto${minutes !== 1 ? 's' : ''}`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Hace ${hours} hora${hours !== 1 ? 's' : ''}`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `Hace ${days} día${days !== 1 ? 's' : ''}`;
-
-    return date.toLocaleDateString();
-};
+import { getTimeAgo } from "../../utils/dateUtils";
 
 const CommunityPage = () => {
     const { user } = useAuth();
@@ -174,8 +159,9 @@ const CommunityPage = () => {
                                         key={post.id}
                                         id={post.id}
                                         user={{
-                                            id: post.user_id, // Use root user_id as user ID
-                                            name: post.user?.username || 'Usuario',
+                                            id: post.user_id,
+                                            username: post.user?.username || 'usuario',
+                                            name: post.user?.full_name || post.user?.username || 'Usuario',
                                             avatar: post.user?.avatar_url || '',
                                             verified: post.user?.is_verified,
                                             location: post.ubicacion

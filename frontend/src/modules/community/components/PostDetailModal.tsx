@@ -27,7 +27,8 @@ import type { Post, Comment } from '../../posts/types';
 import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts';
 import { useAuth } from '../../auth/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { getTimeAgo } from "../../../utils/dateUtils";
 
 interface PostDetailModalProps {
     isOpen: boolean;
@@ -39,19 +40,17 @@ interface PostDetailModalProps {
 
 export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: PostDetailModalProps) => {
     const { user } = useAuth();
-    // const navigate = useNavigate();
+    const navigate = useNavigate();
     const bg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
     const toast = useToast();
 
-    // User Navigation Removed
-    /*
-    const handleUserClick = (userId?: string) => {
-        if (!userId) return;
-        onClose(); 
-        navigate(`/app/perfil/${userId}`);
+    // User Navigation
+    const handleUserClick = (username?: string) => {
+        if (!username) return;
+        onClose();
+        navigate(`/app/perfil/${username}`);
     };
-    */
 
     // Comments Logic
     const { data: commentsData } = usePostComments(post.id);
@@ -109,7 +108,16 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
             <ModalOverlay backdropFilter="blur(10px)" bg="blackAlpha.600" />
-            <ModalContent bg={bg} overflow="hidden" borderRadius="xl" maxH="90vh" display="flex" flexDirection={{ base: 'column', md: 'row' }} m={4}>
+            <ModalContent
+                bg={bg}
+                overflow="hidden"
+                borderRadius="xl"
+                h={{ base: 'auto', md: '700px' }}
+                maxH="90vh"
+                display="flex"
+                flexDirection={{ base: 'column', md: 'row' }}
+                m={4}
+            >
 
                 {/* LEFT SIDE: MEDIA */}
                 <Box
@@ -119,7 +127,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    minH="400px"
+                    h={{ base: "300px", md: "100%" }}
                 >
                     {post.media_type === 'video' ? (
                         <video src={post.media_url} controls style={{ maxWidth: '100%', maxHeight: '100%' }} />
@@ -134,14 +142,21 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                 </Box>
 
                 {/* RIGHT SIDE: INTERACTION */}
-                <Flex flex="1" direction="column" minW="350px" h={{ base: "auto", md: "700px" }}>
+                <Flex flex="1" direction="column" minW="350px" h="100%">
                     {/* Header */}
                     <Flex p={4} align="center" justify="space-between" borderBottom="1px solid" borderColor={borderColor}>
-                        <HStack>
+                        <HStack cursor="pointer" onClick={() => handleUserClick(post.user?.username)}>
                             <Avatar size="sm" src={post.user?.avatar_url} name={post.user?.username} />
-                            <Text fontWeight="bold" fontSize="sm">
-                                {post.user?.username}
-                            </Text>
+                            <VStack align="start" spacing={0}>
+                                <Text fontWeight="bold" fontSize="sm">
+                                    {post.user?.username || 'usuario'}
+                                </Text>
+                                {post.ubicacion && (
+                                    <Text fontSize="xs" color="gray.500">
+                                        {post.ubicacion}
+                                    </Text>
+                                )}
+                            </VStack>
                         </HStack>
 
                         {isOwner ? (
@@ -171,10 +186,10 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                     <VStack flex="1" overflowY="auto" p={4} align="stretch" spacing={4}>
                         {/* Caption as first comment */}
                         <HStack align="start" spacing={3}>
-                            <Avatar size="xs" src={post.user?.avatar_url} name={post.user?.username} />
+                            <Avatar size="xs" src={post.user?.avatar_url} name={post.user?.username} cursor="pointer" onClick={() => handleUserClick(post.user?.username)} />
                             <Box>
                                 <Text fontSize="sm">
-                                    <Text as="span" fontWeight="bold" mr={2}>{post.user?.username}</Text>
+                                    <Text as="span" fontWeight="bold" mr={2} cursor="pointer" onClick={() => handleUserClick(post.user?.username)}>{post.user?.username}</Text>
                                     {post.descripcion}
                                     {post.hashtags && post.hashtags.length > 0 && (
                                         <Text as="span" color="blue.500" ml={2}>
@@ -182,7 +197,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                         </Text>
                                     )}
                                 </Text>
-                                <Text fontSize="xs" color="gray.500" mt={1}>2h</Text>
+                                <Text fontSize="xs" color="gray.500" mt={1}>{getTimeAgo(post.created_at)}</Text>
                             </Box>
                         </HStack>
 
@@ -202,12 +217,14 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete }: Pos
                                             as="span"
                                             fontWeight="bold"
                                             mr={2}
+                                            cursor="pointer"
+                                            onClick={() => handleUserClick(comment.user?.username)}
                                         >
                                             {comment.user?.username}
                                         </Text>
                                         {comment.content}
                                     </Text>
-                                    {/* <Text fontSize="xs" color="gray.500" mt={1}>Reply</Text> */}
+                                    <Text fontSize="xs" color="gray.500" mt={1}>{getTimeAgo(comment.created_at)}</Text>
                                 </Box>
 
                                 {(user?.id === comment.user_id) && (

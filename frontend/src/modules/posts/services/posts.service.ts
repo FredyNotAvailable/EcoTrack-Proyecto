@@ -2,7 +2,7 @@ import apiClient from '../../../services/apiClient';
 import type { Post, Comment, CreatePostPayload, CreateCommentPayload } from '../types';
 
 export const PostsService = {
-    async getPosts(params?: { page?: number; limit?: number }) {
+    async getPosts(params?: { page?: number; limit?: number; authorId?: string }) {
         const { data } = await apiClient.get<{ data: Post[]; meta: any }>('/posts', { params });
         return data; // Returns { data: Post[], meta: ... }
     },

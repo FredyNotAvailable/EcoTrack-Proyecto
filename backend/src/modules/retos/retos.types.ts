@@ -2,6 +2,7 @@ export interface Reto {
     id: string;
     titulo: string;
     descripcion: string;
+    categoria: 'energia' | 'agua' | 'transporte' | 'residuos';
     fecha_inicio: string;
     fecha_fin: string;
     recompensa_puntos: number;

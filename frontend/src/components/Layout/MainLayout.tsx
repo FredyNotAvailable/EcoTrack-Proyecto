@@ -22,6 +22,8 @@ import { useAuth } from '../../modules/auth/AuthContext';
 import { FaLeaf, FaBars } from 'react-icons/fa';
 import React from 'react';
 import { Link } from '@chakra-ui/react';
+import { useQuery } from '@tanstack/react-query';
+import { ProfileAPIService } from '../../modules/profile/services/profile.service';
 
 export const MainLayout: React.FC = () => {
     const { signOut } = useAuth();
@@ -29,6 +31,13 @@ export const MainLayout: React.FC = () => {
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     const bg = useColorModeValue('brand.bgBody', 'gray.800');
+
+    // Fetch current user profile to get username
+    const { data: profile } = useQuery({
+        queryKey: ['profile', 'me'],
+        queryFn: () => ProfileAPIService.getMe(),
+        staleTime: 1000 * 60 * 10, // 10 minutes cache for session-like data
+    });
 
 
     const handleLogout = async () => {
@@ -47,7 +56,7 @@ export const MainLayout: React.FC = () => {
             <NavLink to="/app/comunidad" onClick={onClose}>Comunidad</NavLink>
             <NavLink to="/app/retos" onClick={onClose}>Retos</NavLink>
             <NavLink to="/app/ranking" onClick={onClose}>Ranking</NavLink>
-            <NavLink to="/app/perfil" onClick={onClose}>Perfil</NavLink>
+            <NavLink to={profile?.username ? `/app/perfil/${profile.username}` : "/app/perfil"} onClick={onClose}>Perfil</NavLink>
         </>
     );
 
@@ -132,7 +141,7 @@ export const MainLayout: React.FC = () => {
 
             {/* --- Content Area --- */}
             <Box as="main" width="full">
-                <Container maxW="container.xl" py={8}>
+                <Container maxW="container.xl" py={4}>
                     <Outlet />
                 </Container>
             </Box>

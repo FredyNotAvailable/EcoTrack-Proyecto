@@ -7,6 +7,7 @@ export interface DailyMission {
     kg_co2_ahorrado?: number;
     puntos: number;
     dificultad?: string;
+    categoria: 'energia' | 'agua' | 'transporte' | 'residuos';
     activa: boolean;
     created_at: string;
 }

@@ -19,6 +19,10 @@ export class PostsRepository {
             .order('created_at', { ascending: false })
             .limit(options.limit || 10);
 
+        if (options.authorId) {
+            query = query.eq('user_id', options.authorId);
+        }
+
         if (options.cursor) {
             query = query.lt('created_at', options.cursor);
         }

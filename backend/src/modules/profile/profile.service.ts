@@ -5,12 +5,12 @@ export class ProfileService {
 
     async getProfile(userId: string) {
         const profile = await this.repository.getById(userId);
-        if (!profile) {
-            // Regla de Negocio: NO crear perfil automáticamente. Retornar null o lanzar error.
-            // Si el controlador espera datos, lanzamos error 404 manejado o dejamos que el controlador lo maneje.
-            // Para mantener consistencia con "Bloquear" si no existe:
-            return null;
-        }
+        if (!profile) return null;
+        return profile;
+    }
+
+    async getProfileByUsername(username: string) {
+        const profile = await this.repository.getByUsername(username);
         return profile;
     }
 

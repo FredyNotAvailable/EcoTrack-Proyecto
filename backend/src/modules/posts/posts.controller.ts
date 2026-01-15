@@ -9,13 +9,14 @@ import { mediaService } from './media.service';
 
 export const getFeed = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { limit, cursor } = req.query;
+        const { limit, cursor, authorId } = req.query;
         const userId = req.user?.id; // Optional auth
 
         const posts = await service.getFeed({
             limit: limit ? Number(limit) : 10,
             cursor: cursor as string,
-            userId
+            userId,
+            authorId: authorId as string
         });
 
         res.json({ data: posts });

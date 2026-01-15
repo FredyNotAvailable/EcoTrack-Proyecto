@@ -12,6 +12,17 @@ export class ProfileRepository {
         return data;
     }
 
+    async getByUsername(username: string) {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', username)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
     async update(id: string, updateData: any) {
         const { data, error } = await supabase
             .from('profiles')

@@ -54,6 +54,20 @@ export class RetosService {
     }
 
     async joinChallenge(userId: string, retoId: string) {
+        const reto = await this.repository.getChallengeById(retoId);
+        if (!reto) throw new ApiError(404, 'Reto no encontrado');
+
+        const now = new Date();
+        const start = new Date(reto.fecha_inicio);
+        const end = new Date(reto.fecha_fin);
+
+        if (now < start) {
+            throw new ApiError(400, 'Este reto aún no ha comenzado');
+        }
+        if (now > end) {
+            throw new ApiError(400, 'Este reto ha expirado');
+        }
+
         const existing = await this.repository.getUserChallenge(userId, retoId);
         if (existing) {
             throw new ApiError(400, 'Ya te has unido a este reto');

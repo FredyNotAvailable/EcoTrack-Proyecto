@@ -43,7 +43,13 @@ import { useRef, useState } from "react";
 import { ProfileAPIService } from "./services/profile.service";
 import { StorageService } from "../shared/services/storage.service";
 import { convertToWebP } from "../../utils/ImageConverter";
-import { FaCamera } from "react-icons/fa";
+import { FaCamera, FaImage, FaClone } from "react-icons/fa";
+import { useDeletePost, useUserPosts } from "../posts/hooks/usePosts";
+import { PostsService } from "../posts/services/posts.service";
+import { PostDetailModal } from "../community/components/PostDetailModal";
+import { EditPostModal } from "../community/components/EditPostModal";
+import { ConfirmationModal } from "../community/components/ConfirmationModal";
+import type { Post } from "../posts/types";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -55,8 +61,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userStatsService } from "../../services/userStatsService";
 import { userRachasService } from "../../services/userRachasService";
 
+import { useParams } from "react-router-dom";
+
 const ProfilePage = () => {
     const { user } = useAuth();
+    const { username: urlUsername } = useParams();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const toast = useToast();
     const queryClient = useQueryClient();
@@ -72,25 +81,82 @@ const ProfilePage = () => {
 
     // Replace manual fetch with useQuery
     const { data: profile, isLoading } = useQuery({
-        queryKey: ['profile', user?.id],
-        queryFn: ProfileAPIService.getMe,
-        enabled: !!user?.id,
+        queryKey: ['profile', urlUsername || 'me'],
+        queryFn: () => urlUsername
+            ? ProfileAPIService.getProfileByUsername(urlUsername)
+            : ProfileAPIService.getMe(),
         staleTime: 1000 * 60 * 5, // 5 minutes cache
     });
 
+    const targetUserId = profile?.id;
+    const isMe = user?.id === targetUserId;
+
     const { data: stats } = useQuery({
-        queryKey: ['userStats', user?.id],
-        queryFn: () => userStatsService.getUserStats(),
-        enabled: !!user?.id,
+        queryKey: ['userStats', targetUserId],
+        queryFn: () => userStatsService.getUserStatsById(targetUserId!),
+        enabled: !!targetUserId,
     });
 
     const { data: racha } = useQuery({
-        queryKey: ['userRacha', user?.id],
-        queryFn: () => userRachasService.getMyRacha(),
-        enabled: !!user?.id,
+        queryKey: ['userRacha', targetUserId],
+        queryFn: () => userRachasService.getMyRacha(), // Note: getMyRacha might need a userId param if we want others' rachas
+        enabled: !!targetUserId && isMe, // Rachas might be private or need adjustment
     });
 
-    const isMe = true;
+    // Posts Hook
+    const {
+        data: userPostsData,
+        isLoading: isLoadingPosts,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = useUserPosts(targetUserId);
+
+    const deleteMutation = useDeletePost();
+
+    // Modals State
+    const [viewPostId, setViewPostId] = useState<string | null>(null);
+    const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
+
+    const [editingPost, setEditingPost] = useState<Post | null>(null);
+    const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+
+    const [deletePostId, setDeletePostId] = useState<string | null>(null);
+    const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+
+    const handlePostClick = (postId: string) => {
+        setViewPostId(postId);
+        onDetailOpen();
+    };
+
+    const handleEditPost = (post: Post) => {
+        setEditingPost(post);
+        onEditOpen();
+    };
+
+    const handleDeletePostClick = (postId: string) => {
+        setDeletePostId(postId);
+        onDeleteOpen();
+    };
+
+    const confirmDeletePost = () => {
+        if (deletePostId) {
+            deleteMutation.mutate(deletePostId, {
+                onSuccess: () => {
+                    if (viewPostId === deletePostId) {
+                        onDetailClose();
+                    }
+                    onDeleteClose();
+                }
+            });
+        }
+    };
+
+    const { data: detailPost } = useQuery({
+        queryKey: ['post', viewPostId],
+        queryFn: () => PostsService.getPostById(viewPostId!),
+        enabled: !!viewPostId,
+    });
 
 
     // Initialize form when opening modal
@@ -180,6 +246,7 @@ const ProfilePage = () => {
             setIsSaving(false);
         }
     };
+    const allUserPosts = userPostsData?.pages.flatMap(page => page.data) || [];
 
     if (isLoading) {
         return (
@@ -221,9 +288,6 @@ const ProfilePage = () => {
             // Racha placeholdler
             { label: "Racha Actual", value: `${racha?.racha_actual || 0} días`, icon: FaFire, color: "orange.400" },
         ],
-        badges: [
-            { name: "Primer Paso", icon: FaSeedling, color: "green.400" },
-        ]
     };
 
     return (
@@ -297,40 +361,14 @@ const ProfilePage = () => {
                 </Flex>
             </Card>
 
-            {/* Content Grid */}
-            <SimpleGrid columns={{ base: 1, lg: 3 }} gap={8}>
+            {/* Content Section */}
+            <SimpleGrid columns={{ base: 1, lg: 12 }} spacing={10} w="full" alignItems="start">
 
-                {/* Left Column: Info & Bio */}
-                <VStack spacing={6} align="stretch">
-                    <Card p={6} borderRadius="24px" boxShadow="0 10px 30px rgba(0,0,0,0.05)">
-                        <Heading size="md" mb={4} color="brand.secondary">Insignias</Heading>
-                        <Flex flexWrap="wrap" gap={3}>
-                            {profileData.badges.map((badge, idx) => (
-                                <Box key={idx} textAlign="center">
-                                    <Flex
-                                        w="60px"
-                                        h="60px"
-                                        bg="brand.bgCardLight"
-                                        borderRadius="full"
-                                        align="center"
-                                        justify="center"
-                                        mb={1}
-                                        _hover={{ transform: "scale(1.1)", bg: badge.color, color: "white" }}
-                                        transition="all 0.2s"
-                                    >
-                                        <Icon as={badge.icon} fontSize="1.5rem" />
-                                    </Flex>
-                                    <Text fontSize="xs" fontWeight="bold">{badge.name}</Text>
-                                </Box>
-                            ))}
-                        </Flex>
-                    </Card>
-                </VStack>
+                {/* Left Column: Stats & Progress (occupies 4/12 columns) */}
+                <VStack spacing={6} align="stretch" gridColumn={{ lg: "span 4" }}>
 
-                {/* Right Column: Stats & Progress */}
-                <VStack spacing={6} align="stretch" gridColumn={{ lg: "span 2" }}>
 
-                    {/* Level Progress */}
+                    {/* Stats & Progress Section */}
                     <Card p={6} borderRadius="24px" boxShadow="0 10px 30px rgba(0,0,0,0.05)">
                         <Flex justify="space-between" align="center" mb={4}>
                             <HStack>
@@ -389,9 +427,124 @@ const ProfilePage = () => {
                             </Card>
                         ))}
                     </SimpleGrid>
-
                 </VStack>
+
+                {/* Right Column: Posts (occupies 8/12 columns) */}
+                <Box gridColumn={{ lg: "span 8" }}>
+                    <VStack align="start" spacing={6} w="full">
+                        <HStack w="full" justify="space-between">
+                            <Heading size="md" color="brand.secondary" display="flex" alignItems="center">
+                                <Icon as={FaImage} mr={2} color="brand.primary" />
+                                Tus Publicaciones
+                            </Heading>
+                            <Text fontSize="sm" color="gray.500" fontWeight="bold">
+                                {allUserPosts.length} publicaciones
+                            </Text>
+                        </HStack>
+
+                        {isLoadingPosts ? (
+                            <Flex w="full" py={10} justify="center">
+                                <Spinner color="brand.primary" />
+                            </Flex>
+                        ) : allUserPosts.length > 0 ? (
+                            <SimpleGrid columns={{ base: 3 }} spacing={1} w="full">
+                                {allUserPosts.map((post: Post) => (
+                                    <Box
+                                        key={post.id}
+                                        position="relative"
+                                        pb="100%"
+                                        cursor="pointer"
+                                        onClick={() => handlePostClick(post.id)}
+                                        overflow="hidden"
+                                        _hover={{ opacity: 0.9 }}
+                                        bg="gray.100"
+                                    >
+                                        <Box
+                                            position="absolute"
+                                            top={0}
+                                            left={0}
+                                            right={0}
+                                            bottom={0}
+                                            bgImage={`url(${post.media_url})`}
+                                            bgSize="cover"
+                                            bgPosition="center"
+                                            transition="transform 0.5s ease"
+                                            _hover={{ transform: "scale(1.05)" }}
+                                        />
+                                        {(post.media_type === 'video' || (post.hashtags && post.hashtags.length > 0)) && (
+                                            <Box position="absolute" top={2} right={2} color="white">
+                                                <Icon as={FaClone} dropShadow="0 2px 4px rgba(0,0,0,0.5)" />
+                                            </Box>
+                                        )}
+                                    </Box>
+                                ))}
+                            </SimpleGrid>
+                        ) : (
+                            <Card p={10} w="full" textAlign="center" borderRadius="24px" border="2px dashed" borderColor="gray.100" bg="transparent" boxShadow="none">
+                                <VStack spacing={4}>
+                                    <Icon as={FaImage} fontSize="4xl" color="gray.200" />
+                                    <Text color="gray.400" fontWeight="medium">Aún no has compartido ninguna publicación.</Text>
+                                </VStack>
+                            </Card>
+                        )}
+
+                        {hasNextPage && (
+                            <Button
+                                variant="ghost"
+                                w="full"
+                                isLoading={isFetchingNextPage}
+                                onClick={() => fetchNextPage()}
+                                color="brand.primary"
+                                fontSize="sm"
+                            >
+                                Ver más publicaciones
+                            </Button>
+                        )}
+                    </VStack>
+                </Box>
             </SimpleGrid>
+
+            {/* Post Detail Modal */}
+            {
+                detailPost && (
+                    <PostDetailModal
+                        isOpen={isDetailOpen}
+                        onClose={() => {
+                            onDetailClose();
+                            setViewPostId(null);
+                        }}
+                        post={detailPost}
+                        onEdit={() => handleEditPost(detailPost)}
+                        onDelete={() => handleDeletePostClick(detailPost.id)}
+                    />
+                )
+            }
+
+            {/* Edit Post Modal */}
+            {
+                editingPost && (
+                    <EditPostModal
+                        isOpen={isEditOpen}
+                        onClose={() => {
+                            onEditClose();
+                            setEditingPost(null);
+                        }}
+                        post={editingPost}
+                    />
+                )
+            }
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isDeleteOpen}
+                onClose={onDeleteClose}
+                onConfirm={confirmDeletePost}
+                title="Eliminar publicación"
+                message="¿Estás seguro de que deseas eliminar esta publicación permanentemente?"
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                isLoading={deleteMutation.isPending}
+            />
 
             {/* Modal de Edición */}
             <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
@@ -484,7 +637,7 @@ const ProfilePage = () => {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </Box>
+        </Box >
     );
 };
 
