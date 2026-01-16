@@ -15,7 +15,6 @@ export class RachasController {
             const racha = await this.service.getRacha(userId);
 
             if (!racha) {
-                // Return zeros if no racha yet
                 return res.json({
                     racha_actual: 0,
                     racha_maxima: 0,
@@ -26,6 +25,26 @@ export class RachasController {
             res.json(racha);
         } catch (error) {
             console.error('Error getting racha:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
+    getUserRacha = async (req: Request, res: Response) => {
+        try {
+            const userId = req.params.userId as string;
+            const racha = await this.service.getRacha(userId);
+
+            if (!racha) {
+                return res.json({
+                    racha_actual: 0,
+                    racha_maxima: 0,
+                    ultima_fecha: null
+                });
+            }
+
+            res.json(racha);
+        } catch (error) {
+            console.error('Error getting user racha:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }

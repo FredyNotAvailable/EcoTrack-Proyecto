@@ -2,7 +2,6 @@ import {
     Modal,
     ModalOverlay,
     ModalContent,
-    ModalHeader,
     ModalFooter,
     ModalBody,
     ModalCloseButton,
@@ -14,9 +13,11 @@ import {
     Box,
     Badge,
     useToast,
-    CloseButton
+    CloseButton,
+    Heading,
+    Flex
 } from "@chakra-ui/react";
-import { FaLeaf, FaBolt, FaClock, FaCircleCheck, FaTrophy, FaDroplet, FaBus, FaTrashCan } from "react-icons/fa6";
+import { FaLeaf, FaClock, FaCircleCheck, FaTrophy, FaLightbulb } from "react-icons/fa6";
 import { useEffect, useState } from "react";
 import confetti from 'canvas-confetti';
 import type { DailyMission } from "../services/misiones.service";
@@ -58,7 +59,7 @@ export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionMo
         }
     }, [isOpen, mission]);
 
-    const handleComplete = async () => {
+    const handleAction = async () => {
         if (!mission) return;
         setIsSubmitting(true);
         try {
@@ -110,90 +111,122 @@ export const MissionModal = ({ mission, isOpen, onClose, onComplete }: MissionMo
     if (!mission) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom" size="lg">
-            <ModalOverlay backdropFilter="blur(3px)" />
-            <ModalContent borderRadius="20px" overflow="hidden">
-                <ModalHeader bg="brand.primary" color="white" borderBottomRadius="0">
-                    <HStack>
-                        <Icon as={FaLeaf} />
-                        <Text>{mission.titulo}</Text>
-                    </HStack>
-                </ModalHeader>
-                <ModalCloseButton color="white" />
+        <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom" size="md">
+            <ModalOverlay backdropFilter="blur(12px)" bg="blackAlpha.400" />
+            <ModalContent borderRadius="40px" overflow="hidden" boxShadow="0 30px 60px -12px rgba(0, 0, 0, 0.15)" bg="white" border="1px solid" borderColor="gray.50">
+                <ModalBody p={10}>
+                    <ModalCloseButton top={6} right={6} borderRadius="full" size="sm" bg="gray.50" _hover={{ bg: "gray.100" }} />
 
-                <ModalBody p={6}>
-                    <VStack align="start" spacing={5}>
+                    <VStack align="stretch" spacing={8}>
+                        {/* Header: Clean & Airy */}
+                        <VStack align="center" spacing={4} textAlign="center">
+                            <Flex
+                                w="80px"
+                                h="80px"
+                                bg="brand.bgCardLight"
+                                color="brand.primary"
+                                borderRadius="28px"
+                                align="center"
+                                justify="center"
+                                boxShadow="sm"
+                            >
+                                <Icon as={FaLeaf} fontSize="2.2rem" />
+                            </Flex>
+                            <VStack spacing={1}>
+                                <Badge colorScheme="green" variant="subtle" borderRadius="full" px={3} fontSize="10px" letterSpacing="widest" textTransform="uppercase">
+                                    {mission.categoria}
+                                </Badge>
+                                <Heading size="lg" color="brand.secondary" fontWeight="900" letterSpacing="tight">
+                                    {mission.titulo}
+                                </Heading>
+                            </VStack>
+                        </VStack>
+
+                        {/* Description Section */}
                         <Box>
-                            <Text fontSize="lg" fontWeight="bold" color="brand.secondary" mb={2}>Descripción</Text>
-                            <Text color="gray.600" fontSize="md">{mission.descripcion}</Text>
+                            <Text color="gray.600" fontSize="1.05rem" lineHeight="tall" fontWeight="400" textAlign="center" px={2}>
+                                {mission.descripcion}
+                            </Text>
                         </Box>
 
+                        {/* Minimalist Eco-Tip */}
                         {mission.eco_tip && (
-                            <Box w="100%" bg="green.50" p={4} borderRadius="12px" borderLeft="4px solid" borderColor="green.400">
-                                <HStack mb={1}>
-                                    <Icon as={FaBolt} color="green.500" />
-                                    <Text fontWeight="bold" color="green.700" fontSize="sm">Eco Tip</Text>
+                            <Box
+                                bg="gray.50"
+                                p={5}
+                                borderRadius="28px"
+                                border="1px solid"
+                                borderColor="gray.100"
+                            >
+                                <HStack mb={3} spacing={2}>
+                                    <Icon as={FaLightbulb} color="brand.accentYellow" fontSize="sm" />
+                                    <Text fontWeight="800" color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">Eco-Tip del Experto</Text>
                                 </HStack>
-                                <Text fontSize="sm" color="green.800" fontStyle="italic">"{mission.eco_tip}"</Text>
+                                <Text fontSize="sm" color="brand.secondary" fontStyle="italic" lineHeight="relaxed" fontWeight="500">
+                                    "{mission.eco_tip}"
+                                </Text>
                             </Box>
                         )}
 
-                        <HStack spacing={4} w="100%" pt={2}>
-                            <VStack align="start" flex={1} bg="gray.50" p={3} borderRadius="10px">
-                                <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">Categoría</Text>
-                                <HStack spacing={1}>
-                                    <Icon
-                                        as={
-                                            mission.categoria === 'energia' ? FaBolt :
-                                                mission.categoria === 'agua' ? FaDroplet :
-                                                    mission.categoria === 'transporte' ? FaBus :
-                                                        FaTrashCan
-                                        }
-                                        color={
-                                            mission.categoria === 'energia' ? 'orange.400' :
-                                                mission.categoria === 'agua' ? 'blue.400' :
-                                                    mission.categoria === 'transporte' ? 'purple.400' :
-                                                        'green.400'
-                                        }
-                                    />
-                                    <Text fontSize="sm" fontWeight="600" textTransform="capitalize">{mission.categoria}</Text>
+                        {/* Stats Row: Simplified */}
+                        <HStack spacing={4} justify="center">
+                            <HStack bg="gray.50" py={2} px={4} borderRadius="full" border="1px solid" borderColor="gray.100">
+                                <Icon as={FaTrophy} color="brand.accentYellow" fontSize="sm" />
+                                <Text fontWeight="800" color="brand.primary" fontSize="sm">+{mission.puntos} XP</Text>
+                            </HStack>
+                            {mission.kg_co2_ahorrado && (
+                                <HStack bg="blue.50" py={2} px={4} borderRadius="full" border="1px solid" borderColor="blue.100">
+                                    <Icon as={FaLeaf} color="blue.400" fontSize="sm" />
+                                    <Text fontWeight="800" color="blue.700" fontSize="sm">-{mission.kg_co2_ahorrado}kg CO₂</Text>
                                 </HStack>
-                            </VStack>
-                            <VStack align="start" flex={1} bg="gray.50" p={3} borderRadius="10px">
-                                <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">Impacto</Text>
-                                <Text fontSize="sm" fontWeight="600">{mission.impacto || "Positivo"}</Text>
-                            </VStack>
-                            <VStack align="start" flex={1} bg="gray.50" p={3} borderRadius="10px">
-                                <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">Recompensa</Text>
-                                <Badge colorScheme="green" fontSize="0.9rem" borderRadius="full" px={2}>+{mission.puntos} pts</Badge>
-                            </VStack>
+                            )}
                         </HStack>
                     </VStack>
                 </ModalBody>
 
-                <ModalFooter bg="gray.50" p={4}>
+                <ModalFooter p={10} pt={0}>
                     {mission.completed ? (
-                        <Button w="100%" colorScheme="green" leftIcon={<FaCircleCheck />} isDisabled variant="outline">
-                            Misión Completada
+                        <Button
+                            w="full"
+                            h="65px"
+                            borderRadius="24px"
+                            variant="link"
+                            color="green.500"
+                            leftIcon={<FaCircleCheck size={24} />}
+                            isDisabled
+                            fontSize="lg"
+                            fontWeight="800"
+                            opacity={1}
+                            _disabled={{ opacity: 1, cursor: "default" }}
+                        >
+                            ¡Misión Cumplida!
                         </Button>
                     ) : (
                         <Button
-                            w="100%"
-                            colorScheme="brand"
-                            size="lg"
+                            w="full"
+                            h="65px"
+                            borderRadius="24px"
+                            bg="brand.secondary"
+                            color="white"
+                            _hover={{
+                                bg: "brand.secondary",
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 15px 30px -5px rgba(31, 64, 55, 0.4)"
+                            }}
+                            _active={{ transform: "scale(0.98)" }}
+                            transition="all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                             isLoading={isSubmitting}
                             isDisabled={!canComplete}
-                            onClick={handleComplete}
-                            loadingText="Completando..."
-                            _disabled={{ opacity: 0.6, cursor: "not-allowed" }}
+                            onClick={handleAction}
+                            loadingText="Marcando impacto..."
+                            leftIcon={!canComplete ? <FaClock /> : <FaLeaf />}
+                            fontSize="lg"
+                            fontWeight="800"
                         >
                             {!canComplete ? (
-                                <HStack>
-                                    <Icon as={FaClock} />
-                                    <Text>Lee la misión ({countdown}s)...</Text>
-                                </HStack>
+                                `Lee el consejo (${countdown}s)`
                             ) : (
-                                "Completar Misión"
+                                "¡Lo he logrado!"
                             )}
                         </Button>
                     )}

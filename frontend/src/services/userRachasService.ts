@@ -13,5 +13,9 @@ export const userRachasService = {
     getMyRacha: async (): Promise<UserRacha> => {
         const response = await apiClient.get<UserRacha>('/user-rachas/me');
         return response.data;
+    },
+    getUserRacha: async (userId: string): Promise<UserRacha> => {
+        const response = await apiClient.get<UserRacha>(`/user-rachas/${userId}`);
+        return response.data;
     }
 };

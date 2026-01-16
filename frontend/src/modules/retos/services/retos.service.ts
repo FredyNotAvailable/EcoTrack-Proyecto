@@ -26,10 +26,12 @@ export interface Reto {
     recompensa_kg_co2: number;
     imagen_url?: string;
     created_at: string;
-    status: 'joined' | 'completed' | undefined;
+    status: 'joined' | 'completed' | 'expired' | undefined;
     joined: boolean;
     progress: number;
     tasks: RetoTarea[];
+    total_tasks?: number;
+    completed_tasks?: number;
 }
 
 export const retosService = {

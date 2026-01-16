@@ -25,15 +25,25 @@ export class MisionesService {
         // Get current date string YYYY-MM-DD
         const today = new Date().toISOString().split('T')[0];
 
-        // Sort missions deterministically based on date + mission ID
-        const shuffled = activeMissions.sort((a, b) => {
-            const hashA = this.getHash(`${today}-${a.id}`);
-            const hashB = this.getHash(`${today}-${b.id}`);
-            return hashA - hashB;
-        });
+        // Categories we want: 1 from each
+        const categories: Array<DailyMission['categoria']> = ['energia', 'agua', 'transporte', 'residuos'];
 
-        // Return top 5
-        return shuffled.slice(0, 5);
+        const selectedMissions: DailyMission[] = [];
+
+        for (const cat of categories) {
+            const missionsInCat = activeMissions.filter(m => m.categoria === cat);
+            if (missionsInCat.length > 0) {
+                // Pick one deterministically from this category
+                const shuffled = missionsInCat.sort((a, b) => {
+                    const hashA = this.getHash(`${today}-${a.id}`);
+                    const hashB = this.getHash(`${today}-${b.id}`);
+                    return hashA - hashB;
+                });
+                selectedMissions.push(shuffled[0]);
+            }
+        }
+
+        return selectedMissions;
     }
 
     async getCompletedMissions(userId: string): Promise<string[]> {

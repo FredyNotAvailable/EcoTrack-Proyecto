@@ -62,4 +62,14 @@ export class ProfileRepository {
         console.log(`[ProfileRepo] Found ${data?.length} profiles`);
         return data || [];
     }
+    async delete(id: string) {
+        // This will only delete from the 'profiles' table.
+        // User deletion from Supabase Auth should be handled separately or via triggers/cascades.
+        const { error } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    }
 }

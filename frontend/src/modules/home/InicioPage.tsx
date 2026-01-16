@@ -10,15 +10,19 @@ import {
     Skeleton,
     SkeletonText,
     VStack,
+    HStack,
     Button,
-    Badge
+    Badge,
+    Tooltip
 } from "@chakra-ui/react";
 import {
     FaLeaf,
     FaArrowRight,
     FaLightbulb,
     FaCircleCheck,
-    FaCloud
+    FaFire,
+    FaTrophy,
+    FaTree
 } from "react-icons/fa6";
 import { motion } from "framer-motion";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -48,17 +52,19 @@ const DashboardHeaderVisual = ({ username }: { username: string }) => {
             direction={{ base: "column", md: "row" }}
             align={{ base: "start", md: "flex-end" }}
             justify="space-between"
-            mb={3}
-            mt={-3}
+            mb={6}
+            mt={-2}
             pt={2}
             gap={2}
         >
-            <Heading as="h1" fontSize={{ base: "2rem", md: "2.8rem" }} lineHeight="1.1" color="brand.secondary">
-                Hola, <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" display="inline-block"> {username} </Text> 👋
-            </Heading>
-            <Text color="brand.textMuted" fontSize="1rem" mb={1} fontWeight="500">
-                Tu impacto ecológico de hoy resumido aquí.
-            </Text>
+            <Box>
+                <Heading as="h1" fontSize={{ base: "2rem", md: "2.5rem" }} lineHeight="1.1" color="brand.secondary" mb={1}>
+                    ¡Hola, <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" fontWeight="900"> {username} </Text>! 🌿
+                </Heading>
+                <Text color="brand.textMuted" fontSize="lg" fontWeight="500">
+                    Tu impacto positivo está transformando el mundo, un hábito a la vez.
+                </Text>
+            </Box>
         </Flex>
     );
 };
@@ -66,8 +72,8 @@ const DashboardHeaderVisual = ({ username }: { username: string }) => {
 const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, racha?: UserRacha | null, loading: boolean }) => {
     if (loading) {
         return (
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={5} mb={4} bg="white" p={6} borderRadius="16px" boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)">
-                {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height="80px" borderRadius="12px" />)}
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={5} mb={4} bg="white" p={6} borderRadius="24px" boxShadow="lg">
+                {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height="80px" borderRadius="16px" />)}
             </SimpleGrid>
         );
     }
@@ -83,65 +89,62 @@ const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, rac
             <SimpleGrid
                 columns={{ base: 2, md: 3, lg: 5 }}
                 spacing={5}
-                mb={4}
+                mb={6}
                 bg="white"
                 p={6}
-                borderRadius="16px"
-                boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)"
+                borderRadius="30px"
+                boxShadow="xl"
+                border="1px solid"
+                borderColor="gray.50"
             >
                 {/* Stat 1 */}
-                <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.primary">
-                    <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Puntos Totales</Text>
-                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">{stats?.puntos_totales || 0}</Text>
-                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">xp acumulados</Text>
+                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="brand.primary">
+                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Experiencia</Text>
+                    <Text fontSize="2xl" fontWeight="900" color="brand.secondary">{stats?.puntos_totales || 0}</Text>
+                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">Puntos XP</Text>
                 </Flex>
 
                 {/* Stat 2 */}
-                <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.secondary">
-                    <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Nivel Actual</Text>
-                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">Lvl. {stats?.nivel || 1}</Text>
-                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">Explorador Eco</Text>
+                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="brand.secondary">
+                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Nivel</Text>
+                    <Text fontSize="2xl" fontWeight="900" color="brand.secondary">Nvl. {stats?.nivel || 1}</Text>
+                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">Explorador</Text>
                 </Flex>
 
                 {/* Stat 3: CO2 Impact */}
-                <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="green.400">
-                    <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>CO₂ Ahorrado</Text>
-                    <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">{stats?.kg_co2_ahorrado || 0} kg</Text>
-                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">Impacto Real</Text>
+                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="green.400">
+                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Impacto</Text>
+                    <Tooltip label="Kilogramos de CO2 ahorrados gracias a tus acciones." hasArrow>
+                        <Text fontSize="2xl" fontWeight="900" color="brand.secondary">{stats?.kg_co2_ahorrado || 0} kg</Text>
+                    </Tooltip>
+                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">CO₂ Evitado</Text>
                 </Flex>
 
                 {/* Stat 4: Eco Racha */}
-                <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.accentYellow">
-                    <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Eco Racha</Text>
+                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="orange.400">
+                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Racha</Text>
                     <Flex align="center" gap={2}>
-                        <Text fontSize="1.5rem" fontWeight="800" color="brand.textMain">
+                        <Text fontSize="2xl" fontWeight="900" color="brand.secondary">
                             {racha?.racha_actual || 0}
                         </Text>
-                        <Text
+                        <Icon
+                            as={FaFire}
                             fontSize="1.2rem"
-                            filter={isRachaActive ? "none" : "grayscale(1) opacity(0.5)"}
-                            title={isRachaActive ? "Racha activa hoy" : "Haz una misión para activar tu racha"}
-                        >
-                            🔥
-                        </Text>
+                            color={isRachaActive ? "orange.400" : "gray.300"}
+                            title={isRachaActive ? "¡Racha activa!" : "Completa una misión para activar"}
+                        />
                     </Flex>
-                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">
-                        Días seguidos
-                    </Text>
+                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">Días seguidos</Text>
                 </Flex>
 
                 {/* Stat 5 */}
-                <Flex direction="column" pl={4} borderLeft="3px solid" borderColor="brand.accentPurple">
-                    <Text fontSize="0.85rem" fontWeight="600" color="brand.textMuted" textTransform="uppercase" mb={1}>Próximo Nivel</Text>
-                    <Box mt="5px" h="8px" w="100%" bg="#f1f2f6" borderRadius="full" overflow="hidden">
-                        <Box h="100%" w={`${stats?.progress?.progreso_porcentaje || 0}%`} bgGradient="linear(to-r, #9b59b6, #8e44ad)" />
+                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="purple.400">
+                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Progreso</Text>
+                    <Box mt={2} h="6px" w="100%" bg="gray.100" borderRadius="full" overflow="hidden">
+                        <Box h="100%" w={`${stats?.progress?.progreso_porcentaje || 0}% `} bgGradient="linear(to-r, purple.400, purple.600)" />
                     </Box>
-                    <Text fontSize="0.8rem" color="brand.textMuted" mt="3px">
-                        {stats?.progress?.experiencia_relativa || 0} / {
-                            stats?.progress?.puntos_siguiente_nivel
-                                ? (stats.progress.puntos_siguiente_nivel - stats.progress.puntos_nivel_actual)
-                                : 'Max'
-                        } exp ({stats?.progress?.progreso_porcentaje || 0}%)
+                    <Text fontSize="xs" color="brand.textMuted" mt={1} fontWeight="600">
+                        {stats?.progress?.progreso_porcentaje || 0}% para Nvl. {(stats?.nivel || 1) + 1}
                     </Text>
                 </Flex>
             </SimpleGrid>
@@ -157,29 +160,35 @@ const ActiveChallengesVisual = ({ challenges, loading }: { challenges: Reto[], l
         <Box
             p={6}
             bg="white"
-            borderRadius="16px"
-            boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)"
+            borderRadius="24px"
+            boxShadow="lg"
             mb={8}
-            border="1px solid rgba(0, 0, 0, 0.05)"
+            border="1px solid"
+            borderColor="gray.100"
         >
             <Flex justify="space-between" align="center" mb={5}>
-                <Text fontSize="1.2rem" fontWeight="700">Retos Activos</Text>
+                <Flex align="center" gap={2}>
+                    <Icon as={FaTrophy} color="brand.primary" />
+                    <Text fontSize="lg" fontWeight="800" color="brand.secondary">Retos en Curso</Text>
+                </Flex>
                 <Button
-                    variant="link"
+                    variant="ghost"
                     color="brand.primary"
-                    fontSize="0.9rem"
-                    fontWeight="600"
+                    size="sm"
+                    fontSize="sm"
+                    fontWeight="700"
                     rightIcon={<Icon as={FaArrowRight} />}
                     onClick={() => navigate('/app/retos')}
+                    _hover={{ bg: 'brand.bgCardLight' }}
                 >
-                    Ver más
+                    Ver todos
                 </Button>
             </Flex>
 
             {loading ? (
                 <VStack spacing={4} align="stretch">
-                    <Skeleton height="70px" borderRadius="12px" />
-                    <Skeleton height="70px" borderRadius="12px" />
+                    <Skeleton height="70px" borderRadius="16px" />
+                    <Skeleton height="70px" borderRadius="16px" />
                 </VStack>
             ) : joinedChallenges.length > 0 ? (
                 joinedChallenges.map((reto) => (
@@ -188,40 +197,43 @@ const ActiveChallengesVisual = ({ challenges, loading }: { challenges: Reto[], l
                         align="center"
                         gap={4}
                         p={4}
-                        border="1px solid #f1f2f6"
-                        borderRadius="12px"
+                        border="1px solid"
+                        borderColor="gray.100"
+                        borderRadius="20px"
                         mb={3}
                         transition="all 0.2s"
                         cursor="pointer"
-                        _hover={{ transform: "translateX(5px)", borderColor: "brand.primary", bg: "brand.bgCardLight" }}
+                        _hover={{ transform: "translateX(4px)", borderColor: "brand.primary", bg: "brand.bgCardLight" }}
                         onClick={() => navigate('/app/retos')}
                     >
-                        <Flex w="40px" h="40px" borderRadius="full" bg="brand.bgCardLight" color="brand.primary" align="center" justify="center" shrink={0}>
-                            <Icon as={FaLeaf} />
+                        <Flex w="48px" h="48px" borderRadius="2xl" bg="brand.bgCardLight" color="brand.primary" align="center" justify="center" shrink={0}>
+                            <Icon as={FaLeaf} fontSize="1.2rem" />
                         </Flex>
                         <Box flex={1}>
-                            <Text fontSize="0.95rem" fontWeight="600" mb={1}>{reto.titulo}</Text>
-                            <Box h="6px" w="100%" bg="#f1f2f6" borderRadius="full" mb={2} overflow="hidden">
-                                <Box h="100%" w={`${reto.progress}%`} bg="brand.primary" borderRadius="full" />
+                            <Text fontSize="sm" fontWeight="700" mb={1} color="brand.secondary">{reto.titulo}</Text>
+                            <Box h="6px" w="100%" bg="gray.100" borderRadius="full" mb={2} overflow="hidden">
+                                <Box h="100%" w={`${reto.progress}% `} bg="brand.primary" borderRadius="full" />
                             </Box>
-                            <Flex fontSize="0.8rem" color="brand.textMuted" gap={3}>
-                                <Flex align="center" gap={1}><Icon as={FaLeaf} /> {reto.recompensa_kg_co2}kg CO₂</Flex>
-                                <Text fontWeight="bold" color="brand.primary">{Math.round(reto.progress)}%</Text>
+                            <Flex fontSize="xs" color="brand.textMuted" gap={3} fontWeight="600">
+                                <Flex align="center" gap={1}><Icon as={FaTree} color="green.500" /> {reto.recompensa_kg_co2}kg Ahorrados</Flex>
+                                <Text color="brand.primary">{Math.round(reto.progress)}% Completado</Text>
                             </Flex>
                         </Box>
                     </Flex>
                 ))
             ) : (
-                <VStack py={4} spacing={2} opacity={0.7}>
-                    <Text fontSize="sm" color="gray.500">No tienes retos activos actualmente.</Text>
+                <VStack py={8} spacing={3} bg="gray.50" borderRadius="2xl" border="1px dashed" borderColor="gray.200">
+                    <Icon as={FaLeaf} color="gray.400" boxSize={8} />
+                    <Text fontSize="sm" color="gray.500" fontWeight="500">¿Listo para un desafío?</Text>
                     <Button
                         size="sm"
-                        variant="outline"
-                        colorScheme="green"
+                        bg="brand.primary"
+                        color="white"
                         borderRadius="full"
+                        _hover={{ bg: "brand.primaryHover" }}
                         onClick={() => navigate('/app/retos')}
                     >
-                        Descubrir retos
+                        Explorar Retos
                     </Button>
                 </VStack>
             )}
@@ -233,17 +245,20 @@ const DailyTipVisual = ({ tip, loading }: { tip: DailyTip | null, loading: boole
     return (
         <Box
             p={6}
-            bg="white"
-            borderRadius="16px"
-            boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)"
+            bg="brand.accentLight" // Un color suave para destacar
+            borderRadius="24px"
+            boxShadow="lg"
             mb={8}
-            border="1px solid rgba(0, 0, 0, 0.05)"
-            borderLeft="6px solid"
-            borderLeftColor="brand.primary"
+            position="relative"
+            overflow="hidden"
         >
-            <Flex align="center" gap={2} mb={3} color="brand.primary" fontSize="1.2rem" fontWeight="700">
-                <Icon as={FaLightbulb} />
-                <Text>Consejo del Día</Text>
+            <Icon as={FaLightbulb} position="absolute" right="-20px" bottom="-20px" fontSize="10rem" color="white" opacity="0.5" transform="rotate(20deg)" />
+
+            <Flex align="center" gap={3} mb={3} color="brand.accent" fontSize="lg" fontWeight="800">
+                <Box bg="white" p={2} borderRadius="full" boxShadow="sm">
+                    <Icon as={FaLightbulb} />
+                </Box>
+                <Text>Sabías que...</Text>
             </Flex>
 
             {loading ? (
@@ -252,15 +267,15 @@ const DailyTipVisual = ({ tip, loading }: { tip: DailyTip | null, loading: boole
                     <SkeletonText mt="4" noOfLines={2} spacing="4" skeletonHeight="2" />
                 </>
             ) : tip ? (
-                <>
-                    <Text fontSize="1.1rem" fontWeight="bold" mb={2}>{tip.titulo}</Text>
-                    <Text color="brand.textMuted" fontSize="0.95rem" lineHeight="1.6">
+                <Box position="relative" zIndex={1}>
+                    <Text fontSize="lg" fontWeight="800" mb={2} color="brand.secondary">{tip.titulo}</Text>
+                    <Text color="brand.secondary" fontSize="md" lineHeight="1.6" fontWeight="500">
                         {tip.descripcion}
                     </Text>
-                </>
+                </Box>
             ) : (
-                <Text color="brand.textMuted" fontSize="0.95rem">
-                    No hay consejo disponible para hoy. ¡Vuelve mañana!
+                <Text color="brand.textMuted" fontSize="sm">
+                    Hoy no hay consejo, ¡pero tú ya eres sabio! 🦉
                 </Text>
             )}
         </Box>
@@ -273,60 +288,63 @@ const MissionCardVisual = ({ mission, onClick }: { mission: DailyMission, onClic
             p={4}
             bg={mission.completed ? "gray.50" : "white"}
             border="1px solid"
-            borderColor={mission.completed ? "gray.100" : "gray.100"}
-            borderRadius="12px"
+            borderColor={mission.completed ? "green.100" : "gray.100"}
+            borderRadius="20px"
             cursor="pointer"
-            transition="all 0.2s"
+            transition="all 0.3s ease"
             opacity={mission.completed ? 0.7 : 1}
+            position="relative"
             _hover={{
-                borderColor: mission.completed ? "gray.200" : "brand.primary",
-                transform: "translateY(-2px)",
-                shadow: "sm"
+                borderColor: mission.completed ? "green.300" : "brand.primary",
+                transform: "translateY(-3px)",
+                boxShadow: "md"
             }}
             onClick={onClick}
         >
             <Flex justify="space-between" align="center">
-                <Box>
-                    <Text
-                        fontWeight="600"
-                        fontSize="0.95rem"
-                        textDecoration={mission.completed ? "line-through" : "none"}
-                        color={mission.completed ? "gray.500" : "gray.700"}
-                        mb={1}
+                <HStack spacing={4} flex={1}>
+                    <Flex
+                        w="50px"
+                        h="50px"
+                        borderRadius="16px"
+                        bg={mission.completed ? "green.100" : "brand.bgCardLight"}
+                        color={mission.completed ? "green.600" : "brand.primary"}
+                        align="center"
+                        justify="center"
+                        boxShadow="sm"
                     >
-                        {mission.titulo}
-                    </Text>
-                    <Flex gap={3} fontSize="0.8rem" color="gray.500" align="center" flexWrap="wrap">
-                        <Badge
-                            variant="subtle"
-                            colorScheme={
-                                mission.categoria === 'energia' ? 'orange' :
-                                    mission.categoria === 'agua' ? 'blue' :
-                                        mission.categoria === 'transporte' ? 'purple' :
-                                            'green' // residuos
-                            }
-                            fontSize="0.7rem"
-                            borderRadius="full"
-                            px={2}
-                            textTransform="capitalize"
-                        >
-                            {mission.categoria}
-                        </Badge>
-                        <Flex align="center" gap={1}>
-                            <Icon as={FaLeaf} color="brand.primary" />
-                            <Text>+{mission.puntos} pts</Text>
-                        </Flex>
-                        {mission.kg_co2_ahorrado && (
-                            <Flex align="center" gap={1}>
-                                <Icon as={FaCloud} color="blue.400" />
-                                <Text>{mission.kg_co2_ahorrado}kg CO₂</Text>
-                            </Flex>
-                        )}
+                        {mission.completed ? <Icon as={FaCircleCheck} fontSize="1.4rem" /> : <Icon as={FaLeaf} fontSize="1.2rem" />}
                     </Flex>
-                </Box>
-                {mission.completed && (
-                    <Icon as={FaCircleCheck} color="green.400" boxSize={5} />
-                )}
+                    <Box>
+                        <Text
+                            fontWeight="700"
+                            fontSize="md"
+                            color={mission.completed ? "gray.500" : "brand.secondary"}
+                            mb={1}
+                            textDecoration={mission.completed ? "line-through" : "none"}
+                        >
+                            {mission.titulo}
+                        </Text>
+                        <HStack spacing={2}>
+                            <Badge
+                                variant="subtle"
+                                colorScheme={
+                                    mission.categoria === 'energia' ? 'orange' :
+                                        mission.categoria === 'agua' ? 'cyan' :
+                                            mission.categoria === 'transporte' ? 'purple' :
+                                                'green'
+                                }
+                                borderRadius="full"
+                                px={2}
+                                fontSize="0.65rem"
+                                textTransform="capitalize"
+                            >
+                                {mission.categoria}
+                            </Badge>
+                            <Text fontSize="xs" fontWeight="700" color="brand.primary">+{mission.puntos} XP</Text>
+                        </HStack>
+                    </Box>
+                </HStack>
             </Flex>
         </Box>
     );
@@ -342,29 +360,35 @@ const DailyMissionsWidgetVisual = ({
     onMissionClick: (m: DailyMission) => void
 }) => {
     const completedCount = missions.filter(m => m.completed).length;
+    const progress = missions.length > 0 ? (completedCount / missions.length) * 100 : 0;
 
     return (
         <Box
             p={6}
             bg="white"
-            borderRadius="16px"
-            boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)"
+            borderRadius="24px"
+            boxShadow="lg"
             mb={8}
-            border="1px solid rgba(0, 0, 0, 0.05)"
+            border="1px solid"
+            borderColor="gray.100"
         >
-            <Flex justify="space-between" align="center" mb={5}>
-                <Text fontSize="1.2rem" fontWeight="700">Misiones Diarias</Text>
-                <Text fontSize="0.9rem" color="brand.textMuted">
-                    {completedCount}/{missions.length} completadas
-                </Text>
+            <Flex justify="space-between" align="center" mb={2}>
+                <Text fontSize="lg" fontWeight="800" color="brand.secondary">Misiones de Hoy</Text>
+                <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                    {completedCount}/{missions.length}
+                </Badge>
             </Flex>
 
-            <VStack spacing="15px" align="stretch">
+            <Box h="6px" w="100%" bg="gray.100" borderRadius="full" mb={6} overflow="hidden">
+                <Box h="100%" w={`${progress}%`} bg="brand.primary" borderRadius="full" transition="width 0.5s ease" />
+            </Box>
+
+            <VStack spacing={4} align="stretch">
                 {loading ? (
                     <>
-                        <Skeleton height="60px" borderRadius="12px" />
-                        <Skeleton height="60px" borderRadius="12px" />
-                        <Skeleton height="60px" borderRadius="12px" />
+                        <Skeleton height="80px" borderRadius="20px" />
+                        <Skeleton height="80px" borderRadius="20px" />
+                        <Skeleton height="80px" borderRadius="20px" />
                     </>
                 ) : missions.length > 0 ? (
                     missions.map((mission) => (
@@ -375,7 +399,11 @@ const DailyMissionsWidgetVisual = ({
                         />
                     ))
                 ) : (
-                    <Text color="gray.500" fontSize="sm">No hay misiones disponibles hoy.</Text>
+                    <Flex direction="column" align="center" py={8} textAlign="center">
+                        <Icon as={FaLeaf} color="green.300" boxSize={10} mb={3} />
+                        <Text color="gray.500" fontWeight="500">¡Todo despejado por hoy!</Text>
+                        <Text fontSize="xs" color="gray.400">Vuelve mañana para más misiones.</Text>
+                    </Flex>
                 )}
             </VStack>
         </Box>
@@ -490,23 +518,23 @@ export const InicioPage = () => {
             >
                 {/* Header */}
                 <Box mb={3}>
-                    <DashboardHeaderVisual username={profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Usuario'} />
+                    {/* Safe fallback for display name */}
+                    <DashboardHeaderVisual username={profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Guardián'} />
                 </Box>
 
                 {/* Stats */}
-                {/* Stats */}
-                <Box mb={4}>
+                <Box mb={6}>
                     <StatsOverviewVisual stats={stats} racha={racha} loading={loadingStats} />
                 </Box>
 
                 {/* Main Grid */}
                 <Grid
                     templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
-                    gap={4}
+                    gap={8}
                 >
                     {/* Main Content */}
                     <GridItem>
-                        <Box mb={3}>
+                        <Box mb={6}>
                             <ActiveChallengesVisual challenges={challenges} loading={loadingRetos} />
                         </Box>
                         <DailyTipVisual tip={dailyTip} loading={loadingTip} />

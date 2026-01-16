@@ -21,7 +21,8 @@ import {
     useToast,
     useDisclosure
 } from '@chakra-ui/react';
-import { FaHeart, FaRegHeart, FaRegBookmark, FaEllipsisH, FaTrash, FaPen } from 'react-icons/fa';
+import { keyframes } from "@emotion/react";
+import { FaHeart, FaRegHeart, FaEllipsisH, FaTrash, FaPen } from 'react-icons/fa';
 import { useState } from 'react';
 import type { Post, Comment } from '../../posts/types';
 import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts';
@@ -45,6 +46,13 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
     const bg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
     const toast = useToast();
+
+    const heartBeat = keyframes`
+      0% { transform: scale(1); }
+      25% { transform: scale(1.2); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    `;
 
     // User Navigation
     const handleUserClick = (username?: string) => {
@@ -273,6 +281,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                                     _hover={{ color: "red.400" }}
                                     color={isLiked ? "red.400" : "inherit"}
                                     onClick={handleLike}
+                                    animation={isLiked ? `${heartBeat} 0.45s ease-in-out` : undefined}
                                 />
                             </HStack>
                             {/* <IconButton

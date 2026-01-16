@@ -22,24 +22,81 @@ export class RetosService {
     }
 
     async getActiveChallengesWithStatus(userId: string) {
+        const now = new Date();
+        // 1. Get Active Challenges (Available to join or active)
         const activeRetos = await this.repository.findActiveChallenges();
+
+        // 2. Get User's Joined Challenges (History)
+        const userRetos = await this.repository.getAllUserChallenges(userId);
+
+        // 3. Find challenges that user joined but are NOT in the active list (e.g. Expired)
+        const activeIds = new Set(activeRetos.map(r => r.id));
+        const missingRetoIds = userRetos
+            .map(ur => ur.reto_id)
+            .filter(id => !activeIds.has(id));
+
+        const extraRetos = await this.repository.getChallengesByIds(missingRetoIds);
+
+        // 4. Combine Lists
+        const allRelevantRetos = [...activeRetos, ...extraRetos];
+
+        // Remove duplicates if any (though logic above should prevent it)
+        const uniqueRetosMap = new Map();
+        allRelevantRetos.forEach(r => uniqueRetosMap.set(r.id, r));
+        const finalRetos = Array.from(uniqueRetosMap.values());
+
         const results = [];
 
-        for (const reto of activeRetos) {
-            const userReto = await this.repository.getUserChallenge(userId, reto.id);
+        for (const reto of finalRetos) {
+            let userReto = userRetos.find(ur => ur.reto_id === reto.id);
             const tasks = await this.repository.getTasksByChallengeId(reto.id);
-
-            // Calculate progress if joined
             let userTasks: any[] = [];
+
             if (userReto) {
                 userTasks = await this.repository.getUserTasksByChallenge(userReto.id);
+            }
+
+            const totalTasks = tasks.length;
+            const completedCount = userTasks.filter(ut => ut.completado).length;
+            const progressPercent = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+
+            if (userReto) {
+                // --- LAZY EXPIRATION & RECOVERY CHECK ---
+                // Set end of day for fairness (Local Time)
+                const endDate = new Date(`${reto.fecha_fin}T23:59:59.999`);
+
+                // Check if last day's task is completed
+                const maxDay = tasks.length > 0 ? Math.max(...tasks.map(t => t.dia_orden)) : 0;
+                const lastDayTask = tasks.find(t => t.dia_orden === maxDay);
+                const isLastTaskDone = lastDayTask ? userTasks.some(ut => ut.tarea_id === lastDayTask.id && ut.completado) : false;
+
+                if (now > endDate || isLastTaskDone) {
+                    // Time has passed OR last task is done
+                    if (userReto.estado === 'joined' && completedCount < totalTasks) {
+                        // Should be expired
+                        await this.repository.updateChallengeProgress(userId, reto.id, completedCount, 'expired');
+                        userReto.estado = 'expired';
+                    }
+                } else {
+                    // Time has NOT passed AND last task NOT done (Challenge is active)
+                    if (userReto.estado === 'expired') {
+                        // RECOVERY: It was marked expired but conditions are still valid (likely timezone recovery)
+                        await this.repository.updateChallengeProgress(userId, reto.id, completedCount, 'joined');
+                        userReto.estado = 'joined';
+                    }
+                }
             }
 
             results.push({
                 ...reto,
                 joined: !!userReto,
                 status: userReto?.estado,
-                progress: userReto?.progreso || 0,
+                // Client expects 'progress' to be percentage (0-100)
+                progress: progressPercent,
+                // Detailed Breakdown
+                total_tasks: totalTasks,
+                completed_tasks: completedCount,
+                percent: progressPercent,
                 tasks: tasks.map(t => {
                     const ut = userTasks.find(ut => ut.tarea_id === t.id);
                     return {
@@ -50,7 +107,11 @@ export class RetosService {
                 })
             });
         }
-        return results;
+
+        // Sort: Active/Joined first, then Expired? Or just keep original sort (created_at desc usually)
+        // Repo returns sorted by created_at. Merging might mess it slightly if extraRetos are older.
+        // Let's sort results by fecha_inicio descending (newest first)
+        return results.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
     }
 
     async joinChallenge(userId: string, retoId: string) {
@@ -58,8 +119,8 @@ export class RetosService {
         if (!reto) throw new ApiError(404, 'Reto no encontrado');
 
         const now = new Date();
-        const start = new Date(reto.fecha_inicio);
-        const end = new Date(reto.fecha_fin);
+        const start = new Date(`${reto.fecha_inicio}T00:00:00.000`);
+        const end = new Date(`${reto.fecha_fin}T23:59:59.999`);
 
         if (now < start) {
             throw new ApiError(400, 'Este reto aún no ha comenzado');
@@ -72,7 +133,14 @@ export class RetosService {
         if (existing) {
             throw new ApiError(400, 'Ya te has unido a este reto');
         }
-        return this.repository.joinChallenge(userId, retoId);
+        const result = await this.repository.joinChallenge(userId, retoId);
+
+        // Update Streak (Racha)
+        const { RachasService } = await import('../rachas/rachas.service');
+        const rachasService = new RachasService();
+        await rachasService.updateStreak(userId);
+
+        return result;
     }
 
     async completeTask(userId: string, retoId: string, taskId: string) {
@@ -82,10 +150,32 @@ export class RetosService {
             throw new ApiError(400, 'Debes unirte al reto primero');
         }
 
+        if (userReto.estado === 'expired') {
+            throw new ApiError(400, 'El reto ha expirado y no se pueden completar más tareas.');
+        }
+
+        if (userReto.estado === 'completed') {
+            // Already completed the whole challenge? Usually allowed to finish remaining tasks?
+            // "completed" means progress == total. So usually no tasks left.
+            // But if logic allows extra tasks? Assuming no extra tasks for now.
+        }
+
         // 2. Get Task details
         const tasks = await this.repository.getTasksByChallengeId(retoId);
         const task = tasks.find(t => t.id === taskId);
         if (!task) throw new ApiError(404, 'Tarea no encontrada');
+
+        // Check if challenge is effectively expired by time but not yet status-updated
+        const now = new Date();
+        const reto = await this.repository.getChallengeById(retoId);
+        if (reto) {
+            const end = new Date(`${reto.fecha_fin}T23:59:59.999`);
+            if (now > end && userReto.estado !== 'completed') {
+                // It is expired. Update and block.
+                await this.repository.updateChallengeProgress(userId, retoId, userReto.progreso, 'expired');
+                throw new ApiError(400, 'El reto ha expirado.');
+            }
+        }
 
         // 3. Check if already completed
         let userTask = await this.repository.getUserTask(userReto.id, taskId);
@@ -116,13 +206,20 @@ export class RetosService {
         // 6. Update Stats
         await this.userStatsService.updateChallengeStats(userId, task.recompensa_puntos, task.recompensa_kg_co2);
 
+        // 7. Update Streak (Racha)
+        const { RachasService } = await import('../rachas/rachas.service');
+        const rachasService = new RachasService();
+        await rachasService.updateStreak(userId);
+
         // 7. Check Challenge Completion & Update Progress
-        await this.checkChallengeCompletion(userId, retoId, tasks);
+        // Force refresh of userReto to get current progress? No, calculate locally?
+        // Better to query DB or recalc. checkChallengeCompletion does it.
+        await this.checkChallengeCompletion(userId, retoId, tasks, taskId);
 
         return updatedTask;
     }
 
-    private async checkChallengeCompletion(userId: string, retoId: string, allTasks: any[]) {
+    private async checkChallengeCompletion(userId: string, retoId: string, allTasks: any[], completedTaskId: string) {
         const userReto = await this.repository.getUserChallenge(userId, retoId);
         if (!userReto) return;
 
@@ -132,15 +229,11 @@ export class RetosService {
         const completedCount = userTasks.filter(ut => ut.completado).length;
         const totalCount = allTasks.length;
 
-        // Calculate percentage
-        const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-
-        let status: 'joined' | 'completed' = 'joined';
+        // Start with current status
+        let status: 'joined' | 'completed' | 'expired' = userReto.estado;
 
         if (completedCount === totalCount && totalCount > 0) {
-            // Only mark completed if not already completed (to avoid double rewards)
-            const userReto = await this.repository.getUserChallenge(userId, retoId);
-            if (userReto && userReto.estado !== 'completed') {
+            if (userReto.estado !== 'completed') {
                 status = 'completed';
 
                 // --- CHALLENGE COMPLETE REWARDS ---
@@ -148,20 +241,26 @@ export class RetosService {
                 if (reto) {
                     // Award Bonus
                     if (reto.recompensa_puntos > 0) {
-                        await this.puntosService.logPoints(userId, reto.recompensa_puntos, 'reto_completado', retoId);
+                        await this.puntosService.logPoints(userId, reto.recompensa_puntos, 'reto_completado', reto.id);
                     }
                     if (reto.recompensa_kg_co2 > 0) {
-                        await this.kgCo2Service.logKgCo2(userId, reto.recompensa_kg_co2, 'reto_completado', retoId);
+                        await this.kgCo2Service.logKgCo2(userId, reto.recompensa_kg_co2, 'reto_completado', reto.id);
                     }
-
-                    // Stats for Challenge Completion
-                    await this.userStatsService.updateChallengeStats(userId, reto.recompensa_puntos, reto.recompensa_kg_co2, true); // true = challenge completed
+                    await this.userStatsService.updateChallengeStats(userId, reto.recompensa_puntos, reto.recompensa_kg_co2);
                 }
-            } else if (userReto && userReto.estado === 'completed') {
-                status = 'completed'; // Remain completed
+            }
+        } else {
+            // Not completed. Check if we just finished one of the LAST day's tasks
+            const maxDay = Math.max(...allTasks.map(t => t.dia_orden));
+            const completedTask = allTasks.find(t => t.id === completedTaskId);
+
+            if (completedTask && completedTask.dia_orden === maxDay && status !== 'completed' && status !== 'expired') {
+                // User finished a last-day task but didn't complete all tasks
+                status = 'expired';
             }
         }
 
-        await this.repository.updateChallengeProgress(userId, retoId, progressPercent, status);
+        // Update DB with new progress (count) and status
+        await this.repository.updateChallengeProgress(userId, retoId, completedCount, status);
     }
 }

@@ -14,7 +14,8 @@ import {
     MenuItem,
     useColorModeValue,
 } from "@chakra-ui/react";
-import { FaEllipsisH, FaRegHeart, FaRegComment, FaRegBookmark, FaHeart } from "react-icons/fa";
+import { keyframes } from "@emotion/react";
+import { FaEllipsisH, FaRegHeart, FaRegComment, FaHeart } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 
@@ -54,6 +55,13 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
     const cardBg = useColorModeValue("white", "gray.800");
     const borderColor = useColorModeValue("gray.100", "gray.700");
     const verifiedColor = "blue.400";
+
+    const heartBeat = keyframes`
+      0% { transform: scale(1); }
+      25% { transform: scale(1.2); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    `;
 
     const handleUserClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -169,6 +177,7 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                             _hover={{ color: "red.400" }}
                             color={isLiked ? "red.400" : "brand.textMain"}
                             onClick={() => onLike && onLike(id)}
+                            animation={isLiked ? `${heartBeat} 0.45s ease-in-out` : undefined}
                         />
                         <IconButton
                             aria-label="Comment"

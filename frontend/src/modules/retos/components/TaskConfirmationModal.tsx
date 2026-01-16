@@ -2,7 +2,6 @@ import {
     Modal,
     ModalOverlay,
     ModalContent,
-    ModalHeader,
     ModalFooter,
     ModalBody,
     ModalCloseButton,
@@ -39,86 +38,139 @@ export const TaskConfirmationModal = ({
 
     const handleConfirm = () => {
         onConfirm(retoId, task.id);
-        // We don't close here, the parent will close it on success if desired, 
-        // but usually we close it after the mutation succeeds.
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="md" isCentered>
-            <ModalOverlay backdropFilter="blur(5px)" />
-            <ModalContent borderRadius="24px" p={2}>
-                <ModalHeader>
-                    <VStack align="start" spacing={1}>
-                        <Badge colorScheme="green" borderRadius="full" px={3}>Tarea Seleccionada</Badge>
-                        <Text fontSize="1.5rem" fontWeight="800" color="brand.secondary">
-                            {task.titulo}
-                        </Text>
-                    </VStack>
-                </ModalHeader>
-                <ModalCloseButton />
+        <Modal isOpen={isOpen} onClose={onClose} size="md" isCentered motionPreset="slideInBottom">
+            <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.400" />
+            <ModalContent borderRadius="32px" p={4} boxShadow="2xl">
+                <ModalCloseButton position="absolute" right={6} top={6} borderRadius="full" zIndex={2} />
 
-                <ModalBody>
-                    <VStack align="stretch" spacing={6}>
-                        <Box>
-                            <Text fontWeight="600" color="gray.500" mb={1} textTransform="uppercase" fontSize="xs" letterSpacing="widest">
-                                Descripción de la Tarea
+                <ModalBody pt={8} pb={2} px={6}>
+                    <VStack align="stretch" spacing={7}>
+                        {/* Header Section */}
+                        <VStack align="start" spacing={3}>
+                            <Badge
+                                bg="green.50"
+                                color="green.700"
+                                borderRadius="full"
+                                px={4}
+                                py={1}
+                                fontSize="xs"
+                                fontWeight="800"
+                                letterSpacing="wider"
+                                border="1px solid"
+                                borderColor="green.100"
+                            >
+                                TAREA DE HOY
+                            </Badge>
+                            <Text fontSize="2rem" fontWeight="900" color="brand.secondary" lineHeight="1.1">
+                                {task.titulo}
                             </Text>
-                            <Text color="brand.textMain" fontSize="1.05rem" lineHeight="1.6">
+                        </VStack>
+
+                        {/* Description Section */}
+                        <Box>
+                            <Text
+                                fontWeight="800"
+                                color="gray.400"
+                                mb={3}
+                                textTransform="uppercase"
+                                fontSize="10px"
+                                letterSpacing="widest"
+                            >
+                                Tu Misión
+                            </Text>
+                            <Text color="gray.600" fontSize="1rem" lineHeight="1.6" fontWeight="500">
                                 {task.descripcion}
                             </Text>
                         </Box>
 
-                        <Divider />
+                        <Divider borderColor="gray.100" />
 
+                        {/* Rewards Section */}
                         <Box>
-                            <Text fontWeight="600" color="gray.500" mb={3} textTransform="uppercase" fontSize="xs" letterSpacing="widest">
-                                Recompensas por Completar
+                            <Text
+                                fontWeight="800"
+                                color="gray.400"
+                                mb={4}
+                                textTransform="uppercase"
+                                fontSize="10px"
+                                letterSpacing="widest"
+                            >
+                                Recompensas
                             </Text>
-                            <HStack spacing={6}>
-                                <HStack bg="brand.bgCardLight" p={3} borderRadius="16px" flex={1} justify="center">
-                                    <Icon as={FaTrophy} color="brand.primary" />
+                            <HStack spacing={4}>
+                                <HStack
+                                    bg="brand.bgCardLight"
+                                    p={4}
+                                    borderRadius="24px"
+                                    flex={1}
+                                    spacing={4}
+                                    border="1px solid"
+                                    borderColor="transparent"
+                                    _hover={{ borderColor: "brand.primary" }}
+                                    transition="all 0.2s"
+                                >
+                                    <Icon as={FaTrophy} color="brand.primary" boxSize={6} />
                                     <VStack align="start" spacing={0}>
-                                        <Text fontSize="sm" fontWeight="800" color="brand.secondary">{task.recompensa_puntos}</Text>
-                                        <Text fontSize="xs" color="gray.500">Puntos</Text>
+                                        <Text fontSize="xl" fontWeight="900" color="brand.secondary">{task.recompensa_puntos}</Text>
+                                        <Text fontSize="xs" color="gray.500" fontWeight="600">XP</Text>
                                     </VStack>
                                 </HStack>
 
-                                <HStack bg="brand.bgCardLight" p={3} borderRadius="16px" flex={1} justify="center">
-                                    <Icon as={FaLeaf} color="brand.primary" />
+                                <HStack
+                                    bg="blue.50"
+                                    p={4}
+                                    borderRadius="24px"
+                                    flex={1}
+                                    spacing={4}
+                                    border="1px solid"
+                                    borderColor="transparent"
+                                    _hover={{ borderColor: "blue.400" }}
+                                    transition="all 0.2s"
+                                >
+                                    <Icon as={FaLeaf} color="blue.500" boxSize={6} />
                                     <VStack align="start" spacing={0}>
-                                        <Text fontSize="sm" fontWeight="800" color="brand.secondary">{task.recompensa_kg_co2}</Text>
-                                        <Text fontSize="xs" color="gray.500">Kg CO₂</Text>
+                                        <Text fontSize="xl" fontWeight="900" color="brand.secondary">{task.recompensa_kg_co2}</Text>
+                                        <Text fontSize="xs" color="gray.500" fontWeight="600">Ahorro CO₂</Text>
                                     </VStack>
                                 </HStack>
                             </HStack>
                         </Box>
 
-                        <Box p={4} bg="green.50" borderRadius="16px" border="1px solid" borderColor="green.100">
-                            <HStack spacing={3}>
-                                <Icon as={FaCircleCheck} color="green.500" boxSize={5} />
-                                <Text fontSize="sm" color="green.700" fontWeight="500">
-                                    Al confirmar, esta tarea se marcará como completada y recibirás tus recompensas.
-                                </Text>
-                            </HStack>
-                        </Box>
+
                     </VStack>
                 </ModalBody>
 
-                <ModalFooter gap={3}>
-                    <Button variant="ghost" onClick={onClose} borderRadius="full">
-                        Cancelar
+                <ModalFooter px={6} pb={8} pt={4} gap={4}>
+                    <Button
+                        variant="ghost"
+                        onClick={onClose}
+                        borderRadius="full"
+                        fontSize="sm"
+                        fontWeight="700"
+                        color="gray.500"
+                        _hover={{ bg: "gray.50", color: "gray.700" }}
+                    >
+                        Volver
                     </Button>
                     <Button
-                        colorScheme="green"
-                        bg="brand.primary"
-                        _hover={{ bg: "brand.primaryHover" }}
+                        flex={1}
+                        bg="brand.secondary"
+                        color="white"
+                        _hover={{ bg: "brand.secondary", transform: "translateY(-2px)", boxShadow: "lg" }}
                         borderRadius="full"
                         px={8}
+                        h="50px"
                         onClick={handleConfirm}
                         isLoading={isLoading}
                         loadingText="Completando..."
+                        fontSize="sm"
+                        fontWeight="800"
+                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.15)"
                     >
-                        Confirmar Completado
+                        ¡Completar ahora!
                     </Button>
                 </ModalFooter>
             </ModalContent>

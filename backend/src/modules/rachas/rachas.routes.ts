@@ -7,5 +7,6 @@ const router = Router();
 const controller = new RachasController();
 
 router.get('/me', authMiddleware, controller.getRacha);
+router.get('/:userId', authMiddleware, controller.getUserRacha);
 
 export default router;

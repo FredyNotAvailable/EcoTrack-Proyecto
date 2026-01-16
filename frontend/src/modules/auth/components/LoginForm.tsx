@@ -21,6 +21,7 @@ import { keyframes } from "@emotion/react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { OAuthButtons } from "./OAuthButtons";
+import { getAuthErrorMessage } from "../utils/authErrors";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -54,15 +55,17 @@ export const LoginForm = () => {
                 status: "success",
                 duration: 3000,
                 isClosable: true,
+                position: "top",
             });
             navigate("/app/inicio");
         } catch (error: any) {
             toast({
                 title: "Error al iniciar sesión",
-                description: error.message,
+                description: getAuthErrorMessage(error),
                 status: "error",
                 duration: 5000,
                 isClosable: true,
+                position: "top",
             });
         } finally {
             setIsLoading(false);

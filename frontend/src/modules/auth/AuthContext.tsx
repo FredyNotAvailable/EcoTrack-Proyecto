@@ -3,6 +3,7 @@ import type { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../../config/supabase';
 import type { LoginCredentials } from './types';
 import { AuthService } from './services/auth.service';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
     session: Session | null;
@@ -20,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         let mounted = true;
@@ -45,6 +47,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Escuchar cambios en la auth
         const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
             if (mounted) {
+                // Si la sesión es null (logout), limpiamos el cache de react-query
+                if (!session) {
+                    queryClient.clear();
+                }
                 setSession(session);
                 setUser(session?.user ?? null);
                 setLoading(false);
@@ -57,10 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 data.subscription.unsubscribe();
             }
         };
-    }, []);
+    }, [queryClient]);
 
     const signOut = async () => {
         await AuthService.signOut();
+        queryClient.clear();
     };
 
     const signUp = async (credentials: LoginCredentials) => {

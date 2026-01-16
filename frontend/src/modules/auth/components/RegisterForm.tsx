@@ -9,17 +9,16 @@ import {
     Input,
     InputRightElement,
     Button,
-    Checkbox,
     Text,
-    Link,
     useToast,
     Divider,
     HStack,
 } from "@chakra-ui/react";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { keyframes } from "@emotion/react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../AuthContext";
+import { AuthService } from "../services/auth.service";
+import { OAuthButtons } from "./OAuthButtons";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -36,19 +35,35 @@ export const RegisterForm = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
+    // Estados de carga
     const [isLoading, setIsLoading] = useState(false);
-    const { signUp } = useAuth();
+
     const navigate = useNavigate();
     const toast = useToast();
 
-    const handleRegister = async (e: React.FormEvent) => {
+    const handleEmailRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        try {
-            // DEFERIDO: No creamos la cuenta aquí. Pasamos datos a Onboarding.
-            // await signUp({ email, password }); 
 
-            // Navigate to onboarding with credentials
+        try {
+            if (email && email.trim() !== "") {
+                const result = await AuthService.checkEmailExists(email);
+
+                if (result.exists) {
+                    const isGoogle = result.provider === 'google';
+                    toast({
+                        title: isGoogle ? "Cuenta Google vinculada" : "Cuenta ya registrada",
+                        description: "Este correo ya está en uso. Por favor, inicia sesión.",
+                        status: isGoogle ? "info" : "warning",
+                        duration: 5000,
+                        isClosable: true,
+                        position: "top",
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+            }
             navigate("/onboarding", { state: { email, password } });
         } catch (error: any) {
             toast({
@@ -57,14 +72,14 @@ export const RegisterForm = () => {
                 status: "error",
                 duration: 5000,
                 isClosable: true,
+                position: "top",
             });
-        } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <VStack spacing={5} as="form" onSubmit={handleRegister} animation={`${fadeInUp} 0.5s ease`}>
+        <VStack spacing={5} as="form" onSubmit={handleEmailRegister} animation={`${fadeInUp} 0.5s ease`}>
             <FormControl isRequired>
                 <FormLabel fontWeight="600">Correo Electrónico</FormLabel>
                 <InputGroup>
@@ -103,13 +118,6 @@ export const RegisterForm = () => {
                     </InputRightElement>
                 </InputGroup>
             </FormControl>
-
-            <Checkbox colorScheme="green" defaultChecked isRequired>
-                <Text fontSize="sm">
-                    Acepto los <Link color="brand.primary" fontWeight="600">Términos y Condiciones</Link>
-                </Text>
-            </Checkbox>
-
             <Button
                 w="full"
                 variant="solid"
@@ -125,25 +133,12 @@ export const RegisterForm = () => {
             <HStack w="full" spacing={4} my={2}>
                 <Divider />
                 <Text fontSize="sm" color="brand.textMuted" whiteSpace="nowrap">
-                    O regístrate con
+                    O continúa con
                 </Text>
                 <Divider />
             </HStack>
 
-            <Button
-                w="full"
-                type="button"
-                variant="outline"
-                size="lg"
-                h="50px"
-                leftIcon={<Icon as={FaGoogle} />}
-                borderColor="gray.200"
-                color="gray.600"
-                _hover={{ bg: "gray.50", borderColor: "gray.300" }}
-                onClick={() => navigate("/onboarding")}
-            >
-                Continuar con Google
-            </Button>
+            <OAuthButtons />
         </VStack>
     );
 };

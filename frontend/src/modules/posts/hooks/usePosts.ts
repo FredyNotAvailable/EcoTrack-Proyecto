@@ -57,6 +57,8 @@ export const useCreatePost = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.feed() });
             queryClient.invalidateQueries({ queryKey: ['userStats'] });
+            queryClient.invalidateQueries({ queryKey: ['racha', 'me'] });
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
         },
     });
 };
@@ -67,10 +69,83 @@ export const useLikePost = () => {
     return useMutation({
         mutationFn: ({ postId, liked }: { postId: string; liked: boolean }) =>
             liked ? PostsService.unlikePost(postId) : PostsService.likePost(postId),
-        onSuccess: (_, { postId }) => {
-            // Invalidate specific post and feed
-            queryClient.invalidateQueries({ queryKey: POSTS_KEYS.detail(postId) });
+        onMutate: async ({ postId, liked }) => {
+            await queryClient.cancelQueries({ queryKey: POSTS_KEYS.feed() });
+            await queryClient.cancelQueries({ queryKey: POSTS_KEYS.detail(postId) });
+
+            const previousFeed = queryClient.getQueryData(POSTS_KEYS.feed());
+            const previousDetail = queryClient.getQueryData(POSTS_KEYS.detail(postId));
+
+            // Helper to update a single post
+            const updatePostLike = (post: any) => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        liked_by_me: !liked,
+                        _count: {
+                            ...post._count,
+                            likes: liked ? (post._count?.likes || 1) - 1 : (post._count?.likes || 0) + 1
+                        },
+                        // Also update legacy stats if present
+                        stats: {
+                            ...post.stats,
+                            likes: liked ? (post.stats?.likes || 1) - 1 : (post.stats?.likes || 0) + 1,
+                            likedBy: liked
+                                ? post.stats?.likedBy?.filter((u: string) => u !== 'me')
+                                : [...(post.stats?.likedBy || []), 'me'] // Dummy visual update
+                        }
+                    };
+                }
+                return post;
+            };
+
+            // Update Feed
+            queryClient.setQueryData(POSTS_KEYS.feed(), (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page: any) => ({
+                        ...page,
+                        data: page.data.map(updatePostLike),
+                    })),
+                };
+            });
+
+            // Update user posts if they exist
+            queryClient.setQueriesData({ queryKey: POSTS_KEYS.all }, (old: any) => {
+                if (!old || !old.pages) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page: any) => ({
+                        ...page,
+                        data: page.data.map(updatePostLike),
+                    })),
+                };
+            });
+
+            // Update Detail
+            queryClient.setQueryData(POSTS_KEYS.detail(postId), (old: any) => {
+                if (!old) return old;
+                return updatePostLike(old);
+            });
+
+            return { previousFeed, previousDetail };
+        },
+        onError: (_err, { postId }, context) => {
+            if (context?.previousFeed) {
+                queryClient.setQueryData(POSTS_KEYS.feed(), context.previousFeed);
+            }
+            // Rollback all posts cache roughly (might be overkill but safer)
+            queryClient.invalidateQueries({ queryKey: POSTS_KEYS.all });
+
+            if (context?.previousDetail) {
+                queryClient.setQueryData(POSTS_KEYS.detail(postId), context.previousDetail);
+            }
+        },
+        onSettled: (_, __, { postId }) => {
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.feed() });
+            queryClient.invalidateQueries({ queryKey: POSTS_KEYS.detail(postId) });
+            queryClient.invalidateQueries({ queryKey: POSTS_KEYS.all });
         },
     });
 };
@@ -94,6 +169,8 @@ export const useCreateComment = () => {
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.detail(postId) }); // Update comment count
             queryClient.invalidateQueries({ queryKey: POSTS_KEYS.feed() });
             queryClient.invalidateQueries({ queryKey: ['userStats'] });
+            queryClient.invalidateQueries({ queryKey: ['racha', 'me'] });
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
         },
     });
 };

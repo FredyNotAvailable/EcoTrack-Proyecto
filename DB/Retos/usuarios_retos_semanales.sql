@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS public.usuarios_retos_semanales (
     REFERENCES public.retos_semanales(id)
     ON DELETE CASCADE,
 
-  -- activo | completado | abandonado
-  estado TEXT NOT NULL DEFAULT 'activo',
+  -- joined | completed | expired
+  estado TEXT NOT NULL DEFAULT 'joined',
 
   progreso INT DEFAULT 0,
 

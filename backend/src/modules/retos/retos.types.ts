@@ -27,7 +27,7 @@ export interface UserReto {
     id: string;
     user_id: string;
     reto_id: string;
-    estado: 'joined' | 'completed';
+    estado: 'joined' | 'completed' | 'expired';
     progreso: number;
     fecha_union: string;
     fecha_completado?: string;

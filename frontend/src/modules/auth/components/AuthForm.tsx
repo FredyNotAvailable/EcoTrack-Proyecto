@@ -4,16 +4,14 @@ import {
     Grid,
     Heading,
     Text,
-    Icon,
     Flex,
+    Icon,
+    HStack,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import {
-    FaLeaf,
-    FaTint,
-    FaSun,
-} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import { keyframes } from "@emotion/react";
+import { FaEnvira } from "react-icons/fa";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 
@@ -23,14 +21,9 @@ const fadeInUp = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
-  100% { transform: translateY(0px); }
-`;
-
 export const AuthForm = () => {
     const [isLogin, setIsLogin] = useState(true);
+    const navigate = useNavigate();
 
     const toggleForm = (toLogin: boolean) => {
         setIsLogin(toLogin);
@@ -40,19 +33,45 @@ export const AuthForm = () => {
         <Grid
             templateColumns={{ base: "1fr", md: "1fr 1fr" }}
             gap={10}
-            alignItems="center"
-            minH="80vh"
+            alignItems="stretch"
+            minH="70vh"
             w="100%"
         >
             {/* --- Left Column: Form --- */}
             <Box
                 bg="white"
                 p={{ base: 6, md: 10 }}
-                borderRadius="24px"
+                borderRadius="32px"
                 boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.15)"
                 border="1px solid rgba(0, 0, 0, 0.05)"
                 animation={`${fadeInUp} 0.8s ease-out`}
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
             >
+                {/* Logo Section */}
+                <HStack
+                    spacing={2}
+                    mb={6}
+                    justify="center"
+                    cursor="pointer"
+                    onClick={() => navigate("/")}
+                    _hover={{ transform: "scale(1.02)" }}
+                    transition="all 0.2s"
+                >
+                    <Icon as={FaEnvira} color="brand.primary" boxSize={6} />
+                    <Heading
+                        as="span"
+                        fontSize="1.5rem"
+                        fontWeight="900"
+                        bgGradient="linear(to-r, brand.primary, brand.accent)"
+                        bgClip="text"
+                        letterSpacing="-0.5px"
+                    >
+                        EcoTrack
+                    </Heading>
+                </HStack>
+
                 <Box textAlign="center" mb={8}>
                     <Heading as="h2" size="xl" color="brand.secondary" mb={2}>
                         {isLogin ? "Bienvenido de nuevo" : "Crea tu cuenta"}
@@ -112,61 +131,47 @@ export const AuthForm = () => {
             <Box
                 display={{ base: "none", md: "flex" }}
                 position="relative"
-                h={{ md: "600px", lg: "700px" }}
-                bgGradient="linear(135deg, brand.bgCardLight 0%, #e8f5e9 100%)"
-                borderRadius="24px"
+                minH={{ md: "500px" }}
+                bgImage="url('/auth_photo.jpg')"
+                bgSize="cover"
+                bgPosition="center"
+                borderRadius="32px"
                 alignItems="center"
                 justifyContent="center"
                 textAlign="center"
                 border="1px solid rgba(0, 0, 0, 0.05)"
                 overflow="hidden"
+                boxShadow="inner"
             >
-                {/* Floating Icons */}
-                <Icon
-                    as={FaLeaf}
+                {/* Overlay with glassmorphism */}
+                <Box
                     position="absolute"
-                    top="10%"
-                    right="10%"
-                    fontSize="6rem"
-                    color="rgba(53, 122, 98, 0.1)"
-                    animation={`${float} 6s ease-in-out infinite`}
-                />
-                <Icon
-                    as={FaTint}
-                    position="absolute"
-                    bottom="15%"
-                    left="10%"
-                    fontSize="4rem"
-                    color="rgba(53, 122, 98, 0.1)"
-                    animation={`${float} 6s ease-in-out infinite 2s`}
-                />
-                <Icon
-                    as={FaSun}
-                    position="absolute"
-                    top="20%"
-                    left="20%"
-                    fontSize="3rem"
-                    color="rgba(53, 122, 98, 0.1)"
-                    animation={`${float} 6s ease-in-out infinite 4s`}
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                    bg="blackAlpha.200"
+                    zIndex={1}
                 />
 
                 {/* Content Box */}
                 <Box
                     position="relative"
                     zIndex={2}
-                    p={10}
-                    bg="rgba(255, 255, 255, 0.8)"
-                    backdropFilter="blur(10px)"
-                    borderRadius="16px"
+                    p={8}
+                    bg="rgba(255, 255, 255, 0.85)"
+                    backdropFilter="blur(12px)"
+                    borderRadius="28px"
                     m={10}
-                    boxShadow="0 10px 30px rgba(0,0,0,0.05)"
+                    boxShadow="0 20px 40px rgba(0,0,0,0.1)"
+                    border="1px solid white"
+                    maxW="80%"
                 >
-                    <Heading as="h3" size="lg" color="brand.secondary" mb={4}>
+                    <Heading as="h3" size="lg" color="brand.secondary" mb={4} fontWeight="900" letterSpacing="-0.5px">
                         Tu impacto comienza aquí
                     </Heading>
-                    <Text color="brand.textMuted">
-                        Únete a más de 10,000 usuarios que ya están cambiando el mundo, un
-                        hábito a la vez.
+                    <Text color="gray.600" fontSize="md" fontWeight="500" lineHeight="1.6">
+                        Únete a personas comprometidas con transformar el mundo, un pequeño hábito a la vez. Tu camino hacia la sostenibilidad sigue aquí.
                     </Text>
                 </Box>
             </Box>

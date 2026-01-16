@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flex, Spinner, useToast, Heading, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '../AuthContext';
-import { supabase } from '../../../config/supabase';
 import { ProfileAPIService } from '../../profile/services/profile.service';
 import { StorageService } from '../../shared/services/storage.service';
 import { base64ToBlob } from '../../../utils/ImageConverter';
@@ -68,32 +67,47 @@ const AuthCallbackPage = () => {
                     navigate('/app/inicio');
 
                 } else {
-                    // --- FLUJO DE LOGIN ---
-                    console.log("AuthCallbackPage: Login flow (no onboarding data)");
-                    // Verificar si el usuario ya tiene perfil
-                    try {
-                        const profile = await ProfileAPIService.getMe();
-                        console.log("AuthCallbackPage: Profile found", profile);
+                    // --- FLUJO DE LOGIN / CALLBACK GOOGLE ---
+                    console.log("AuthCallbackPage: Callback Google / Login flow");
 
-                        // Si no lanza error, el perfil existe
+                    // 1. Obtener el token de la sesión
+                    const token = session.access_token;
+
+                    // 2. Consultar nuestro backend para ver si tiene perfil
+                    const { AuthService } = await import('../services/auth.service');
+                    const { registered } = await AuthService.checkRegistrationStatus(token);
+                    console.log("AuthCallbackPage: Registered status from backend:", registered);
+
+                    // 3. Verificar origen
+                    const authOrigin = localStorage.getItem('auth_origin');
+                    localStorage.removeItem('auth_origin'); // Limpiar
+
+                    if (registered) {
+                        if (authOrigin === 'register') {
+                            console.log("AuthCallbackPage: Account exists but origin was register. Signing out and warning.");
+                            await AuthService.signOut();
+                            toast({
+                                title: "Cuenta ya registrada",
+                                description: "Este correo ya tiene una cuenta. Por favor, inicia sesión.",
+                                status: "warning",
+                                duration: 5000,
+                                isClosable: true,
+                                position: "top"
+                            });
+                            navigate('/login');
+                        } else {
+                            toast({ title: "Sesión iniciada", status: "success", duration: 3000, position: "top" });
+                            navigate('/app/inicio');
+                        }
+                    } else {
+                        console.log("Usuario sin perfil. Redirigiendo a onboarding.");
                         toast({
-                            title: "Sesión iniciada",
-                            status: "success",
-                            duration: 3000,
-                        });
-                        navigate('/app/inicio');
-
-                    } catch (error) {
-                        // Si falla (404), es un usuario de Google sin perfil (Cuenta Fantasma)
-                        // REGLA DE NEGOCIO ACTUALIZADA: Redirigir a Onboarding para completar perfil
-                        console.log("Usuario autenticado sin perfil. Redirigiendo a onboarding.");
-
-                        toast({
-                            title: "Casi listo",
-                            description: "Por favor completa tu información de perfil para continuar.",
+                            title: "¡Ya casi estás!",
+                            description: "Completa tu información para empezar.",
                             status: "info",
                             duration: 5000,
                             isClosable: true,
+                            position: "top"
                         });
                         navigate('/onboarding');
                     }
@@ -105,6 +119,7 @@ const AuthCallbackPage = () => {
                     description: error.message || "Ocurrió un problema inesperado.",
                     status: "error",
                     duration: 5000,
+                    position: "top"
                 });
                 navigate('/login');
             }

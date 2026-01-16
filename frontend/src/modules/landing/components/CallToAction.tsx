@@ -1,97 +1,79 @@
 import {
     Container,
     Stack,
-    Flex,
     Box,
     Heading,
     Text,
     Button,
+    Icon,
 } from '@chakra-ui/react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { FaArrowRight, FaEnvira } from 'react-icons/fa';
 
 export const CallToAction = () => {
+    const navigate = useNavigate();
+
     return (
-        <Container maxW={'5xl'} py={12}>
-            <Stack
-                align={'center'}
-                spacing={{ base: 8, md: 10 }}
-                py={{ base: 20, md: 28 }}
-                direction={{ base: 'column', md: 'row' }}
+        <Container maxW={'container.xl'} py={20}>
+            <Box
+                bgGradient="linear(135deg, brand.primary 0%, brand.secondary 100%)"
+                borderRadius="40px"
+                p={{ base: 8, md: 20 }}
+                position="relative"
+                overflow="hidden"
+                boxShadow="2xl"
             >
-                <Stack flex={1} spacing={{ base: 5, md: 10 }}>
+                {/* Decorative background icon */}
+                <Icon
+                    as={FaEnvira}
+                    position="absolute"
+                    right="-50px"
+                    bottom="-50px"
+                    fontSize="20rem"
+                    color="whiteAlpha.100"
+                    transform="rotate(-15deg)"
+                />
+
+                <Stack spacing={8} maxW="3xl" position="relative" zIndex={1}>
                     <Heading
                         lineHeight={1.1}
-                        fontWeight={600}
+                        fontWeight={900}
                         fontSize={{ base: '3xl', md: '5xl' }}
+                        color="white"
                     >
-                        <Text
-                            as={'span'}
-                            position={'relative'}
-                            _after={{
-                                content: "''",
-                                width: 'full',
-                                height: '30%',
-                                position: 'absolute',
-                                bottom: 1,
-                                left: 0,
-                                bg: 'eco.100',
-                                zIndex: -1,
-                            }}
-                        >
-                            ¿Listo para el cambio?
-                        </Text>
-                        <br />
-                        <Text as={'span'} color={'eco.500'}>
-                            ¡Únete hoy mismo!
-                        </Text>
+                        ¿Listo para liderar el cambio positivo?
                     </Heading>
-                    <Text color={'gray.500'}>
+                    <Text color={'whiteAlpha.900'} fontSize="lg" fontWeight="500" lineHeight="1.6">
                         No esperes más para ser parte de la solución. Cada pequeña acción
-                        cuenta y en EcoTrack te ayudamos a ver el impacto real de tus
+                        cuenta y en EcoTrack te ayudamos a visualizar el impacto real de tus
                         decisiones diarias.
                     </Text>
                     <Stack
-                        spacing={{ base: 4, sm: 6 }}
+                        spacing={4}
                         direction={{ base: 'column', sm: 'row' }}
                     >
                         <Button
-                            as={RouterLink}
-                            to="/login"
-                            rounded={'full'}
                             size={'lg'}
-                            fontWeight={'normal'}
-                            px={6}
-                            colorScheme={'eco'}
-                            bg={'eco.500'}
-                            _hover={{ bg: 'eco.600' }}
+                            bg={'white'}
+                            color={'brand.primary'}
+                            px={10}
+                            height="60px"
+                            borderRadius="full"
+                            fontSize="md"
+                            fontWeight="800"
+                            rightIcon={<Icon as={FaArrowRight} />}
+                            onClick={() => navigate('/login')}
+                            _hover={{
+                                bg: 'whiteAlpha.900',
+                                transform: 'translateY(-3px)',
+                                boxShadow: 'xl'
+                            }}
                         >
-                            Registrarme / Iniciar Sesión
+                            Crear cuenta gratis
                         </Button>
                     </Stack>
                 </Stack>
-                <Flex
-                    flex={1}
-                    justify={'center'}
-                    align={'center'}
-                    position={'relative'}
-                    w={'full'}
-                >
-                    <Box
-                        position={'relative'}
-                        height={'300px'}
-                        rounded={'2xl'}
-                        boxShadow={'2xl'}
-                        width={'full'}
-                        overflow={'hidden'}
-                        bg="eco.100"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        <Text color="eco.600" fontWeight="bold"> [Imagen Ilustrativa Eco] </Text>
-                    </Box>
-                </Flex>
-            </Stack>
+            </Box>
         </Container>
     );
 };

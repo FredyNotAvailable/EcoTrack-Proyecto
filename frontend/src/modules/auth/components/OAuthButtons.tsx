@@ -15,9 +15,12 @@ export const OAuthButtons = () => {
             borderColor="gray.200"
             color="gray.600"
             _hover={{ bg: "gray.50", borderColor: "gray.300" }}
-            onClick={() => signInWithGoogle()}
+            onClick={() => {
+                localStorage.setItem('auth_origin', 'login');
+                signInWithGoogle();
+            }}
         >
-            Google
+            Continuar con Google
         </Button>
     );
 };

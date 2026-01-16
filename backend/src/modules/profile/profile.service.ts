@@ -63,4 +63,9 @@ export class ProfileService {
         if (!query || query.trim() === '') return [];
         return await this.repository.searchProfiles(query);
     }
+    async deleteAccount(userId: string) {
+        // Delete profile data from DB.
+        // Dependent tables (points, missions, etc) should satisfy ON DELETE CASCADE in DB schema.
+        await this.repository.delete(userId);
+    }
 }

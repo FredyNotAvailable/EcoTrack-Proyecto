@@ -5,13 +5,19 @@ export class RetosRepository {
 
     // Find active challenges (based on 'activo' flag)
     async findActiveChallenges(): Promise<Reto[]> {
-        const now = new Date().toISOString();
+        const now = new Date();
+
+        // To be inclusive of the entire "fecha_fin" day, we look for challenges 
+        // where now is not more than 24 hours past the fecha_fin timestamp.
+        // This handles cases where fecha_fin is set to 00:00:00 of the last day.
+        const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
         const { data, error } = await supabase
             .from('retos_semanales')
             .select('*')
             .eq('activo', true)
-            .lte('fecha_inicio', now)
-            .gte('fecha_fin', now);
+            .lte('fecha_inicio', now.toISOString())
+            .gte('fecha_fin', cutoff.toISOString());
 
         if (error) throw error;
         return (data || []).map(this.mapRetoFromDB);
@@ -104,7 +110,37 @@ export class RetosRepository {
         };
     }
 
-    async updateChallengeProgress(userId: string, retoId: string, progress: number, status: 'joined' | 'completed'): Promise<void> {
+    async getAllUserChallenges(userId: string): Promise<UserReto[]> {
+        const { data, error } = await supabase
+            .from('usuarios_retos_semanales')
+            .select('*')
+            .eq('user_id', userId);
+
+        if (error) throw error;
+        return (data || []).map((d: any) => ({
+            id: d.id,
+            user_id: d.user_id,
+            reto_id: d.reto_semanal_id,
+            estado: d.estado,
+            progreso: d.progreso,
+            fecha_union: d.created_at || new Date().toISOString(),
+            fecha_completado: d.fecha_completado
+        }));
+    }
+
+    async getChallengesByIds(ids: string[]): Promise<Reto[]> {
+        if (ids.length === 0) return [];
+
+        const { data, error } = await supabase
+            .from('retos_semanales')
+            .select('*')
+            .in('id', ids);
+
+        if (error) throw error;
+        return (data || []).map(this.mapRetoFromDB);
+    }
+
+    async updateChallengeProgress(userId: string, retoId: string, progress: number, status: 'joined' | 'completed' | 'expired'): Promise<void> {
         const updates: any = { progreso: progress, estado: status };
         if (status === 'completed') {
             updates.fecha_completado = new Date().toISOString();

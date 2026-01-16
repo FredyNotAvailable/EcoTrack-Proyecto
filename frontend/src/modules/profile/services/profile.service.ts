@@ -2,6 +2,16 @@ import { supabase } from '../../../config/supabase';
 
 const API_URL = 'http://localhost:3001/api';
 
+export interface Profile {
+    id?: string;
+    username: string;
+    bio?: string;
+    avatar_url?: string;
+    level?: number;
+    xp?: number;
+    // Add other fields as needed
+}
+
 export const ProfileAPIService = {
     async getMe() {
         const { data: { session } } = await supabase.auth.getSession();
@@ -128,5 +138,24 @@ export const ProfileAPIService = {
 
         const result = await response.json();
         return result;
+    },
+
+    async deleteAccount() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('No hay sesión activa');
+
+        const response = await fetch(`${API_URL}/auth/me`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al eliminar la cuenta');
+        }
+
+        return await response.json();
     }
 };
