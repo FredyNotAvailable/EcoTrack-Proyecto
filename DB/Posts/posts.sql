@@ -10,9 +10,6 @@ CREATE TABLE public.posts (
 
   descripcion text NOT NULL,
 
-  media_url text,
-  media_type text CHECK (media_type IN ('image', 'video')),
-
   ubicacion text,
   hashtags text[],
 
@@ -22,6 +19,7 @@ CREATE TABLE public.posts (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+
 
 -- =====================================================
 -- RLS

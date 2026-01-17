@@ -11,6 +11,7 @@ export class PostsRepository {
             .select(`
                 *,
                 user:profiles(username, avatar_url),
+                media:post_media(*),
                 likes_count:post_likes(count),
                 comments_count:post_comments(count),
                 my_like:post_likes!left(user_id)
@@ -18,6 +19,12 @@ export class PostsRepository {
             .eq('is_public', true)
             .order('created_at', { ascending: false })
             .limit(options.limit || 10);
+
+        // NOTE: Default Supabase ordering for joined relations (media) isn't guaranteed. 
+        // We often need client-side sort or an inner order constraint if supported by SDK (it varies).
+        // Usually, we accept what we get and sort in map function or rely on insertion order if stable. 
+        // Ideally: .order('position', { foreignTable: 'post_media', ascending: true }) 
+        // But that might filter parents. Let's sort in mapping.
 
         if (options.authorId) {
             query = query.eq('user_id', options.authorId);
@@ -29,18 +36,6 @@ export class PostsRepository {
 
         if (options.hashtag) {
             query = query.contains('hashtags', [options.hashtag]);
-        }
-
-        // Note: my_like filtering needs to happen carefully. 
-        // Supabase select filtering on joined tables usually filters the parent row if join is inner.
-        // For 'left' join it just returns null if no match.
-        // We want to check if *current user* liked it.
-        if (options.userId) {
-            // We do NOT filter the main query by post_likes.user_id, 
-            // because that would restrict the returned counts to only this user's likes.
-            // The 'my_like' join (left join) handles the "Liked by me" check properly.
-        } else {
-            // ...
         }
 
         const { data, error } = await query;
@@ -56,6 +51,7 @@ export class PostsRepository {
             .select(`
                 *,
                 user:profiles(username, avatar_url),
+                media:post_media(*),
                 likes_count:post_likes(count),
                 comments_count:post_comments(count)
             `)
@@ -65,11 +61,6 @@ export class PostsRepository {
         const { data, error } = await query;
         if (error || !data) return null;
 
-        // Separate query for "liked_by_me" because doing it in one specialized query 
-        // with specific user_id filter on left join can be tricky in simple SDK usage without filtering the parent.
-        // Alternative: use .eq('post_likes.user_id', userId) but that limits the likes count to 1 or 0 (incorrect count).
-        // Best approach for correct count + boolean flag in one go is confusing in Supabase JS client syntax.
-        // Simple approach: do a quick check if userId is present.
         let likedByMe = false;
         if (userId) {
             const { count } = await supabase
@@ -82,12 +73,14 @@ export class PostsRepository {
 
         return {
             ...data,
+            // Sort media by position
+            media: (data.media || []).sort((a: any, b: any) => a.position - b.position),
             _count: {
                 likes: data.likes_count?.[0]?.count || 0,
                 comments: data.comments_count?.[0]?.count || 0
             },
             liked_by_me: likedByMe,
-            user: Array.isArray(data.user) ? data.user[0] : data.user // Handle potential array return
+            user: Array.isArray(data.user) ? data.user[0] : data.user
         };
     }
 
@@ -99,7 +92,18 @@ export class PostsRepository {
             .single();
 
         if (error) throw error;
-        return data;
+        // Return without media initially, service will attach it
+        return { ...data, media: [] };
+    }
+
+    async addMedia(mediaItems: { post_id: string, media_url: string, media_type: string, position: number }[]): Promise<void> {
+        if (!mediaItems.length) return;
+
+        const { error } = await supabase
+            .from('post_media')
+            .insert(mediaItems);
+
+        if (error) throw error;
     }
 
     async update(id: string, postData: Partial<Post>): Promise<Post> {
@@ -111,7 +115,7 @@ export class PostsRepository {
             .single();
 
         if (error) throw error;
-        return data;
+        return data; // Note: this might not return media if we don't join, but usually update returns simple object
     }
 
     async delete(id: string): Promise<void> {
@@ -123,14 +127,16 @@ export class PostsRepository {
         if (error) throw error;
     }
 
-    async updateMediaUrl(id: string, mediaUrl: string): Promise<void> {
+    async deleteAllMedia(postId: string): Promise<void> {
         const { error } = await supabase
-            .from('posts')
-            .update({ media_url: mediaUrl })
-            .eq('id', id);
+            .from('post_media')
+            .delete()
+            .eq('post_id', postId);
 
         if (error) throw error;
     }
+
+    // Removed obsolete updateMediaUrl
 
     // --- Likes ---
 
@@ -255,6 +261,8 @@ export class PostsRepository {
 
         return {
             ...post,
+            // Ensure media is array and sorted
+            media: (post.media || []).sort((a: any, b: any) => a.position - b.position),
             user: Array.isArray(post.user) ? post.user[0] : post.user,
             _count: {
                 likes: post.likes_count?.[0]?.count || 0,

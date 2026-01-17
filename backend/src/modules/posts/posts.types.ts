@@ -1,9 +1,16 @@
+export interface PostMedia {
+    id: string;
+    post_id: string;
+    media_url: string;
+    media_type: 'image' | 'video';
+    position: number;
+}
+
 export interface Post {
     id: string;
     user_id: string;
     descripcion: string;
-    media_url?: string | null;
-    media_type?: 'image' | 'video' | null;
+    media: PostMedia[];
     ubicacion?: string | null;
     hashtags?: string[] | null;
     is_public: boolean;
@@ -41,9 +48,10 @@ export interface CreatePostDTO {
     is_public?: boolean;
     ubicacion?: string;
     hashtags?: string[];
-    media_type?: 'image' | 'video';
-    media_url?: string;
-    media_mime?: string; // Used for presigned URL generation
+    media?: {
+        url: string;
+        type: 'image' | 'video';
+    }[];
 }
 
 export interface CreateCommentDTO {

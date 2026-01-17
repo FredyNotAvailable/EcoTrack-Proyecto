@@ -10,8 +10,13 @@ export interface Post {
     id: string;
     user_id: string;
     descripcion: string;
-    media_url?: string;
-    media_type?: 'image' | 'video';
+    descripcion: string;
+    media: {
+        id: string;
+        media_url: string;
+        media_type: 'image' | 'video';
+        position: number;
+    }[];
     ubicacion?: string;
     hashtags?: string[];
     is_public: boolean;
@@ -45,8 +50,7 @@ export interface Comment {
 
 export interface CreatePostPayload {
     descripcion: string;
-    media_url?: string;
-    media_type?: 'image' | 'video';
+    media?: { url: string; type: 'image' | 'video' }[];
     ubicacion?: string;
     hashtags?: string[];
     is_public?: boolean;

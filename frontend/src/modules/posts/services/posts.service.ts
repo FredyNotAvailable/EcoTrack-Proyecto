@@ -66,14 +66,14 @@ export const PostsService = {
 
     async uploadMedia(file: File) {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('files', file);
 
-        const { data } = await apiClient.post<{ data: { url: string } }>('/posts/upload', formData, {
+        const { data } = await apiClient.post<{ data: { urls: string[] } }>('/posts/upload', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
         });
 
-        return data.data.url;
+        return data.data.urls[0]; // Backend returns array of URLs, we take the first one since we upload one by one
     }
 };

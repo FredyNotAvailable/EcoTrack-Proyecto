@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
     Box,
     Flex,
@@ -7,15 +8,15 @@ import {
     IconButton,
     HStack,
     Icon,
-    AvatarGroup,
     Menu,
     MenuButton,
     MenuList,
     MenuItem,
     useColorModeValue,
+    Skeleton
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
-import { FaEllipsisH, FaRegHeart, FaRegComment, FaHeart } from "react-icons/fa";
+import { FaEllipsisH, FaRegHeart, FaRegComment, FaHeart, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 
@@ -30,10 +31,15 @@ export interface PostCardProps {
         location?: string;
     };
     content: {
-        image?: string;
         text: string;
         hashtags?: string[];
         timeAgo: string;
+        media?: {
+            id: string;
+            media_url: string;
+            media_type: 'image' | 'video';
+            position: number;
+        }[];
     };
     stats: {
         likes: number;
@@ -55,6 +61,8 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
     const cardBg = useColorModeValue("white", "gray.800");
     const borderColor = useColorModeValue("gray.100", "gray.700");
     const verifiedColor = "blue.400";
+    const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+    const [isMediaLoaded, setIsMediaLoaded] = useState(false);
 
     const heartBeat = keyframes`
       0% { transform: scale(1); }
@@ -67,6 +75,39 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
         e.stopPropagation();
         navigate(`/app/perfil/${user.username}`);
     };
+
+    const handleNextMedia = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (content.media && content.media.length > 0) {
+            setIsMediaLoaded(false);
+            setCurrentMediaIndex((prev) => (prev + 1) % content.media!.length);
+        }
+    };
+
+    const handlePrevMedia = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (content.media && content.media.length > 0) {
+            setIsMediaLoaded(false);
+            setCurrentMediaIndex((prev) => (prev - 1 + content.media!.length) % content.media!.length);
+        }
+    };
+
+    const handleDotClick = (e: React.MouseEvent, index: number) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsMediaLoaded(false);
+        setCurrentMediaIndex(index);
+    };
+
+    const currentMedia = content.media && content.media.length > 0 ? content.media[currentMediaIndex] : null;
+
+    useEffect(() => {
+        // Reset index when post id changes or media list changes
+        setCurrentMediaIndex(0);
+        setIsMediaLoaded(false);
+    }, [id, content.media?.length]);
 
     return (
         <Box
@@ -129,36 +170,117 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                 )}
             </Flex>
 
-            {/* Media */}
-            {content.image && (
+            {/* Media Carousel */}
+            {currentMedia && (
                 <Box
                     position="relative"
                     w="100%"
+                    width="94%"
+                    mx="auto"
+                    mb={3}
+                    aspectRatio="1/1" // Reduced height (was 4/5)
                     borderRadius="2xl"
                     overflow="hidden"
-                    mx="auto"
-                    width="94%"
-                    mb={3}
-                    onClick={() => onComment && onComment(id)}
-                    cursor="pointer"
+                    bg="black" // Background for any letterboxing if we switched back to contain, but cover fills it
                 >
-                    {/* Using 94% width + rounded corners to mimic the "floating" card look inside the container if desired,
-                       or full width. The reference "Loop" usually has full width images or slightly inset.
-                       Let's go with slightly inset for a modern "card inside card" feel or full width.
-                       Let's try Full Width for maximum impact but with the outer container padding?
-                       Actually, the reference shows the image filling the "content" area but the header is above.
-                       Let's stick to full width of the card's inner content area, but maybe the card itself has padding?
-                       Let's do full width image restricted by the parent card padding if we applied any?
-                       No, let's make the image full width of the card.
-                   */}
-                    <Image
-                        src={content.image}
-                        alt="Post content"
-                        objectFit="cover"
+                    {/* Media Item */}
+                    <Box
+                        key={currentMedia.id}
+                        onClick={currentMedia.media_type !== 'video' ? (() => onComment && onComment(id)) : undefined}
+                        cursor="pointer"
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        position="absolute"
+                        top="0"
+                        left="0"
                         w="100%"
-                        maxH="500px" // Reasonable max height
-                    />
-                    {/* Floating Tag or location if needed */}
+                        h="100%"
+                    >
+                        {/* Skeleton Loader */}
+                        {!isMediaLoaded && (
+                            <Skeleton height="100%" width="100%" position="absolute" top={0} left={0} />
+                        )}
+
+                        {currentMedia.media_type === 'video' ? (
+                            <Box
+                                as="video"
+                                src={currentMedia.media_url}
+                                controls
+                                objectFit="contain" // Fit within constraints without cropping
+                                w="100%"
+                                h="100%"
+                                preload="metadata"
+                                onLoadedData={() => setIsMediaLoaded(true)}
+                                display={isMediaLoaded ? 'block' : 'none'}
+                            />
+                        ) : (
+                            <Image
+                                src={currentMedia.media_url}
+                                alt="Post content"
+                                objectFit="contain" // Fit within constraints without cropping
+                                w="100%"
+                                h="100%"
+                                onLoad={() => setIsMediaLoaded(true)}
+                                display={isMediaLoaded ? 'block' : 'none'}
+                            />
+                        )}
+                    </Box>
+
+                    {/* Navigation Arrows */}
+                    {content.media && content.media.length > 1 && (
+                        <>
+                            <IconButton
+                                aria-label="Previous image"
+                                icon={<FaChevronLeft />}
+                                position="absolute"
+                                left={2}
+                                top="50%"
+                                transform="translateY(-50%)"
+                                isRound
+                                size="md"
+                                bg="blackAlpha.600"
+                                color="white"
+                                _hover={{ bg: "blackAlpha.800" }}
+                                _active={{ bg: "blackAlpha.900" }}
+                                onClick={handlePrevMedia}
+                                zIndex={2}
+                            />
+                            <IconButton
+                                aria-label="Next image"
+                                icon={<FaChevronRight />}
+                                position="absolute"
+                                right={2}
+                                top="50%"
+                                transform="translateY(-50%)"
+                                isRound
+                                size="md"
+                                bg="blackAlpha.600"
+                                color="white"
+                                _hover={{ bg: "blackAlpha.800" }}
+                                _active={{ bg: "blackAlpha.900" }}
+                                onClick={handleNextMedia}
+                                zIndex={2}
+                            />
+                            <Flex justify="center" position="absolute" bottom={2} w="100%">
+                                <HStack spacing={1}>
+                                    {content.media.map((_, idx) => (
+                                        <Box
+                                            key={idx}
+                                            w={idx === currentMediaIndex ? 2 : 1.5}
+                                            h={idx === currentMediaIndex ? 2 : 1.5}
+                                            borderRadius="full"
+                                            bg={idx === currentMediaIndex ? "white" : "whiteAlpha.500"}
+                                            cursor="pointer"
+                                            onClick={(e) => handleDotClick(e, idx)}
+                                            transition="all 0.2s"
+                                            _hover={{ transform: 'scale(1.2)', bg: 'white' }}
+                                        />
+                                    ))}
+                                </HStack>
+                            </Flex>
+                        </>
+                    )}
                 </Box>
             )}
 
@@ -166,19 +288,27 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
             <Box px={5} pb={5}>
                 {/* Action Row */}
                 <Flex justify="space-between" align="center" mb={3}>
-                    <HStack spacing={5}>
-                        <IconButton
-                            aria-label="Like"
-                            icon={isLiked ? <FaHeart size={22} color="#E53E3E" /> : <FaRegHeart size={22} />}
-                            variant="unstyled"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            _hover={{ color: "red.400" }}
-                            color={isLiked ? "red.400" : "brand.textMain"}
-                            onClick={() => onLike && onLike(id)}
-                            animation={isLiked ? `${heartBeat} 0.45s ease-in-out` : undefined}
-                        />
+                    <HStack spacing={4}>
+                        <HStack spacing={1}>
+                            <IconButton
+                                aria-label="Like"
+                                icon={isLiked ? <FaHeart size={22} color="#E53E3E" /> : <FaRegHeart size={22} />}
+                                variant="unstyled"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                _hover={{ color: "red.400" }}
+                                color={isLiked ? "red.400" : "brand.textMain"}
+                                onClick={() => onLike && onLike(id)}
+                                animation={isLiked ? `${heartBeat} 0.45s ease-in-out` : undefined}
+                            />
+                            {stats.likes > 0 && (
+                                <Text fontSize="sm" fontWeight="600" color="brand.textMain">
+                                    {stats.likes}
+                                </Text>
+                            )}
+                        </HStack>
+
                         <IconButton
                             aria-label="Comment"
                             icon={<FaRegComment size={22} />}
@@ -198,20 +328,6 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                         color="brand.textMuted"
                     /> */}
                 </Flex>
-
-                {/* Likes Stats */}
-                <HStack spacing={2} mb={2}>
-                    {stats.likedBy && stats.likedBy.length > 0 && (
-                        <AvatarGroup size="xs" max={3} spacing={-1.5}>
-                            {stats.likedBy.map((url, i) => (
-                                <Avatar key={i} src={url} border="2px solid white" />
-                            ))}
-                        </AvatarGroup>
-                    )}
-                    <Text fontSize="sm" fontWeight="600" color="brand.textMain">
-                        {stats.likes.toLocaleString()} Me gusta
-                    </Text>
-                </HStack>
 
                 {/* Caption */}
                 <Text fontSize="sm" color="brand.textMuted" noOfLines={2} lineHeight="1.5">

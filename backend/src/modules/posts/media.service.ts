@@ -1,6 +1,9 @@
 import sharp from 'sharp';
 sharp.cache(false); // Prevent file locking on Windows
 import ffmpeg from 'fluent-ffmpeg';
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 import fs from 'fs';
 import path from 'path';
 import { supabase } from '../../config/supabaseClient';
@@ -55,7 +58,7 @@ export class MediaService {
 
             if (error) {
                 console.error('[MediaService] Supabase upload error:', error);
-                throw new ApiError(500, 'Error uploading file to storage');
+                throw new ApiError(500, `Error uploading file: ${error.message}`);
             }
             console.log('[MediaService] Upload success, getting public URL...');
 
@@ -83,9 +86,8 @@ export class MediaService {
         return new Promise((resolve, reject) => {
             ffmpeg(inputPath)
                 .output(outputPath)
-                // .videoCodec('libvpx-vp9') // Optional: specify codec. standard webm uses vp8/vp9. 
-                // Simplest conversion:
                 .toFormat('webm')
+                // .videoCodec('libvpx-vp9') // Optional, but default webm is usually vp9/vp8 which is fine
                 .on('end', () => resolve())
                 .on('error', (err) => {
                     console.error('FFmpeg error:', err);

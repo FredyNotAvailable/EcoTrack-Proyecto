@@ -7,63 +7,73 @@ import {
     ModalOverlay,
     ModalContent
 } from '@chakra-ui/react';
+import { useState } from 'react';
 import { useCreatePost } from '../../posts/hooks/usePosts';
 import { PostsService } from '../../posts/services/posts.service';
 import { PostEditor } from './PostEditor';
 
-export const CreatePostForm = () => {
+interface CreatePostFormProps {
+    onBackgroundSubmit?: (data: any) => void;
+}
+
+export const CreatePostForm = ({ onBackgroundSubmit }: CreatePostFormProps) => {
     const createPost = useCreatePost();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure({ defaultIsOpen: false });
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleSubmit = async (data: {
         descripcion: string;
-        media?: File;
-        mediaType?: 'image' | 'video';
+        mediaItems: any[];
         ubicacion?: string;
         hashtags?: string[];
     }) => {
-        // TODO: Handle media upload here if integrated (User asked for the *design* first)
-        // Since we don't have the media upload service fully wired in the previous step (mocked),
-        // we'll explicitly pass what we can. 
+        if (onBackgroundSubmit) {
+            onBackgroundSubmit(data);
+            onClose();
+            return;
+        }
 
-        // Note: The previous service had `createPost` taking payload.
-        // We'll skip actual file upload logic and just send text for now unless we mocked it properly.
-        // Or we pass the file to context? 
-        // Let's implement basics.
+        // Fallback to old synchronous behavior if no background handler provided
+        // (though we plan to use it everywhere)
+        let mediaPayload: { url: string; type: 'image' | 'video' }[] = [];
+        const newFiles = data.mediaItems.filter(item => item.isNew && item.file);
 
-        let finalMediaUrl: string | undefined;
-
-        // 1. Upload Media if present
-        console.log('Completing handleSubmit with media:', data.media);
-        if (data.media) {
-            // We could show a specific uploading toast or progress here
+        if (newFiles.length > 0) {
+            setIsUploading(true);
             try {
-                finalMediaUrl = await PostsService.uploadMedia(data.media);
-                console.log('Upload completed. URL:', finalMediaUrl);
+                const uploadPromises = newFiles.map(item => PostsService.uploadMedia(item.file));
+                const urls = await Promise.all(uploadPromises);
+
+                mediaPayload = urls.map((url, index) => {
+                    const item = newFiles[index];
+                    return {
+                        url: url,
+                        type: item.type
+                    };
+                });
             } catch (error) {
                 console.error('Error uploading media:', error);
                 toast({
-                    title: 'Error al subir archivo',
-                    description: 'No se pudo subir la imagen/video.',
+                    title: 'Error al subir archivos',
+                    description: 'No se pudieron subir las imágenes/video.',
                     status: 'error',
                     duration: 3000,
                 });
-                return; // Stop submission if upload fails
+                setIsUploading(false);
+                return;
             }
+            setIsUploading(false);
         }
 
-        // 2. Create Post
-        console.log('Mutating createPost with:', { ...data, media_url: finalMediaUrl });
         createPost.mutate(
             {
                 descripcion: data.descripcion,
                 is_public: true,
                 ubicacion: data.ubicacion,
-                media_url: finalMediaUrl, // Added media_url
-                media_type: data.mediaType,
+                media: mediaPayload,
                 hashtags: data.hashtags
-            },
+            } as any,
             {
                 onSuccess: () => {
                     toast({
@@ -71,7 +81,7 @@ export const CreatePostForm = () => {
                         status: 'success',
                         duration: 3000,
                     });
-                    onClose(); // Close modal on success
+                    onClose();
                 },
                 onError: () => {
                     toast({
@@ -83,6 +93,7 @@ export const CreatePostForm = () => {
             }
         );
     };
+
 
     return (
         <Box mb={6} textAlign="center">
@@ -100,8 +111,7 @@ export const CreatePostForm = () => {
                      */}
                     <PostEditor
                         onSubmit={handleSubmit}
-                        isSubmitting={createPost.isPending}
-                        onClose={onClose}
+                        isSubmitting={createPost.isPending || isUploading}
                     // Optionally pass initialData if needed
                     />
                 </ModalContent>

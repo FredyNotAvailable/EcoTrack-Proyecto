@@ -27,20 +27,33 @@ export class PostsService {
     }
 
     async createPost(userId: string, data: CreatePostDTO): Promise<{ post: Post }> {
-        // If media_url is provided (new flow), use it.
-        // If not, and media_mime is present (old flow), we could support it but let's stick to the new flow.
-
         const initialPostData: Partial<Post> = {
             user_id: userId,
             descripcion: data.descripcion,
             is_public: data.is_public ?? true, // Default to true
             ubicacion: data.ubicacion,
-            hashtags: data.hashtags,
-            media_type: data.media_type,
-            media_url: data.media_url || null
+            hashtags: data.hashtags
         };
 
         const createdPost = await this.repository.create(initialPostData);
+
+        // Insert Media if any
+        if (data.media && data.media.length > 0) {
+            const mediaItems = data.media.map((item, index) => ({
+                post_id: createdPost.id,
+                media_url: item.url,
+                media_type: item.type,
+                position: index
+            }));
+
+            await this.repository.addMedia(mediaItems);
+
+            // Attach media to returned object for immediate UI update (mocking the DB return)
+            createdPost.media = mediaItems.map(m => ({
+                id: 'temp-id', // We don't have the UUID unless we fetch back, but mostly fine for UI feedback
+                ...m
+            }));
+        }
 
         // Log points: +15 for creating a post
         const { PuntosService } = await import('../puntos/puntos.service');
@@ -71,19 +84,36 @@ export class PostsService {
             throw new ApiError(403, 'Not authorized to update this post', 'FORBIDDEN');
         }
 
+        // Handle Media Update (Wipe and Replace Strategy for reordering)
+        if (data.media) {
+            await this.repository.deleteAllMedia(postId);
+
+            if (data.media.length > 0) {
+                const mediaItems = data.media.map((item, index) => ({
+                    post_id: postId,
+                    media_url: item.url,
+                    media_type: item.type,
+                    position: index
+                }));
+                await this.repository.addMedia(mediaItems);
+            }
+        }
+
         const updateData: Partial<Post> = {
             descripcion: data.descripcion,
             is_public: data.is_public,
             ubicacion: data.ubicacion,
             hashtags: data.hashtags,
-            // media update not supported in this simple flow yet
             updated_at: new Date().toISOString()
         };
 
         // Remove undefined keys
         Object.keys(updateData).forEach(key => updateData[key as keyof Post] === undefined && delete updateData[key as keyof Post]);
 
-        return this.repository.update(postId, updateData);
+        const updated = await this.repository.update(postId, updateData);
+        // Fetch full to get new media order
+        const fullUpdated = await this.repository.findById(postId, userId);
+        return fullUpdated || updated;
     }
 
     async deletePost(userId: string, postId: string): Promise<void> {

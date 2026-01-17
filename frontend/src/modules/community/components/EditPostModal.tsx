@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Modal,
     ModalOverlay,
@@ -13,14 +14,17 @@ interface EditPostModalProps {
     isOpen: boolean;
     onClose: () => void;
     post: Post;
+    onCloseComplete?: () => void;
 }
 
-export const EditPostModal = ({ isOpen, onClose, post }: EditPostModalProps) => {
+export const EditPostModal = ({ isOpen, onClose, post, onCloseComplete }: EditPostModalProps) => {
     const toast = useToast();
     const queryClient = useQueryClient();
 
+    const [isUploading, setIsUploading] = useState(false); // Add uploading state
+
     const updatePost = useMutation({
-        mutationFn: (data: { descripcion: string; ubicacion?: string; hashtags?: string[] }) =>
+        mutationFn: (data: { descripcion: string; ubicacion?: string; hashtags?: string[]; media?: any[] }) =>
             PostsService.updatePost(post.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['posts'] });
@@ -40,24 +44,58 @@ export const EditPostModal = ({ isOpen, onClose, post }: EditPostModalProps) => 
         }
     });
 
-    const handleSubmit = (data: { descripcion: string; ubicacion?: string; hashtags?: string[] }) => {
-        updatePost.mutate(data);
+    const handleSubmit = async (data: {
+        descripcion: string;
+        mediaItems: any[]; // EditorMediaItem[]
+        ubicacion?: string;
+        hashtags?: string[]
+    }) => {
+        setIsUploading(true);
+        try {
+            // Process media items to get final URLs order
+            const finalMedia = await Promise.all(data.mediaItems.map(async (item) => {
+                if (item.isNew && item.file) {
+                    const url = await PostsService.uploadMedia(item.file);
+                    return {
+                        url: url,
+                        type: item.type
+                    };
+                } else {
+                    return {
+                        url: item.url,
+                        type: item.type
+                    };
+                }
+            }));
+
+            updatePost.mutate({
+                descripcion: data.descripcion,
+                ubicacion: data.ubicacion,
+                hashtags: data.hashtags,
+                media: finalMedia
+            });
+        } catch (error) {
+            toast({
+                title: 'Error al subir archivos',
+                status: 'error'
+            });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+        <Modal isOpen={isOpen} onClose={onClose} onCloseComplete={onCloseComplete} size="xl" isCentered>
             <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
             <ModalContent bg="transparent" boxShadow="none">
                 <PostEditor
                     onSubmit={handleSubmit}
-                    isSubmitting={updatePost.isPending}
-                    onClose={onClose}
+                    isSubmitting={updatePost.isPending || isUploading}
                     initialData={{
                         descripcion: post.descripcion,
                         ubicacion: post.ubicacion || undefined,
                         hashtags: post.hashtags || [],
-                        media_url: post.media_url,
-                        media_type: post.media_type
+                        media: post.media
                     }}
                 />
             </ModalContent>

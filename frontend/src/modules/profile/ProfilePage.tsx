@@ -38,6 +38,7 @@ import { PostsService } from "../posts/services/posts.service";
 import { PostDetailModal } from "../community/components/PostDetailModal";
 import { EditPostModal } from "../community/components/EditPostModal";
 import { ConfirmationModal } from "../community/components/ConfirmationModal";
+import { PostPlaceholder } from "../community/components/PostPlaceholder";
 import type { Post } from "../posts/types";
 
 const fadeInUp = keyframes`
@@ -69,7 +70,8 @@ const ProfilePage = () => {
     });
 
     const targetUserId = profile?.id;
-    const isMe = user?.id === targetUserId;
+    // Strictly compare IDs and ensure both exist to show settings
+    const isMe = !!user?.id && !!targetUserId && user.id === targetUserId;
 
     const { data: stats } = useQuery({
         queryKey: ['userStats', targetUserId],
@@ -128,8 +130,10 @@ const ProfilePage = () => {
                 onSuccess: () => {
                     if (viewPostId === deletePostId) {
                         onDetailClose();
+                        // State cleared in onCloseComplete
                     }
                     onDeleteClose();
+                    // State cleared in onCloseComplete
                 }
             });
         }
@@ -195,6 +199,10 @@ const ProfilePage = () => {
 
     const handleUpdateProfile = () => {
         queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['userStats', targetUserId] });
+        queryClient.invalidateQueries({ queryKey: ['userRacha', targetUserId] });
+        // Also invalidate current user if needed, as some global UI might depend on it
+        queryClient.invalidateQueries({ queryKey: ['user'] });
     };
 
     // ... loading checks ...
@@ -230,22 +238,9 @@ const ProfilePage = () => {
                             <VStack align="start" spacing={1}>
                                 <HStack spacing={2}>
                                     <Heading size="lg" color="brand.secondary">
-                                        {profileData.name}
+                                        {profileData.username}
                                     </Heading>
                                     <Icon as={FaCheckCircle} color="blue.400" w={5} h={5} />
-                                </HStack>
-                                <HStack spacing={2} wrap="wrap">
-                                    <Text color="brand.textMuted" fontSize="lg" fontWeight="medium">
-                                        {profileData.username}
-                                    </Text>
-                                    {isMe && user?.email && (
-                                        <>
-                                            <Text color="gray.300">•</Text>
-                                            <Text color="brand.textMuted" fontSize="md">
-                                                {user.email}
-                                            </Text>
-                                        </>
-                                    )}
                                 </HStack>
                             </VStack>
 
@@ -386,19 +381,31 @@ const ProfilePage = () => {
                                         _hover={{ opacity: 0.9 }}
                                         bg="gray.100"
                                     >
-                                        <Box
-                                            position="absolute"
-                                            top={0}
-                                            left={0}
-                                            right={0}
-                                            bottom={0}
-                                            bgImage={`url(${post.media_url})`}
-                                            bgSize="cover"
-                                            bgPosition="center"
-                                            transition="transform 0.5s ease"
-                                            _hover={{ transform: "scale(1.05)" }}
-                                        />
-                                        {(post.media_type === 'video' || (post.hashtags && post.hashtags.length > 0)) && (
+                                        {post.media && post.media.length > 0 ? (
+                                            <Box
+                                                position="absolute"
+                                                top={0}
+                                                left={0}
+                                                right={0}
+                                                bottom={0}
+                                                bgImage={`url(${post.media[0].media_url})`}
+                                                bgSize="cover"
+                                                bgPosition="center"
+                                                transition="transform 0.5s ease"
+                                                _hover={{ transform: "scale(1.05)" }}
+                                            />
+                                        ) : (
+                                            <Box
+                                                position="absolute"
+                                                top={0}
+                                                left={0}
+                                                right={0}
+                                                bottom={0}
+                                            >
+                                                <PostPlaceholder minH="100%" fontSize="6px" iconSize={5} />
+                                            </Box>
+                                        )}
+                                        {(post.media && (post.media.length > 1 || post.media[0]?.media_type === 'video')) && (
                                             <Box position="absolute" top={2} right={2} color="white">
                                                 <Icon as={FaClone} dropShadow="0 2px 4px rgba(0,0,0,0.5)" />
                                             </Box>
@@ -436,37 +443,30 @@ const ProfilePage = () => {
             </SimpleGrid>
 
             {/* ... Modals (Post Detail, Edit, Delete) ... */}
-            {
-                detailPost && (
-                    <PostDetailModal
-                        isOpen={isDetailOpen}
-                        onClose={() => {
-                            onDetailClose();
-                            setViewPostId(null);
-                        }}
-                        post={detailPost}
-                        onEdit={() => handleEditPost(detailPost)}
-                        onDelete={() => handleDeletePostClick(detailPost.id)}
-                    />
-                )
-            }
+            {detailPost && (
+                <PostDetailModal
+                    isOpen={isDetailOpen}
+                    onClose={onDetailClose}
+                    onCloseComplete={() => setViewPostId(null)}
+                    post={detailPost}
+                    onEdit={() => handleEditPost(detailPost)}
+                    onDelete={() => handleDeletePostClick(detailPost.id)}
+                />
+            )}
 
-            {
-                editingPost && (
-                    <EditPostModal
-                        isOpen={isEditOpen}
-                        onClose={() => {
-                            onEditClose();
-                            setEditingPost(null);
-                        }}
-                        post={editingPost}
-                    />
-                )
-            }
+            {editingPost && (
+                <EditPostModal
+                    isOpen={isEditOpen}
+                    onClose={onEditClose}
+                    onCloseComplete={() => setEditingPost(null)}
+                    post={editingPost}
+                />
+            )}
 
             <ConfirmationModal
                 isOpen={isDeleteOpen}
                 onClose={onDeleteClose}
+                onCloseComplete={() => setDeletePostId(null)}
                 onConfirm={confirmDeletePost}
                 title="Eliminar publicación"
                 message="¿Estás seguro de que deseas eliminar esta publicación permanentemente?"

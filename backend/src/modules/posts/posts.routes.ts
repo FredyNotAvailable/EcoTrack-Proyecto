@@ -49,7 +49,7 @@ import { uploadMiddleware } from '../../middlewares/upload.middleware';
 router.post('/', authMiddleware, postsController.createPost);
 router.put('/:id', authMiddleware, postsController.updatePost);
 router.delete('/:id', authMiddleware, postsController.deletePost);
-router.post('/upload', authMiddleware, uploadMiddleware.single('file'), postsController.uploadMedia);
+router.post('/upload', authMiddleware, uploadMiddleware.array('files', 10), postsController.uploadMedia);
 router.post('/:id/like', authMiddleware, postsController.likePost);
 router.delete('/:id/like', authMiddleware, postsController.unlikePost);
 

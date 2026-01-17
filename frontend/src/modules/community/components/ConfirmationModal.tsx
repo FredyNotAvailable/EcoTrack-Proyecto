@@ -23,6 +23,7 @@ interface ConfirmationModalProps {
     confirmText?: string;
     cancelText?: string;
     isLoading?: boolean;
+    onCloseComplete?: () => void;
 }
 
 export const ConfirmationModal = ({
@@ -33,13 +34,14 @@ export const ConfirmationModal = ({
     message,
     confirmText = "Eliminar",
     cancelText = "Cancelar",
-    isLoading = false
+    isLoading = false,
+    onCloseComplete
 }: ConfirmationModalProps) => {
     const bg = useColorModeValue("white", "gray.800");
     const borderColor = useColorModeValue("gray.100", "gray.700");
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} isCentered size="sm">
+        <Modal isOpen={isOpen} onClose={onClose} onCloseComplete={onCloseComplete} isCentered size="sm">
             <ModalOverlay backdropFilter="blur(4px)" bg="blackAlpha.300" />
             <ModalContent
                 bg={bg}

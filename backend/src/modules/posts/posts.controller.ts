@@ -40,14 +40,24 @@ export const getPost = async (req: Request, res: Response, next: NextFunction) =
 
 export const uploadMedia = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        if (!req.file) {
-            throw new ApiError(400, 'No file uploaded');
+        if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
+            // Fallback for single file if somehow used
+            if (!req.file) throw new ApiError(400, 'No files uploaded');
         }
 
         const userId = req.user!.id;
-        const publicUrl = await mediaService.processAndUpload(req.file, userId);
+        const files = req.files as Express.Multer.File[] || [req.file];
 
-        res.json({ data: { url: publicUrl } });
+        const urls: string[] = [];
+
+        for (const file of files) {
+            const publicUrl = await mediaService.processAndUpload(file, userId);
+            urls.push(publicUrl);
+        }
+
+        // Return array of URLs. Frontend might need to adapt if it expects single "url".
+        // But we are updating frontend too.
+        res.json({ data: { urls } });
     } catch (error) {
         next(error);
     }

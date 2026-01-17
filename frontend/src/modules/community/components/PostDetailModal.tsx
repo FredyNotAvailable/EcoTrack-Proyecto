@@ -19,11 +19,12 @@ import {
     MenuList,
     MenuItem,
     useToast,
-    useDisclosure
+    useDisclosure,
+    Skeleton
 } from '@chakra-ui/react';
 import { keyframes } from "@emotion/react";
-import { FaHeart, FaRegHeart, FaEllipsisH, FaTrash, FaPen } from 'react-icons/fa';
-import { useState } from 'react';
+import { FaHeart, FaRegHeart, FaEllipsisH, FaTrash, FaPen, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 import type { Post, Comment } from '../../posts/types';
 import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts';
 import { useAuth } from '../../auth/AuthContext';
@@ -38,14 +39,17 @@ interface PostDetailModalProps {
     onEdit?: () => void;
     onDelete?: () => void;
     onHashtagClick?: (hashtag: string) => void;
+    onCloseComplete?: () => void;
 }
 
-export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHashtagClick }: PostDetailModalProps) => {
+export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHashtagClick, onCloseComplete }: PostDetailModalProps) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const bg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
     const toast = useToast();
+    const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+    const [isMediaLoaded, setIsMediaLoaded] = useState(false);
 
     const heartBeat = keyframes`
       0% { transform: scale(1); }
@@ -114,8 +118,44 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
     const comments = commentsData || [];
     const isOwner = user?.id === post.user_id;
 
+    const handleNextMedia = (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        if (post.media && post.media.length > 0) {
+            setIsMediaLoaded(false);
+            setCurrentMediaIndex((prev) => (prev + 1) % post.media!.length);
+        }
+    };
+
+    const handlePrevMedia = (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        if (post.media && post.media.length > 0) {
+            setIsMediaLoaded(false);
+            setCurrentMediaIndex((prev) => (prev - 1 + post.media!.length) % post.media!.length);
+        }
+    };
+
+    const handleDotClick = (e: React.MouseEvent, index: number) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsMediaLoaded(false);
+        setCurrentMediaIndex(index);
+    };
+
+    useEffect(() => {
+        setCurrentMediaIndex(0);
+        setIsMediaLoaded(false);
+    }, [post.id]);
+
+    const currentMedia = post.media && post.media.length > 0 ? post.media[currentMediaIndex] : null;
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
+        <Modal isOpen={isOpen} onClose={onClose} onCloseComplete={onCloseComplete} size="4xl" isCentered>
             <ModalOverlay backdropFilter="blur(10px)" bg="blackAlpha.600" />
             <ModalContent
                 bg={bg}
@@ -138,11 +178,90 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                     justifyContent="center"
                     h={{ base: "300px", md: "100%" }}
                 >
-                    {post.media_type === 'video' ? (
-                        <video src={post.media_url} controls style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    {/* Skeleton Loader */}
+                    {!isMediaLoaded && (
+                        <Skeleton height="100%" width="100%" position="absolute" top={0} left={0} />
+                    )}
+
+                    {currentMedia ? (
+                        <>
+                            {currentMedia.media_type === 'video' ? (
+                                <video
+                                    src={currentMedia.media_url}
+                                    controls
+                                    style={{ maxWidth: '100%', maxHeight: '100%', display: isMediaLoaded ? 'block' : 'none' }}
+                                    onLoadedData={() => setIsMediaLoaded(true)}
+                                />
+                            ) : (
+                                <ChakraImage
+                                    src={currentMedia.media_url}
+                                    objectFit="contain"
+                                    maxH="100%"
+                                    maxW="100%"
+                                    onLoad={() => setIsMediaLoaded(true)}
+                                    display={isMediaLoaded ? 'block' : 'none'}
+                                />
+                            )}
+
+                            {/* Navigation Arrows */}
+                            {post.media && post.media.length > 1 && (
+                                <>
+                                    <IconButton
+                                        aria-label="Previous image"
+                                        icon={<FaChevronLeft />}
+                                        position="absolute"
+                                        left={4}
+                                        top="50%"
+                                        transform="translateY(-50%)"
+                                        isRound
+                                        size="md"
+                                        bg="blackAlpha.600"
+                                        color="white"
+                                        _hover={{ bg: "blackAlpha.800" }}
+                                        _active={{ bg: "blackAlpha.900" }}
+                                        onClick={(e) => handlePrevMedia(e)}
+                                        zIndex={2}
+                                    />
+                                    <IconButton
+                                        aria-label="Next image"
+                                        icon={<FaChevronRight />}
+                                        position="absolute"
+                                        right={4}
+                                        top="50%"
+                                        transform="translateY(-50%)"
+                                        isRound
+                                        size="md"
+                                        bg="blackAlpha.600"
+                                        color="white"
+                                        _hover={{ bg: "blackAlpha.800" }}
+                                        _active={{ bg: "blackAlpha.900" }}
+                                        onClick={(e) => handleNextMedia(e)}
+                                        zIndex={2}
+                                    />
+                                    {/* Dots Indicator for Modal too */}
+                                    <Flex justify="center" position="absolute" bottom={4} w="100%">
+                                        <HStack spacing={1}>
+                                            {post.media.map((_, idx) => (
+                                                <Box
+                                                    key={idx}
+                                                    w={idx === currentMediaIndex ? 2 : 1.5}
+                                                    h={idx === currentMediaIndex ? 2 : 1.5}
+                                                    borderRadius="full"
+                                                    bg={idx === currentMediaIndex ? "white" : "whiteAlpha.500"}
+                                                    cursor="pointer"
+                                                    onClick={(e) => handleDotClick(e, idx)}
+                                                    transition="all 0.2s"
+                                                    _hover={{ transform: 'scale(1.2)', bg: 'white' }}
+                                                />
+                                            ))}
+                                        </HStack>
+                                    </Flex>
+                                </>
+                            )}
+                        </>
                     ) : (
                         <ChakraImage
-                            src={post.media_url || 'https://via.placeholder.com/600'}
+                            src={'https://via.placeholder.com/600'}
                             objectFit="contain"
                             maxH="100%"
                             maxW="100%"

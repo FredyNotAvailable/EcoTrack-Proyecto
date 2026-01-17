@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import theme from './theme';
 import { AuthProvider } from './modules/auth';
 import { AppRouter } from './routes';
+import { PostUploadProvider } from './modules/community/context/PostUploadContext';
 
 const queryClient = new QueryClient();
 
@@ -12,9 +13,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ChakraProvider theme={theme}>
         <AuthProvider>
-          <Router>
-            <AppRouter />
-          </Router>
+          <PostUploadProvider>
+            <Router>
+              <AppRouter />
+            </Router>
+          </PostUploadProvider>
         </AuthProvider>
       </ChakraProvider>
     </QueryClientProvider>
