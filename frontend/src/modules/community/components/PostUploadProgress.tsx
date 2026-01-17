@@ -3,12 +3,7 @@ import { Box, HStack, Text, Progress, useColorModeValue, Image as ChakraImage, I
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCheckCircle, FaCloudUploadAlt } from "react-icons/fa";
 
-export interface UploadState {
-    previewUrl: string | null;
-    progress: number;
-    status: 'uploading' | 'creating' | 'success' | 'error';
-    message: string;
-}
+import type { UploadState } from "../context/PostUploadContext";
 
 interface PostUploadProgressProps {
     upload: UploadState | null;
@@ -79,7 +74,7 @@ export const PostUploadProgress = ({ upload }: PostUploadProgressProps) => {
                                 borderRadius="full"
                                 bg="gray.100"
                                 transition="all 0.3s"
-                                isIndeterminate={upload.status === 'creating'}
+                                isIndeterminate={upload.status === 'creating' || upload.status === 'preloading'}
                             />
                         </Box>
                     </HStack>
