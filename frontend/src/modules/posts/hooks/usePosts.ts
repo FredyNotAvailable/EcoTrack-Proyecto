@@ -99,17 +99,6 @@ export const useLikePost = () => {
                 return post;
             };
 
-            // Update Feed
-            queryClient.setQueryData(POSTS_KEYS.feed(), (old: any) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    pages: old.pages.map((page: any) => ({
-                        ...page,
-                        data: page.data.map(updatePostLike),
-                    })),
-                };
-            });
 
             // Update user posts if they exist
             queryClient.setQueriesData({ queryKey: POSTS_KEYS.all }, (old: any) => {

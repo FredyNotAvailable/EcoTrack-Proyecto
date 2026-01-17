@@ -7,17 +7,18 @@ export class RetosRepository {
     async findActiveChallenges(): Promise<Reto[]> {
         const now = new Date();
 
-        // To be inclusive of the entire "fecha_fin" day, we look for challenges 
-        // where now is not more than 24 hours past the fecha_fin timestamp.
-        // This handles cases where fecha_fin is set to 00:00:00 of the last day.
-        const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        // Use LOCAL time to construct YYYY-MM-DD to ensure we compare against the local calendar day
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
 
         const { data, error } = await supabase
             .from('retos_semanales')
             .select('*')
             .eq('activo', true)
-            .lte('fecha_inicio', now.toISOString())
-            .gte('fecha_fin', cutoff.toISOString());
+            .lte('fecha_inicio', now.toISOString()) // Started anytime before now (UTC is fine for start check usually, or use same logic if stricter)
+            .gte('fecha_fin', localDateStr); // End date must be greater than or equal to TODAY
 
         if (error) throw error;
         return (data || []).map(this.mapRetoFromDB);
