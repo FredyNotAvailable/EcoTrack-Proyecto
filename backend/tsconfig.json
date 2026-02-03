@@ -18,8 +18,7 @@
             "node",
             "express",
             "multer",
-            "cors",
-            "jest"
+            "cors"
         ],
         "paths": {
             "@/*": [
