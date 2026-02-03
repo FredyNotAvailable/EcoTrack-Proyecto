@@ -1,7 +1,12 @@
 import axios from 'axios';
 import { supabase } from '../config/supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// Asegurar que la URL termine en /api para evitar errores 404
+if (API_URL && !API_URL.endsWith('/api') && !API_URL.endsWith('/api/')) {
+    API_URL = API_URL.endsWith('/') ? `${API_URL}api` : `${API_URL}/api`;
+}
 
 const apiClient = axios.create({
     baseURL: API_URL,
