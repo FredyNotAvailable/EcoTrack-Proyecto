@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authMiddleware, requireRole } from '../../middlewares/auth.middleware';
 
 import { supabase } from '../../config/supabaseClient';
@@ -11,7 +11,7 @@ const router = Router();
  * Público (sin middleware de auth).
  */
 // verifica si un correo ya esta registrado
-router.post('/check-email', async (req, res) => {
+router.post('/check-email', async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
         console.log(`[Backend] Check Email Request for: ${email}`);
@@ -66,7 +66,7 @@ router.post('/check-email', async (req, res) => {
  * GET /auth/me
  * Devuelve la información del usuario autenticado extraída del JWT
  */
-router.get('/me', authMiddleware, (req, res) => {
+router.get('/me', authMiddleware, (req: Request, res: Response) => {
     res.json(req.user);
 });
 
@@ -74,7 +74,7 @@ router.get('/me', authMiddleware, (req, res) => {
  * GET /auth/admin/ping
  * Ruta protegida solo para administradores
  */
-router.get('/admin/ping', authMiddleware, requireRole(['admin']), (req, res) => {
+router.get('/admin/ping', authMiddleware, requireRole(['admin']), (req: Request, res: Response) => {
     res.json({
         message: 'Pong! Acceso concedido a administrador',
         admin_id: req.user?.id
@@ -86,7 +86,7 @@ router.get('/admin/ping', authMiddleware, requireRole(['admin']), (req, res) => 
  * Verifica si el usuario autenticado tiene un perfil registrado.
  * Protegido.
  */
-router.get('/registration-status', authMiddleware, async (req: any, res) => {
+router.get('/registration-status', authMiddleware, async (req: any, res: Response) => {
     try {
         const userId = req.user.id;
         console.log(`[Backend] Checking registration status for userId: ${userId}`);
@@ -112,7 +112,7 @@ router.get('/registration-status', authMiddleware, async (req: any, res) => {
  * Elimina la cuenta del usuario autenticado permanentemente.
  * Protegido.
  */
-router.delete('/me', authMiddleware, async (req: any, res) => {
+router.delete('/me', authMiddleware, async (req: any, res: Response) => {
     try {
         const userId = req.user.id;
         console.log(`[Backend] Deleting account for userId: ${userId}`);

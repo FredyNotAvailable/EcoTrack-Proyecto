@@ -6,6 +6,7 @@ import { ApiError } from '../../utils/ApiError';
 const service = new PostsService();
 
 import { mediaService } from './media.service';
+import multer from 'multer';
 
 export const getFeed = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -46,7 +47,7 @@ export const uploadMedia = async (req: Request, res: Response, next: NextFunctio
         }
 
         const userId = req.user!.id;
-        const files = req.files as Express.Multer.File[] || [req.file];
+        const files = (req.files as any) || [req.file];
 
         const urls: string[] = [];
 

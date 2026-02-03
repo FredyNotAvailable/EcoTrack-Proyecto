@@ -89,7 +89,7 @@ export class MediaService {
                 .toFormat('webm')
                 // .videoCodec('libvpx-vp9') // Optional, but default webm is usually vp9/vp8 which is fine
                 .on('end', () => resolve())
-                .on('error', (err) => {
+                .on('error', (err: Error) => {
                     console.error('FFmpeg error:', err);
                     reject(err);
                 })
