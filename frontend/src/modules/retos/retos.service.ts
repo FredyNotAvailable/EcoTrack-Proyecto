@@ -10,7 +10,7 @@ export interface Reto {
 export const RetoService = {
     getAll: async (): Promise<Reto[]> => {
         const { data } = await apiClient.get('/retos');
-        return data.data;
+        return data;
     },
 
     join: async (retoId: string): Promise<any> => {

@@ -13,36 +13,36 @@ export interface Profile {
 export const ProfileAPIService = {
     async getMe() {
         const response = await apiClient.get('/profile/me');
-        return response.data.data;
+        return response.data;
     },
 
     async getProfileById(userId: string) {
         const response = await apiClient.get(`/profile/${userId}`);
-        return response.data.data;
+        return response.data;
     },
 
     async getProfileByUsername(username: string) {
         const response = await apiClient.get(`/profile/username/${username}`);
-        return response.data.data;
+        return response.data;
     },
 
     async updateMe(profileData: any) {
         const response = await apiClient.put('/profile/me', profileData);
-        return response.data.data;
+        return response.data;
     },
 
     async create(profileData: any) {
         console.log("ProfileAPIService.create called with:", profileData);
         const response = await apiClient.post('/profile/me', profileData);
         console.log("ProfileAPIService: Success", response.data);
-        return response.data.data;
+        return response.data;
     },
 
     async searchProfiles(query: string) {
         const response = await apiClient.get(`/profile/search`, {
             params: { query }
         });
-        return response.data.data;
+        return response.data;
     },
 
     async deleteAccount() {
