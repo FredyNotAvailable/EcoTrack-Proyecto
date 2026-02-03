@@ -1,6 +1,4 @@
-import { supabase } from '../../../config/supabase';
-
-const API_URL = 'http://localhost:3001/api';
+import apiClient from '../../../services/apiClient';
 
 export interface Profile {
     id?: string;
@@ -14,148 +12,41 @@ export interface Profile {
 
 export const ProfileAPIService = {
     async getMe() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/profile/me`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al obtener el perfil');
-        }
-
-        const result = await response.json();
-        return result;
+        const response = await apiClient.get('/profile/me');
+        return response.data.data;
     },
 
     async getProfileById(userId: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/profile/${userId}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al obtener el perfil');
-        }
-
-        const result = await response.json();
-        return result;
+        const response = await apiClient.get(`/profile/${userId}`);
+        return response.data.data;
     },
 
     async getProfileByUsername(username: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/profile/username/${username}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al obtener el perfil');
-        }
-
-        const result = await response.json();
-        return result;
+        const response = await apiClient.get(`/profile/username/${username}`);
+        return response.data.data;
     },
 
     async updateMe(profileData: any) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/profile/me`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify(profileData),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al actualizar el perfil');
-        }
-
-        const result = await response.json();
-        return result;
+        const response = await apiClient.put('/profile/me', profileData);
+        return response.data.data;
     },
 
     async create(profileData: any) {
         console.log("ProfileAPIService.create called with:", profileData);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            console.error("ProfileAPIService: No session found");
-            throw new Error('No hay sesión activa');
-        }
-
-        console.log("ProfileAPIService: Sending POST to", `${API_URL}/profile/me`);
-        const response = await fetch(`${API_URL}/profile/me`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify(profileData),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            console.error("ProfileAPIService: Error response", error);
-            throw new Error(error.message || 'Error al crear el perfil');
-        }
-
-        const result = await response.json();
-        console.log("ProfileAPIService: Success", result);
-        return result;
+        const response = await apiClient.post('/profile/me', profileData);
+        console.log("ProfileAPIService: Success", response.data);
+        return response.data.data;
     },
 
     async searchProfiles(query: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/profile/search?query=${query}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
+        const response = await apiClient.get(`/profile/search`, {
+            params: { query }
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al buscar perfiles');
-        }
-
-        const result = await response.json();
-        return result;
+        return response.data.data;
     },
 
     async deleteAccount() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('No hay sesión activa');
-
-        const response = await fetch(`${API_URL}/auth/me`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Error al eliminar la cuenta');
-        }
-
-        return await response.json();
+        const response = await apiClient.delete('/auth/me');
+        return response.data;
     }
 };
