@@ -148,8 +148,12 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
     };
 
     const handleSubmit = () => {
-        if (!description.trim() && mediaItems.length === 0) {
-            toast({ title: "Publicación vacía", description: "Agrega texto o contenido multimedia.", status: "warning" });
+        if (mediaItems.length === 0) {
+            toast({
+                title: "Multimedia requerido",
+                description: "Debes subir al menos una foto o video para poder publicar.",
+                status: "warning"
+            });
             return;
         }
         onSubmit({
@@ -171,7 +175,8 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
     const hasChanges = useMemo(() => {
         // If creating new post
         if (!initialData?.id) {
-            return description.trim().length > 0 || mediaItems.length > 0;
+            // Requiere al menos una imagen/video para ser considerado un cambio válido de creación
+            return mediaItems.length > 0;
         }
 
         const initialHashtags = initialData.hashtags || [];
@@ -205,7 +210,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
         );
     }, [description, location, hashtags, mediaItems, initialData]);
 
-    const isSubmitDisabled = !hasChanges;
+    const isSubmitDisabled = !hasChanges || mediaItems.length === 0;
 
     return (
         <Box bg={bg} p={6} borderRadius="3xl" boxShadow="lg" border="1px" borderColor={borderColor} w="100%" maxW="720px">

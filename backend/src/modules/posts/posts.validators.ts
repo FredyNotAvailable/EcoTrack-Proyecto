@@ -8,7 +8,7 @@ export const createPostSchema = z.object({
     media: z.array(z.object({
         url: z.string().url(),
         type: z.enum(['image', 'video'])
-    })).optional(),
+    })).min(1, 'Debes subir al menos una foto o video para publicar.'),
 });
 
 export const createCommentSchema = z.object({
