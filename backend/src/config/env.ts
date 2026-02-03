@@ -4,7 +4,7 @@ import { z } from 'zod';
 dotenv.config();
 
 const envSchema = z.object({
-    PORT: z.string().default('3001'),
+    PORT: z.string().default('3001').transform(Number),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     SUPABASE_URL: z.string().url(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
