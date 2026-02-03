@@ -1,5 +1,6 @@
 import { supabase } from '../../../config/supabase';
 import type { LoginCredentials } from '../types';
+import apiClient from '../../../services/apiClient';
 
 export const AuthService = {
     /**
@@ -53,26 +54,14 @@ export const AuthService = {
      * Verifica si un correo ya existe en la base de datos
      */
     async checkEmailExists(email: string): Promise<{ exists: boolean; provider: string | null }> {
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
         try {
-            console.log(`[AuthService] Fetching ${API_URL}/auth/check-email for ${email}...`);
-            const response = await fetch(`${API_URL}/auth/check-email`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email }),
-            });
+            console.log(`[AuthService] Fetching check-email for ${email}...`);
+            const response = await apiClient.post('/auth/check-email', { email });
 
-            if (!response.ok) {
-                console.warn("[AuthService] Response not OK:", response.status);
-                return { exists: false, provider: null };
-            }
-            const data = await response.json();
-            console.log("[AuthService] Data received:", data);
+            console.log("[AuthService] Data received:", response.data);
             return {
-                exists: data.exists,
-                provider: data.provider
+                exists: response.data.exists,
+                provider: response.data.provider
             };
         } catch (error) {
             console.error("Error al verificar email:", error);
@@ -84,19 +73,17 @@ export const AuthService = {
      * Verifica si el usuario actual tiene un perfil registrado en el backend
      */
     async checkRegistrationStatus(token: string): Promise<{ registered: boolean }> {
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
         try {
-            const response = await fetch(`${API_URL}/auth/registration-status`, {
-                method: "GET",
+            // we ignore the passed token and let apiClient handle it via session
+            // or we can pass it manually if needed, but apiClient is cleaner.
+            // If token is specifically needed (onboarding), we can use headers.
+            const response = await apiClient.get('/auth/registration-status', {
                 headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
-            if (!response.ok) return { registered: false };
-            const data = await response.json();
-            return { registered: data.registered };
+            return { registered: response.data.registered };
         } catch (error) {
             console.error("Error al verificar estado de registro:", error);
             return { registered: false };
