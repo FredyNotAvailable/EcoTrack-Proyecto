@@ -130,7 +130,7 @@ const HistoryTasksModal = ({ isOpen, onClose, reto, onTaskClick }: { isOpen: boo
                     </Box>
 
                     <VStack align="stretch" spacing={0} divider={<Box borderBottomWidth="1px" borderColor="gray.50" />}>
-                        {reto.tasks.map((task, index) => (
+                        {reto.tasks.map((task) => (
                             <HStack
                                 key={task.id}
                                 p={5}

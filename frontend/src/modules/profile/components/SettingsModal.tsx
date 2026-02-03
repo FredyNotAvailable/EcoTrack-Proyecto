@@ -31,7 +31,6 @@ import { ProfileAPIService } from '../services/profile.service';
 import { StorageService } from '../../shared/services/storage.service';
 import { convertToWebP } from '../../../utils/ImageConverter';
 import { useAuth } from '../../auth/AuthContext';
-import type { Profile } from '../services/profile.service'; // Assuming type exists or is inferred
 
 interface SettingsModalProps {
     isOpen: boolean;

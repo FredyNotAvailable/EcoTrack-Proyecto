@@ -14,7 +14,7 @@ import {
     Box,
     Divider,
 } from '@chakra-ui/react';
-import { FaTrophy, FaLeaf, FaCircleCheck } from 'react-icons/fa6';
+import { FaTrophy, FaLeaf } from 'react-icons/fa6';
 import type { RetoTarea } from '../services/retos.service';
 
 interface TaskConfirmationModalProps {

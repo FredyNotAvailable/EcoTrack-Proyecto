@@ -10,7 +10,6 @@ export interface Post {
     id: string;
     user_id: string;
     descripcion: string;
-    descripcion: string;
     media: {
         id: string;
         media_url: string;

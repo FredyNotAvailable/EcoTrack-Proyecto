@@ -4,10 +4,9 @@ import {
     Button,
     HStack,
     IconButton,
-    Image as ChakraImage,
-    Icon
+    Image as ChakraImage
 } from '@chakra-ui/react';
-import { FaImage, FaVideo, FaTimes, FaMagic, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaImage, FaTimes, FaMagic, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { Reorder } from 'framer-motion';
 
 interface PostMediaPreviewProps {
