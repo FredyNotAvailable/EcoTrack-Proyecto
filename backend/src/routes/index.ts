@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 
 import authRouter from '../modules/auth/auth.routes';
 import profileRouter from '../modules/profile/profile.routes';
@@ -10,6 +10,11 @@ import rachasRouter from '../modules/rachas/rachas.routes';
 import { retosRouter } from '../modules/retos/retos.routes';
 
 const router = Router();
+
+// Health Check Endpoint
+router.get('/health', (req: Request, res: Response) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 router.use('/auth', authRouter);
 router.use('/profile', profileRouter);
