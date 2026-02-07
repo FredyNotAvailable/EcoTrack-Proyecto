@@ -2,6 +2,14 @@ import { supabase } from '../../config/supabaseClient';
 import { Reto, RetoTarea, UserReto, UserRetoTarea } from './retos.types';
 
 export class RetosRepository {
+    private static instance: RetosRepository;
+
+    static getInstance(): RetosRepository {
+        if (!RetosRepository.instance) {
+            RetosRepository.instance = new RetosRepository();
+        }
+        return RetosRepository.instance;
+    }
 
     // Find active challenges (based on 'activo' flag)
     async findActiveChallenges(): Promise<Reto[]> {
@@ -15,7 +23,7 @@ export class RetosRepository {
 
         const { data, error } = await supabase
             .from('retos_semanales')
-            .select('*')
+            .select('id, nombre, descripcion, categoria, puntos_totales, kgco2_total, fecha_inicio, fecha_fin, activo, created_at')
             .eq('activo', true)
             .lte('fecha_inicio', now.toISOString()) // Started anytime before now (UTC is fine for start check usually, or use same logic if stricter)
             .gte('fecha_fin', localDateStr); // End date must be greater than or equal to TODAY
@@ -27,7 +35,7 @@ export class RetosRepository {
     async findAllChallenges(): Promise<Reto[]> {
         const { data, error } = await supabase
             .from('retos_semanales')
-            .select('*')
+            .select('id, nombre, descripcion, categoria, puntos_totales, kgco2_total, fecha_inicio, fecha_fin, activo, created_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -37,7 +45,7 @@ export class RetosRepository {
     async getChallengeById(id: string): Promise<Reto | null> {
         const { data, error } = await supabase
             .from('retos_semanales')
-            .select('*')
+            .select('id, nombre, descripcion, categoria, puntos_totales, kgco2_total, fecha_inicio, fecha_fin, activo, created_at')
             .eq('id', id)
             .single();
 
@@ -48,7 +56,7 @@ export class RetosRepository {
     async getTasksByChallengeId(retoId: string): Promise<RetoTarea[]> {
         const { data, error } = await supabase
             .from('retos_semanales_tareas')
-            .select('*')
+            .select('id, reto_semanal_id, nombre, descripcion, puntos, kgco2, dia_orden')
             .eq('reto_semanal_id', retoId);
 
         if (error) throw error;
@@ -65,12 +73,74 @@ export class RetosRepository {
         }));
     }
 
+    // BATCH: Get tasks for multiple challenges in one query (eliminates N+1)
+    async getTasksByMultipleChallengeIds(retoIds: string[]): Promise<Map<string, RetoTarea[]>> {
+        if (retoIds.length === 0) return new Map();
+
+        const { data, error } = await supabase
+            .from('retos_semanales_tareas')
+            .select('id, reto_semanal_id, nombre, descripcion, puntos, kgco2, dia_orden')
+            .in('reto_semanal_id', retoIds);
+
+        if (error) throw error;
+
+        const tasksMap = new Map<string, RetoTarea[]>();
+        (data || []).forEach((t: any) => {
+            const task: RetoTarea = {
+                id: t.id,
+                reto_id: t.reto_semanal_id,
+                titulo: t.nombre,
+                descripcion: t.descripcion,
+                recompensa_puntos: t.puntos,
+                recompensa_kg_co2: t.kgco2,
+                tipo: 'manual',
+                cantidad_meta: 1,
+                dia_orden: t.dia_orden
+            };
+            const existing = tasksMap.get(t.reto_semanal_id) || [];
+            existing.push(task);
+            tasksMap.set(t.reto_semanal_id, existing);
+        });
+
+        return tasksMap;
+    }
+
+    // BATCH: Get user tasks for multiple challenges in one query (eliminates N+1)
+    async getUserTasksByMultipleChallengeIds(userRetoIds: string[]): Promise<Map<string, UserRetoTarea[]>> {
+        if (userRetoIds.length === 0) return new Map();
+
+        const { data, error } = await supabase
+            .from('usuarios_retos_tareas')
+            .select('id, user_reto_id, tarea_id, completado, completed_at')
+            .in('user_reto_id', userRetoIds);
+
+        if (error) throw error;
+
+        const tasksMap = new Map<string, UserRetoTarea[]>();
+        (data || []).forEach((d: any) => {
+            const task: UserRetoTarea = {
+                id: d.id,
+                user_id: '',
+                reto_id: d.user_reto_id,
+                tarea_id: d.tarea_id,
+                completado: d.completado,
+                progreso_actual: 0,
+                fecha_completado: d.completed_at
+            };
+            const existing = tasksMap.get(d.user_reto_id) || [];
+            existing.push(task);
+            tasksMap.set(d.user_reto_id, existing);
+        });
+
+        return tasksMap;
+    }
+
     // User Participation
     async getUserChallenge(userId: string, retoId: string): Promise<UserReto | null> {
         // Try reto_semanal_id first (likely correct based on tasks table)
         const { data, error } = await supabase
             .from('usuarios_retos_semanales')
-            .select('*')
+            .select('id, user_id, reto_semanal_id, estado, progreso, started_at, completed_at')
             .eq('user_id', userId)
             .eq('reto_semanal_id', retoId)
             .single();
@@ -82,8 +152,8 @@ export class RetosRepository {
             reto_id: data.reto_semanal_id,
             estado: data.estado,
             progreso: data.progreso,
-            fecha_union: data.created_at || new Date().toISOString(),
-            fecha_completado: data.fecha_completado
+            fecha_union: data.started_at || new Date().toISOString(),
+            fecha_completado: data.completed_at
         };
     }
 
@@ -106,15 +176,15 @@ export class RetosRepository {
             reto_id: data.reto_semanal_id,
             estado: data.estado,
             progreso: data.progreso,
-            fecha_union: data.created_at || new Date().toISOString(),
-            fecha_completado: data.fecha_completado
+            fecha_union: data.started_at || new Date().toISOString(),
+            fecha_completado: data.completed_at
         };
     }
 
     async getAllUserChallenges(userId: string): Promise<UserReto[]> {
         const { data, error } = await supabase
             .from('usuarios_retos_semanales')
-            .select('*')
+            .select('id, user_id, reto_semanal_id, estado, progreso, started_at, completed_at')
             .eq('user_id', userId);
 
         if (error) throw error;
@@ -124,8 +194,8 @@ export class RetosRepository {
             reto_id: d.reto_semanal_id,
             estado: d.estado,
             progreso: d.progreso,
-            fecha_union: d.created_at || new Date().toISOString(),
-            fecha_completado: d.fecha_completado
+            fecha_union: d.started_at || new Date().toISOString(),
+            fecha_completado: d.completed_at
         }));
     }
 
@@ -134,7 +204,7 @@ export class RetosRepository {
 
         const { data, error } = await supabase
             .from('retos_semanales')
-            .select('*')
+            .select('id, nombre, descripcion, categoria, puntos_totales, kgco2_total, fecha_inicio, fecha_fin, activo, created_at')
             .in('id', ids);
 
         if (error) throw error;
@@ -144,7 +214,7 @@ export class RetosRepository {
     async updateChallengeProgress(userId: string, retoId: string, progress: number, status: 'joined' | 'completed' | 'expired'): Promise<void> {
         const updates: any = { progreso: progress, estado: status };
         if (status === 'completed') {
-            updates.fecha_completado = new Date().toISOString();
+            updates.completed_at = new Date().toISOString();
         }
 
         const { error } = await supabase
@@ -160,7 +230,7 @@ export class RetosRepository {
     async getUserTask(userRetoId: string, taskId: string): Promise<UserRetoTarea | null> {
         const { data, error } = await supabase
             .from('usuarios_retos_tareas')
-            .select('*')
+            .select('id, user_reto_id, tarea_id, completado, completed_at')
             .eq('user_reto_id', userRetoId)
             .eq('tarea_id', taskId)
             .single();
@@ -180,7 +250,7 @@ export class RetosRepository {
     async getUserTasksByChallenge(userRetoId: string): Promise<UserRetoTarea[]> {
         const { data, error } = await supabase
             .from('usuarios_retos_tareas')
-            .select('*')
+            .select('id, user_reto_id, tarea_id, completado, completed_at')
             .eq('user_reto_id', userRetoId);
 
         if (error) throw error;

@@ -1,50 +1,15 @@
 import {
     Box,
-    chakra,
     Container,
     Stack,
     Text,
-    VisuallyHidden,
-    Icon,
     Heading,
     HStack,
     SimpleGrid,
+    Image,
 } from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { FaInstagram, FaTwitter, FaYoutube, FaEnvira } from 'react-icons/fa';
-
-const SocialButton = ({
-    children,
-    label,
-    href,
-}: {
-    children: ReactNode;
-    label: string;
-    href: string;
-}) => {
-    return (
-        <chakra.button
-            bg="brand.bgCardLight"
-            rounded={'full'}
-            w={10}
-            h={10}
-            cursor={'pointer'}
-            as={'a'}
-            href={href}
-            display={'inline-flex'}
-            alignItems={'center'}
-            justifyContent={'center'}
-            transition={'background 0.3s ease'}
-            _hover={{
-                bg: 'brand.primary',
-                color: 'white',
-                transform: 'translateY(-3px)'
-            }}>
-            <VisuallyHidden>{label}</VisuallyHidden>
-            {children}
-        </chakra.button>
-    );
-};
 
 const ListHeader = ({ children }: { children: ReactNode }) => {
     return (
@@ -53,6 +18,19 @@ const ListHeader = ({ children }: { children: ReactNode }) => {
         </Text>
     );
 };
+
+const FooterLink = ({ to, children }: { to: string; children: ReactNode }) => (
+    <Box
+        as={RouterLink}
+        to={to}
+        color="brand.textMuted"
+        fontSize="sm"
+        fontWeight="500"
+        _hover={{ color: 'brand.primary' }}
+    >
+        {children}
+    </Box>
+);
 
 export const Footer = () => {
     return (
@@ -68,7 +46,7 @@ export const Footer = () => {
                     spacing={8}>
                     <Stack spacing={6}>
                         <HStack spacing={2}>
-                            <Icon as={FaEnvira} color="brand.primary" boxSize={6} />
+                            <Image src="/logo.png" alt="EcoTrack" boxSize="24px" objectFit="contain" />
                             <Heading
                                 fontSize="1.5rem"
                                 fontWeight="900"
@@ -82,35 +60,21 @@ export const Footer = () => {
                         <Text fontSize={'sm'} color="brand.textMuted" maxW="300px" fontWeight="500" lineHeight="1.6">
                             Liderando la transición hacia un estilo de vida más consciente y sostenible a través de la gamificación y la comunidad.
                         </Text>
-                        <Stack direction={'row'} spacing={4}>
-                            <SocialButton label={'Twitter'} href={'#'}>
-                                <FaTwitter />
-                            </SocialButton>
-                            <SocialButton label={'YouTube'} href={'#'}>
-                                <FaYoutube />
-                            </SocialButton>
-                            <SocialButton label={'Instagram'} href={'#'}>
-                                <FaInstagram />
-                            </SocialButton>
-                        </Stack>
                     </Stack>
                     <Stack align={'flex-start'}>
                         <ListHeader>Producto</ListHeader>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Cómo funciona</Box>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Retos semanales</Box>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Comunidad</Box>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Ranking global</Box>
+                        <FooterLink to="/landing#how-it-works">Cómo funciona</FooterLink>
+                        <FooterLink to="/landing#impact">Características</FooterLink>
+                        <FooterLink to="/landing#community">Comunidad</FooterLink>
                     </Stack>
                     <Stack align={'flex-start'}>
                         <ListHeader>Compañía</ListHeader>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Sobre nosotros</Box>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Contacto</Box>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Blog</Box>
+                        <FooterLink to="/sobre-nosotros">Sobre nosotros</FooterLink>
                     </Stack>
                     <Stack align={'flex-start'}>
                         <ListHeader>Legal</ListHeader>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Términos y condiciones</Box>
-                        <Box as="a" href={'#'} color="brand.textMuted" fontSize="sm" fontWeight="500" _hover={{ color: 'brand.primary' }}>Privacidad</Box>
+                        <FooterLink to="/terminos">Términos y condiciones</FooterLink>
+                        <FooterLink to="/privacidad">Privacidad</FooterLink>
                     </Stack>
                 </SimpleGrid>
             </Container>

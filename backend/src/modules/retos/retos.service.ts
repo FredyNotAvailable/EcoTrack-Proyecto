@@ -2,98 +2,153 @@ import { RetosRepository } from './retos.repository';
 import { PuntosService } from '../puntos/puntos.service';
 import { KgCo2Service } from '../kgco2/kgco2.service';
 import { UserStatsService } from '../user-stats/user-stats.service';
+import { RachasService } from '../rachas/rachas.service';
 import { ApiError } from '../../utils/ApiError';
+import { cacheService, CACHE_TTL, CACHE_KEYS } from '../../utils/cache';
 
 export class RetosService {
+    private static instance: RetosService;
     private repository: RetosRepository;
     private puntosService: PuntosService;
     private kgCo2Service: KgCo2Service;
     private userStatsService: UserStatsService;
+    private rachasService: RachasService;
 
     constructor() {
-        this.repository = new RetosRepository();
-        this.puntosService = new PuntosService();
-        this.kgCo2Service = new KgCo2Service();
-        this.userStatsService = new UserStatsService();
+        this.repository = RetosRepository.getInstance();
+        this.puntosService = PuntosService.getInstance();
+        this.kgCo2Service = KgCo2Service.getInstance();
+        this.userStatsService = UserStatsService.getInstance();
+        this.rachasService = RachasService.getInstance();
+    }
+
+    static getInstance(): RetosService {
+        if (!RetosService.instance) {
+            RetosService.instance = new RetosService();
+        }
+        return RetosService.instance;
     }
 
     async getAllChallenges() {
         return this.repository.findAllChallenges();
     }
 
+    /**
+     * Dado un fecha_fin (YYYY-MM-DD o ISO), retorna el viernes de esa semana en YYYY-MM-DD.
+     * Los retos expiran el viernes a medianoche.
+     */
+    private getFridayDateStr(fechaFin: string): string {
+        const datePart = fechaFin.substring(0, 10);
+        const [y, m, d] = datePart.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        const dayOfWeek = date.getDay(); // 0=Dom, 5=Vie, 6=Sab
+
+        if (dayOfWeek === 5) return datePart; // Ya es viernes
+
+        let friday: Date;
+        if (dayOfWeek === 6) {
+            friday = new Date(y, m - 1, d - 1); // Sab → Vie
+        } else if (dayOfWeek === 0) {
+            friday = new Date(y, m - 1, d - 2); // Dom → Vie
+        } else {
+            // Lun(1)-Jue(4): avanzar al viernes de la misma semana
+            friday = new Date(y, m - 1, d + (5 - dayOfWeek));
+        }
+
+        const fy = friday.getFullYear();
+        const fm = String(friday.getMonth() + 1).padStart(2, '0');
+        const fd = String(friday.getDate()).padStart(2, '0');
+        return `${fy}-${fm}-${fd}`;
+    }
+
     async getActiveChallengesWithStatus(userId: string) {
         const now = new Date();
-        // 1. Get Active Challenges (Available to join or active)
-        const activeRetos = await this.repository.findActiveChallenges();
 
-        // 2. Get User's Joined Challenges (History)
-        const userRetos = await this.repository.getAllUserChallenges(userId);
+        // Fecha local YYYY-MM-DD para comparaciones de fecha
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        // 1. Parallel fetch: Active Challenges (cached) + User's Joined Challenges
+        const [activeRetos, userRetos] = await Promise.all([
+            cacheService.getOrSet(
+                CACHE_KEYS.retosActivos(),
+                () => this.repository.findActiveChallenges(),
+                CACHE_TTL.RETOS_ACTIVOS
+            ),
+            this.repository.getAllUserChallenges(userId)
+        ]);
 
-        // 3. Find challenges that user joined but are NOT in the active list (e.g. Expired)
+        // 2. Find challenges that user joined but are NOT in the active list (e.g. Expired)
         const activeIds = new Set(activeRetos.map(r => r.id));
         const missingRetoIds = userRetos
             .map(ur => ur.reto_id)
             .filter(id => !activeIds.has(id));
 
-        const extraRetos = await this.repository.getChallengesByIds(missingRetoIds);
+        const extraRetos = missingRetoIds.length > 0 
+            ? await this.repository.getChallengesByIds(missingRetoIds)
+            : [];
 
-        // 4. Combine Lists
-        const allRelevantRetos = [...activeRetos, ...extraRetos];
-
-        // Remove duplicates if any (though logic above should prevent it)
+        // 3. Combine Lists and remove duplicates
         const uniqueRetosMap = new Map();
-        allRelevantRetos.forEach(r => uniqueRetosMap.set(r.id, r));
+        [...activeRetos, ...extraRetos].forEach(r => uniqueRetosMap.set(r.id, r));
         const finalRetos = Array.from(uniqueRetosMap.values());
 
+        // 4. BATCH: Get all tasks and user tasks in parallel (eliminates N+1)
+        const retoIds = finalRetos.map(r => r.id);
+        const userRetoIds = userRetos.map(ur => ur.id);
+        
+        const [allTasksMap, allUserTasksMap] = await Promise.all([
+            this.repository.getTasksByMultipleChallengeIds(retoIds),
+            this.repository.getUserTasksByMultipleChallengeIds(userRetoIds)
+        ]);
+
+        // 5. Build results without additional queries
         const results = [];
+        const statusUpdates: Promise<void>[] = [];
 
         for (const reto of finalRetos) {
             let userReto = userRetos.find(ur => ur.reto_id === reto.id);
-            const tasks = await this.repository.getTasksByChallengeId(reto.id);
-            let userTasks: any[] = [];
-
-            if (userReto) {
-                userTasks = await this.repository.getUserTasksByChallenge(userReto.id);
-            }
+            const tasks = allTasksMap.get(reto.id) || [];
+            const userTasks = userReto ? (allUserTasksMap.get(userReto.id) || []) : [];
 
             const totalTasks = tasks.length;
             const completedCount = userTasks.filter(ut => ut.completado).length;
             const progressPercent = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
 
-            if (userReto) {
-                // --- LAZY EXPIRATION & RECOVERY CHECK ---
-                // Set end of day for fairness (Local Time)
-                const endDate = new Date(`${reto.fecha_fin}T23:59:59.999`);
+            // Determinar si el reto ya expiró: el viernes de la semana de fecha_fin ya pasó
+            const fridayStr = this.getFridayDateStr(reto.fecha_fin);
+            const isExpiredByDate = fridayStr < todayStr;
 
-                // Check if last day's task is completed
+            if (userReto) {
+                // --- LAZY EXPIRATION CHECK ---
                 const maxDay = tasks.length > 0 ? Math.max(...tasks.map(t => t.dia_orden)) : 0;
                 const lastDayTask = tasks.find(t => t.dia_orden === maxDay);
                 const isLastTaskDone = lastDayTask ? userTasks.some(ut => ut.tarea_id === lastDayTask.id && ut.completado) : false;
 
-                if (now > endDate || isLastTaskDone) {
-                    // Time has passed OR last task is done
-                    if (userReto.estado === 'joined' && completedCount < totalTasks) {
-                        // Should be expired
-                        await this.repository.updateChallengeProgress(userId, reto.id, completedCount, 'expired');
-                        userReto.estado = 'expired';
-                    }
-                } else {
-                    // Time has NOT passed AND last task NOT done (Challenge is active)
-                    if (userReto.estado === 'expired') {
-                        // RECOVERY: It was marked expired but conditions are still valid (likely timezone recovery)
-                        await this.repository.updateChallengeProgress(userId, reto.id, completedCount, 'joined');
-                        userReto.estado = 'joined';
+                if (isExpiredByDate || isLastTaskDone) {
+                    // El reto ya venció o se completó la última tarea
+                    if (userReto.estado === 'joined') {
+                        if (completedCount === totalTasks && totalTasks > 0) {
+                            // Todas las tareas completadas = reto completado
+                            statusUpdates.push(this.repository.updateChallengeProgress(userId, reto.id, completedCount, 'completed'));
+                            userReto.estado = 'completed';
+                        } else {
+                            // No se completaron todas = expirado
+                            statusUpdates.push(this.repository.updateChallengeProgress(userId, reto.id, completedCount, 'expired'));
+                            userReto.estado = 'expired';
+                        }
                     }
                 }
+                // NOTA: Ya no revertimos 'expired' a 'joined'. Una vez expirado, se queda expirado.
             }
 
             results.push({
                 ...reto,
                 joined: !!userReto,
-                status: userReto?.estado,
-                // Client expects 'progress' to be percentage (0-100)
+                status: userReto?.estado || (isExpiredByDate ? 'expired' : undefined),
                 progress: progressPercent,
-                // Detailed Breakdown
                 total_tasks: totalTasks,
                 completed_tasks: completedCount,
                 percent: progressPercent,
@@ -108,9 +163,11 @@ export class RetosService {
             });
         }
 
-        // Sort: Active/Joined first, then Expired? Or just keep original sort (created_at desc usually)
-        // Repo returns sorted by created_at. Merging might mess it slightly if extraRetos are older.
-        // Let's sort results by fecha_inicio descending (newest first)
+        // Execute any status updates in parallel (non-blocking for response)
+        if (statusUpdates.length > 0) {
+            Promise.all(statusUpdates).catch(console.error);
+        }
+
         return results.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
     }
 
@@ -120,7 +177,11 @@ export class RetosService {
 
         const now = new Date();
         const start = new Date(`${reto.fecha_inicio}T00:00:00.000`);
-        const end = new Date(`${reto.fecha_fin}T23:59:59.999`);
+        
+        // Los retos expiran el viernes a medianoche
+        const fridayStr = this.getFridayDateStr(reto.fecha_fin);
+        const [fy, fm, fd] = fridayStr.split('-').map(Number);
+        const end = new Date(fy, fm - 1, fd, 23, 59, 59, 999);
 
         if (now < start) {
             throw new ApiError(400, 'Este reto aún no ha comenzado');
@@ -136,9 +197,7 @@ export class RetosService {
         const result = await this.repository.joinChallenge(userId, retoId);
 
         // Update Streak (Racha)
-        const { RachasService } = await import('../rachas/rachas.service');
-        const rachasService = new RachasService();
-        await rachasService.updateStreak(userId);
+        await this.rachasService.updateStreak(userId);
 
         return result;
     }
@@ -169,7 +228,9 @@ export class RetosService {
         const now = new Date();
         const reto = await this.repository.getChallengeById(retoId);
         if (reto) {
-            const end = new Date(`${reto.fecha_fin}T23:59:59.999`);
+            const fridayStr = this.getFridayDateStr(reto.fecha_fin);
+            const [fy, fm, fd] = fridayStr.split('-').map(Number);
+            const end = new Date(fy, fm - 1, fd, 23, 59, 59, 999);
             if (now > end && userReto.estado !== 'completed') {
                 // It is expired. Update and block.
                 await this.repository.updateChallengeProgress(userId, retoId, userReto.progreso, 'expired');
@@ -207,11 +268,9 @@ export class RetosService {
         await this.userStatsService.updateChallengeStats(userId, task.recompensa_puntos, task.recompensa_kg_co2);
 
         // 7. Update Streak (Racha)
-        const { RachasService } = await import('../rachas/rachas.service');
-        const rachasService = new RachasService();
-        await rachasService.updateStreak(userId);
+        await this.rachasService.updateStreak(userId);
 
-        // 7. Check Challenge Completion & Update Progress
+        // 8. Check Challenge Completion & Update Progress
         // Force refresh of userReto to get current progress? No, calculate locally?
         // Better to query DB or recalc. checkChallengeCompletion does it.
         await this.checkChallengeCompletion(userId, retoId, tasks, taskId);

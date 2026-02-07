@@ -2,14 +2,31 @@ import { PostsRepository } from './posts.repository';
 import { PostsStorage } from './posts.storage';
 import { CreatePostDTO, CreateCommentDTO, Post, PostComment, PostListOptions } from './posts.types';
 import { ApiError } from '../../utils/ApiError';
+import { PuntosService } from '../puntos/puntos.service';
+import { RachasService } from '../rachas/rachas.service';
+import { UserStatsService } from '../user-stats/user-stats.service';
 
 export class PostsService {
+    private static instance: PostsService;
     private repository: PostsRepository;
     private storage: PostsStorage;
+    private puntosService: PuntosService;
+    private rachasService: RachasService;
+    private userStatsService: UserStatsService;
 
     constructor() {
-        this.repository = new PostsRepository();
-        this.storage = new PostsStorage();
+        this.repository = PostsRepository.getInstance();
+        this.storage = PostsStorage.getInstance();
+        this.puntosService = PuntosService.getInstance();
+        this.rachasService = RachasService.getInstance();
+        this.userStatsService = UserStatsService.getInstance();
+    }
+
+    static getInstance(): PostsService {
+        if (!PostsService.instance) {
+            PostsService.instance = new PostsService();
+        }
+        return PostsService.instance;
     }
 
     async getFeed(options: PostListOptions): Promise<Post[]> {
@@ -55,20 +72,12 @@ export class PostsService {
             }));
         }
 
-        // Log points: +15 for creating a post
-        const { PuntosService } = await import('../puntos/puntos.service');
-        const puntosService = new PuntosService();
-        await puntosService.logPoints(userId, 15, 'post', createdPost.id);
-
-        // Update Streak (Racha)
-        const { RachasService } = await import('../rachas/rachas.service');
-        const rachasService = new RachasService();
-        await rachasService.updateStreak(userId);
-
-        // Update User Stats
-        const { UserStatsService } = await import('../user-stats/user-stats.service');
-        const userStatsService = new UserStatsService();
-        await userStatsService.updatePostStats(userId, 15);
+        // Log points, update streak, and stats in parallel
+        await Promise.all([
+            this.puntosService.logPoints(userId, 15, 'post', createdPost.id),
+            this.rachasService.updateStreak(userId),
+            this.userStatsService.updatePostStats(userId, 15)
+        ]);
 
 
         return {
@@ -132,17 +141,15 @@ export class PostsService {
         if (!post) throw new ApiError(404, 'Post not found', 'NOT_FOUND');
 
         if (action === 'like') {
-            await this.repository.addLike(postId, userId);
-            // Update User Stats (increment like for post owner)
-            const { UserStatsService } = await import('../user-stats/user-stats.service');
-            const userStatsService = new UserStatsService();
-            await userStatsService.updateLikeStats(post.user_id, true);
+            await Promise.all([
+                this.repository.addLike(postId, userId),
+                this.userStatsService.updateLikeStats(post.user_id, true)
+            ]);
         } else {
-            await this.repository.removeLike(postId, userId);
-            // Update User Stats (decrement like for post owner)
-            const { UserStatsService } = await import('../user-stats/user-stats.service');
-            const userStatsService = new UserStatsService();
-            await userStatsService.updateLikeStats(post.user_id, false);
+            await Promise.all([
+                this.repository.removeLike(postId, userId),
+                this.userStatsService.updateLikeStats(post.user_id, false)
+            ]);
         }
     }
 
@@ -163,20 +170,12 @@ export class PostsService {
             content: data.content
         });
 
-        // Log points: +5 for creating a comment
-        const { PuntosService } = await import('../puntos/puntos.service');
-        const puntosService = new PuntosService();
-        await puntosService.logPoints(userId, 5, 'comentario', comment.id);
-
-        // Update Streak (Racha)
-        const { RachasService } = await import('../rachas/rachas.service');
-        const rachasService = new RachasService();
-        await rachasService.updateStreak(userId);
-
-        // Update User Stats
-        const { UserStatsService } = await import('../user-stats/user-stats.service');
-        const userStatsService = new UserStatsService();
-        await userStatsService.updateCommentStats(userId, 5);
+        // Log points, update streak, and stats in parallel
+        await Promise.all([
+            this.puntosService.logPoints(userId, 5, 'comentario', comment.id),
+            this.rachasService.updateStreak(userId),
+            this.userStatsService.updateCommentStats(userId, 5)
+        ]);
 
         return comment;
     }

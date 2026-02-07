@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
     Box,
     SimpleGrid,
@@ -17,7 +18,7 @@ interface FeatureProps {
     icon: IconType;
 }
 
-const Feature = ({ title, text, icon }: FeatureProps) => {
+const Feature = memo(({ title, text, icon }: FeatureProps) => {
     return (
         <Stack
             align={'center'}
@@ -46,7 +47,9 @@ const Feature = ({ title, text, icon }: FeatureProps) => {
             <Text color={'brand.textMuted'} fontSize="sm" fontWeight="500" lineHeight="1.6">{text}</Text>
         </Stack>
     );
-};
+});
+
+Feature.displayName = 'Feature';
 
 export const FeaturesSection = () => {
     return (

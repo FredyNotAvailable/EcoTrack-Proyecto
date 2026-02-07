@@ -1,9 +1,20 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { authMiddleware, requireRole } from '../../middlewares/auth.middleware';
+import { validateBody, checkEmailSchema } from '../../utils/validators';
 
 import { supabase } from '../../config/supabaseClient';
 
 const router = Router();
+
+// Rate limiting estricto para rutas de auth (5 req/min)
+const authLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 5,
+    message: { error: { code: 'TOO_MANY_AUTH_REQUESTS', message: 'Demasiados intentos de autenticación, espera un minuto' } },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 /**
  * POST /auth/check-email
@@ -11,14 +22,10 @@ const router = Router();
  * Público (sin middleware de auth).
  */
 // verifica si un correo ya esta registrado
-router.post('/check-email', async (req: Request, res: Response) => {
+router.post('/check-email', authLimiter, validateBody(checkEmailSchema), async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
         console.log(`[Backend] Check Email Request for: ${email}`);
-
-        if (!email) {
-            return res.status(400).json({ error: 'Email requerido' });
-        }
 
         // Utiliza listUsers ya que schema('auth') falló por permisos de PostgREST
         // Nota: listUsers no tiene filtro directo de email en esta versión?
@@ -104,6 +111,74 @@ router.get('/registration-status', authMiddleware, async (req: any, res: Respons
     } catch (error) {
         console.error("Error checking registration status:", error);
         return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+/**
+ * POST /auth/forgot-password
+ * Envía un correo de restablecimiento de contraseña al usuario.
+ * Público con rate limiting estricto.
+ */
+router.post('/forgot-password', authLimiter, validateBody(checkEmailSchema), async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+        console.log(`[Backend] Password reset request for: ${email}`);
+
+        // Primero verificar si el email existe
+        const { data: userList, error: listError } = await supabase.auth.admin.listUsers({
+            perPage: 1000
+        });
+
+        if (listError) {
+            console.error("Error listing users:", listError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'El correo no existe o está vinculado a una cuenta de Google.'
+            });
+        }
+
+        const userExists = userList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+        if (!userExists) {
+            return res.status(404).json({
+                success: false,
+                message: 'No existe una cuenta registrada con este correo electrónico.'
+            });
+        }
+
+        // Verificar si la cuenta fue creada con OAuth (Google, etc.)
+        const provider = userExists.app_metadata?.provider;
+        if (provider && provider !== 'email') {
+            return res.status(400).json({
+                success: false,
+                message: `Esta cuenta está vinculada a ${provider === 'google' ? 'Google' : provider}. Inicia sesión usando ese método.`
+            });
+        }
+
+        // El email existe y es cuenta de email/password, enviar correo de reset
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`
+        });
+
+        if (error) {
+            console.error("Error sending reset email:", error.message);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudo enviar el correo. Verifica que el correo sea correcto.'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Te hemos enviado un correo con instrucciones para restablecer tu contraseña.'
+        });
+
+    } catch (error) {
+        console.error("Error in forgot-password:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'El correo no existe o está vinculado a una cuenta de Google.'
+        });
     }
 });
 

@@ -1,16 +1,30 @@
 import { ConsejosRepository } from './consejos.repository';
 import { DailyTip } from './consejos.types';
 import { ApiError } from '../../utils/ApiError';
+import { cacheService, CACHE_TTL, CACHE_KEYS } from '../../utils/cache';
 
 export class ConsejosService {
+    private static instance: ConsejosService;
     private repository: ConsejosRepository;
 
     constructor() {
-        this.repository = new ConsejosRepository();
+        this.repository = ConsejosRepository.getInstance();
+    }
+
+    static getInstance(): ConsejosService {
+        if (!ConsejosService.instance) {
+            ConsejosService.instance = new ConsejosService();
+        }
+        return ConsejosService.instance;
     }
 
     async getDailyTip(): Promise<DailyTip> {
-        const tips = await this.repository.findAllActive();
+        // Get tips from cache or DB
+        const tips = await cacheService.getOrSet(
+            CACHE_KEYS.consejos(),
+            () => this.repository.findAllActive(),
+            CACHE_TTL.CONSEJOS
+        );
 
         if (!tips || tips.length === 0) {
             throw new ApiError(404, 'No active tips found', 'NO_TIPS_AVAILABLE');

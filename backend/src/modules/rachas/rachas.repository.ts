@@ -6,7 +6,7 @@ export class RachasRepository {
     async getRacha(userId: string): Promise<UserRacha | null> {
         const { data, error } = await supabase
             .from('user_rachas')
-            .select('*')
+            .select('user_id, racha_actual, racha_maxima, ultima_fecha, updated_at')
             .eq('user_id', userId)
             .single();
 

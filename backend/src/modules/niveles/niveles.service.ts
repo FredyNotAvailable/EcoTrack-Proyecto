@@ -63,7 +63,6 @@ export class NivelesService {
 
         return {
             nivel: currentLevel.nivel,
-            titulo: currentLevel.titulo || `Nivel ${currentLevel.nivel}`,
             puntos_actuales_totales: currentPoints,
             puntos_nivel_actual,
             puntos_siguiente_nivel,

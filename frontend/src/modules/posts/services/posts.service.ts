@@ -2,8 +2,15 @@ import apiClient from '../../../services/apiClient';
 import type { Post, Comment, CreatePostPayload, CreateCommentPayload } from '../types';
 
 export const PostsService = {
-    async getPosts(params?: { page?: number; limit?: number; authorId?: string; hashtag?: string }) {
-        const { data } = await apiClient.get<{ data: Post[]; meta: any }>('/posts', { params });
+    async getPosts(params?: { cursor?: string; limit?: number; authorId?: string; hashtag?: string }) {
+        const { data } = await apiClient.get<{ 
+            data: Post[]; 
+            pagination: { 
+                hasMore: boolean; 
+                nextCursor: string | null; 
+                count: number 
+            } 
+        }>('/posts', { params });
         return data;
     },
 

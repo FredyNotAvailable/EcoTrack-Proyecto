@@ -72,7 +72,7 @@ const CommunityPage = () => {
     const { uploadState, handleBackgroundSubmit } = usePostUpload();
 
     // Flatten pages to get all posts
-    const allPosts = feedData?.pages.flatMap(page => page.data) || [];
+    const allPosts = feedData?.pages.flatMap((page: { data: Post[] }) => page.data) || [];
 
     // Derived state for reactive updates
     const detailPost = allPosts.find((p: Post) => p.id === viewPostId) || null;
@@ -203,13 +203,13 @@ const CommunityPage = () => {
                                                         username: post.user?.username || 'usuario',
                                                         name: post.user?.full_name || post.user?.username || 'Usuario',
                                                         avatar: post.user?.avatar_url || '',
-                                                        verified: post.user?.is_verified,
-                                                        location: post.ubicacion
+                                                        verified: post.user?.is_verified
                                                     }}
                                                     content={{
                                                         text: post.descripcion,
                                                         hashtags: post.hashtags,
                                                         timeAgo: getTimeAgo(post.created_at),
+                                                        location: post.ubicacion,
                                                         media: post.media
                                                     }}
                                                     stats={{
@@ -232,16 +232,26 @@ const CommunityPage = () => {
                             </VStack>
 
                             {hasNextPage && (
-                                <Center py={4}>
+                                <Center py={6}>
                                     <Button
                                         onClick={() => fetchNextPage()}
                                         isLoading={isFetchingNextPage}
-                                        variant="outline"
+                                        loadingText="Cargando..."
+                                        variant="solid"
                                         colorScheme="green"
                                         borderRadius="full"
-                                        size="md"
+                                        size="lg"
+                                        px={10}
+                                        py={6}
+                                        fontWeight="700"
+                                        boxShadow="md"
+                                        _hover={{
+                                            transform: "translateY(-2px)",
+                                            boxShadow: "lg"
+                                        }}
+                                        transition="all 0.2s"
                                     >
-                                        Cargar más publicaciones
+                                        Ver más publicaciones
                                     </Button>
                                 </Center>
                             )}

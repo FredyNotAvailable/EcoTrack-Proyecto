@@ -3,10 +3,19 @@ import { DailyMission } from './misiones.types';
 import { ApiError } from '../../utils/ApiError';
 
 export class MisionesRepository {
+    private static instance: MisionesRepository;
+
+    static getInstance(): MisionesRepository {
+        if (!MisionesRepository.instance) {
+            MisionesRepository.instance = new MisionesRepository();
+        }
+        return MisionesRepository.instance;
+    }
+
     async findAllActive(): Promise<DailyMission[]> {
         const { data, error } = await supabase
             .from('misiones_diarias')
-            .select('*')
+            .select('id, titulo, descripcion, eco_tip, impacto, kg_co2_ahorrado, puntos, dificultad, categoria, activa, created_at')
             .eq('activa', true);
 
         if (error) {

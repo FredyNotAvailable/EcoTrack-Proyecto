@@ -47,6 +47,9 @@ export const PostUploadProvider: React.FC<{ children: ReactNode }> = ({ children
     };
 
     const handleBackgroundSubmit = async (data: any) => {
+        console.log('PostUploadContext - Received data:', data);
+        console.log('PostUploadContext - Hashtags:', data.hashtags);
+        
         // Initial state
         const firstMedia = data.mediaItems[0];
         setUploadState({
@@ -88,6 +91,14 @@ export const PostUploadProvider: React.FC<{ children: ReactNode }> = ({ children
                 progress: 90,
                 message: 'Finalizando publicación...'
             }) : null);
+
+            console.log('PostUploadContext - Creating post with payload:', {
+                descripcion: data.descripcion,
+                is_public: true,
+                ubicacion: data.ubicacion,
+                media: mediaPayload,
+                hashtags: data.hashtags
+            });
 
             const newPost = await createPostMutation.mutateAsync({
                 descripcion: data.descripcion,

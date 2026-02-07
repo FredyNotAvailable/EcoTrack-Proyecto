@@ -75,6 +75,10 @@ const theme = extendTheme({
             html: {
                 scrollBehavior: "smooth",
             },
+            '@keyframes shimmer': {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+            },
         },
     },
     components: {

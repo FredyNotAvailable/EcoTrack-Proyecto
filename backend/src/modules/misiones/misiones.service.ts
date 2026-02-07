@@ -1,13 +1,34 @@
 import { MisionesRepository } from './misiones.repository';
 import { DailyMission } from './misiones.types';
 import { ApiError } from '../../utils/ApiError';
+import { cacheService, CACHE_TTL, CACHE_KEYS } from '../../utils/cache';
+import { PuntosService } from '../puntos/puntos.service';
+import { KgCo2Service } from '../kgco2/kgco2.service';
+import { RachasService } from '../rachas/rachas.service';
+import { UserStatsService } from '../user-stats/user-stats.service';
 import crypto from 'crypto';
 
 export class MisionesService {
+    private static instance: MisionesService;
     private repository: MisionesRepository;
+    private puntosService: PuntosService;
+    private kgCo2Service: KgCo2Service;
+    private rachasService: RachasService;
+    private userStatsService: UserStatsService;
 
     constructor() {
-        this.repository = new MisionesRepository();
+        this.repository = MisionesRepository.getInstance();
+        this.puntosService = PuntosService.getInstance();
+        this.kgCo2Service = KgCo2Service.getInstance();
+        this.rachasService = RachasService.getInstance();
+        this.userStatsService = UserStatsService.getInstance();
+    }
+
+    static getInstance(): MisionesService {
+        if (!MisionesService.instance) {
+            MisionesService.instance = new MisionesService();
+        }
+        return MisionesService.instance;
     }
 
     private getHash(input: string): number {
@@ -16,7 +37,12 @@ export class MisionesService {
     }
 
     async getDailyMissions(): Promise<DailyMission[]> {
-        const activeMissions = await this.repository.findAllActive();
+        // Get missions from cache or DB
+        const activeMissions = await cacheService.getOrSet(
+            CACHE_KEYS.misiones(),
+            () => this.repository.findAllActive(),
+            CACHE_TTL.MISIONES
+        );
 
         if (!activeMissions || activeMissions.length === 0) {
             throw new ApiError(404, 'No active missions found');
@@ -62,31 +88,26 @@ export class MisionesService {
         // Let's verify by fetching all active strategies or just fetching the specific mission.
         // Since we don't have getById, let's add it or hack it by finding in active.
         // Better approach: Add getById to Repository. But for now, let's use findAllActive and find.
-        const allMissions = await this.repository.findAllActive();
+        const allMissions = await cacheService.getOrSet(
+            CACHE_KEYS.misiones(),
+            () => this.repository.findAllActive(),
+            CACHE_TTL.MISIONES
+        );
         const mission = allMissions.find(m => m.id === missionId);
 
         if (mission) {
-            // 4. Log points
-            const { PuntosService } = await import('../puntos/puntos.service');
-            const puntosService = new PuntosService();
-            await puntosService.logPoints(userId, mission.puntos, 'mision', mission.id);
+            // Execute points, CO2, streak, and stats updates in parallel
+            const promises: Promise<unknown>[] = [
+                this.puntosService.logPoints(userId, mission.puntos, 'mision', mission.id),
+                this.rachasService.updateStreak(userId),
+                this.userStatsService.updateMissionStats(userId, mission.puntos, mission.kg_co2_ahorrado || 0)
+            ];
 
-            // 5. Log KgCO2
             if (mission.kg_co2_ahorrado && mission.kg_co2_ahorrado > 0) {
-                const { KgCo2Service } = await import('../kgco2/kgco2.service');
-                const kgCo2Service = new KgCo2Service();
-                await kgCo2Service.logKgCo2(userId, mission.kg_co2_ahorrado, 'mision', mission.id);
+                promises.push(this.kgCo2Service.logKgCo2(userId, mission.kg_co2_ahorrado, 'mision', mission.id));
             }
 
-            // 6. Update Streak (Racha)
-            const { RachasService } = await import('../rachas/rachas.service');
-            const rachasService = new RachasService();
-            await rachasService.updateStreak(userId);
-
-            // 7. Update User Stats
-            const { UserStatsService } = await import('../user-stats/user-stats.service');
-            const userStatsService = new UserStatsService();
-            await userStatsService.updateMissionStats(userId, mission.puntos, mission.kg_co2_ahorrado || 0);
+            await Promise.all(promises);
         }
     }
 }

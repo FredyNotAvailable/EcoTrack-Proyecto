@@ -1,417 +1,84 @@
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
     Box,
     Grid,
     GridItem,
-    SimpleGrid,
-    Heading,
-    Text,
-    Flex,
-    Icon,
     Skeleton,
-    SkeletonText,
-    VStack,
+    useDisclosure,
     HStack,
-    Button,
-    Badge,
-    Tooltip
+    VStack,
+    Container,
 } from "@chakra-ui/react";
-import {
-    FaLeaf,
-    FaArrowRight,
-    FaLightbulb,
-    FaCircleCheck,
-    FaFire,
-    FaTrophy,
-    FaTree
-} from "react-icons/fa6";
 import { motion } from "framer-motion";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { consejosService } from "./services/consejos.service";
-import type { DailyTip } from "./services/consejos.service";
+import type { DailyTip as DailyTipType } from "./services/consejos.service";
 import { misionesService } from "./services/misiones.service";
 import type { DailyMission } from "./services/misiones.service";
-import { MissionModal } from "./components/MissionModal";
-import { useDisclosure } from "@chakra-ui/react";
 import { useUserStats } from "../../hooks/useUserStats";
-import type { UserStats } from "../../services/userStatsService";
 import { userRachasService } from "../../services/userRachasService";
-import type { UserRacha } from "../../services/userRachasService";
 import { useAuth } from "../auth/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { useRetos } from "../retos/hooks/useRetos";
-import type { Reto } from "../retos/services/retos.service";
-
-// --- Visual Components (Cloned from Dashboard) ---
-
-const MotionBox = motion(Box);
-
-const DashboardHeaderVisual = ({ username }: { username: string }) => {
-    return (
-        <Flex
-            direction={{ base: "column", md: "row" }}
-            align={{ base: "start", md: "flex-end" }}
-            justify="space-between"
-            mb={6}
-            mt={-2}
-            pt={2}
-            gap={2}
-        >
-            <Box>
-                <Heading as="h1" fontSize={{ base: "2rem", md: "2.5rem" }} lineHeight="1.1" color="brand.secondary" mb={1}>
-                    ¡Hola, <Text as="span" bgGradient="linear(to-r, brand.primary, brand.accent)" bgClip="text" fontWeight="900"> {username} </Text>! 🌿
-                </Heading>
-                <Text color="brand.textMuted" fontSize="lg" fontWeight="500">
-                    Tu impacto positivo está transformando el mundo, un hábito a la vez.
-                </Text>
-            </Box>
-        </Flex>
-    );
-};
-
-const StatsOverviewVisual = ({ stats, racha, loading }: { stats?: UserStats, racha?: UserRacha | null, loading: boolean }) => {
-    if (loading) {
-        return (
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={5} mb={4} bg="white" p={6} borderRadius="24px" boxShadow="lg">
-                {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height="80px" borderRadius="16px" />)}
-            </SimpleGrid>
-        );
-    }
-
-    const isRachaActive = racha?.ultima_fecha && racha.ultima_fecha === new Date().toISOString().split('T')[0];
-
-    return (
-        <MotionBox
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <SimpleGrid
-                columns={{ base: 2, md: 3, lg: 5 }}
-                spacing={5}
-                mb={6}
-                bg="white"
-                p={6}
-                borderRadius="30px"
-                boxShadow="xl"
-                border="1px solid"
-                borderColor="gray.50"
-            >
-                {/* Stat 1 */}
-                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="brand.primary">
-                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Experiencia</Text>
-                    <Text fontSize="2xl" fontWeight="900" color="brand.secondary">{stats?.puntos_totales || 0}</Text>
-                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">Puntos XP</Text>
-                </Flex>
-
-                {/* Stat 2 */}
-                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="brand.secondary">
-                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Nivel</Text>
-                    <Text fontSize="2xl" fontWeight="900" color="brand.secondary">Nvl. {stats?.nivel || 1}</Text>
-                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">Explorador</Text>
-                </Flex>
-
-                {/* Stat 3: CO2 Impact */}
-                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="green.400">
-                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Impacto</Text>
-                    <Tooltip label="Kilogramos de CO2 ahorrados gracias a tus acciones." hasArrow>
-                        <Text fontSize="2xl" fontWeight="900" color="brand.secondary">{stats?.kg_co2_ahorrado || 0} kg</Text>
-                    </Tooltip>
-                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">CO₂ Evitado</Text>
-                </Flex>
-
-                {/* Stat 4: Eco Racha */}
-                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="orange.400">
-                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Racha</Text>
-                    <Flex align="center" gap={2}>
-                        <Text fontSize="2xl" fontWeight="900" color="brand.secondary">
-                            {racha?.racha_actual || 0}
-                        </Text>
-                        <Icon
-                            as={FaFire}
-                            fontSize="1.2rem"
-                            color={isRachaActive ? "orange.400" : "gray.300"}
-                            title={isRachaActive ? "¡Racha activa!" : "Completa una misión para activar"}
-                        />
-                    </Flex>
-                    <Text fontSize="xs" color="brand.textMuted" fontWeight="600">Días seguidos</Text>
-                </Flex>
-
-                {/* Stat 5 */}
-                <Flex direction="column" pl={5} py={2} borderLeft="4px solid" borderColor="purple.400">
-                    <Text fontSize="xs" fontWeight="700" color="brand.textMuted" textTransform="uppercase" letterSpacing="wider" mb={1}>Progreso</Text>
-                    <Box mt={2} h="6px" w="100%" bg="gray.100" borderRadius="full" overflow="hidden">
-                        <Box h="100%" w={`${stats?.progress?.progreso_porcentaje || 0}% `} bgGradient="linear(to-r, purple.400, purple.600)" />
-                    </Box>
-                    <Text fontSize="xs" color="brand.textMuted" mt={1} fontWeight="600">
-                        {stats?.progress?.progreso_porcentaje || 0}% para Nvl. {(stats?.nivel || 1) + 1}
-                    </Text>
-                </Flex>
-            </SimpleGrid>
-        </MotionBox>
-    );
-};
-
-const ActiveChallengesVisual = ({ challenges, loading }: { challenges: Reto[], loading: boolean }) => {
-    const navigate = useNavigate();
-    const joinedChallenges = challenges.filter(r => r.joined && r.status !== 'completed').slice(0, 2);
-
-    return (
-        <Box
-            p={6}
-            bg="white"
-            borderRadius="24px"
-            boxShadow="lg"
-            mb={8}
-            border="1px solid"
-            borderColor="gray.100"
-        >
-            <Flex justify="space-between" align="center" mb={5}>
-                <Flex align="center" gap={2}>
-                    <Icon as={FaTrophy} color="brand.primary" />
-                    <Text fontSize="lg" fontWeight="800" color="brand.secondary">Retos en Curso</Text>
-                </Flex>
-                <Button
-                    variant="ghost"
-                    color="brand.primary"
-                    size="sm"
-                    fontSize="sm"
-                    fontWeight="700"
-                    rightIcon={<Icon as={FaArrowRight} />}
-                    onClick={() => navigate('/app/retos')}
-                    _hover={{ bg: 'brand.bgCardLight' }}
-                >
-                    Ver todos
-                </Button>
-            </Flex>
-
-            {loading ? (
-                <VStack spacing={4} align="stretch">
-                    <Skeleton height="70px" borderRadius="16px" />
-                    <Skeleton height="70px" borderRadius="16px" />
-                </VStack>
-            ) : joinedChallenges.length > 0 ? (
-                joinedChallenges.map((reto) => (
-                    <Flex
-                        key={reto.id}
-                        align="center"
-                        gap={4}
-                        p={4}
-                        border="1px solid"
-                        borderColor="gray.100"
-                        borderRadius="20px"
-                        mb={3}
-                        transition="all 0.2s"
-                        cursor="pointer"
-                        _hover={{ transform: "translateX(4px)", borderColor: "brand.primary", bg: "brand.bgCardLight" }}
-                        onClick={() => navigate('/app/retos')}
-                    >
-                        <Flex w="48px" h="48px" borderRadius="2xl" bg="brand.bgCardLight" color="brand.primary" align="center" justify="center" shrink={0}>
-                            <Icon as={FaLeaf} fontSize="1.2rem" />
-                        </Flex>
-                        <Box flex={1}>
-                            <Text fontSize="sm" fontWeight="700" mb={1} color="brand.secondary">{reto.titulo}</Text>
-                            <Box h="6px" w="100%" bg="gray.100" borderRadius="full" mb={2} overflow="hidden">
-                                <Box h="100%" w={`${reto.progress}% `} bg="brand.primary" borderRadius="full" />
-                            </Box>
-                            <Flex fontSize="xs" color="brand.textMuted" gap={3} fontWeight="600">
-                                <Flex align="center" gap={1}><Icon as={FaTree} color="green.500" /> {reto.recompensa_kg_co2}kg Ahorrados</Flex>
-                                <Text color="brand.primary">{Math.round(reto.progress)}% Completado</Text>
-                            </Flex>
-                        </Box>
-                    </Flex>
-                ))
-            ) : (
-                <VStack py={8} spacing={3} bg="gray.50" borderRadius="2xl" border="1px dashed" borderColor="gray.200">
-                    <Icon as={FaLeaf} color="gray.400" boxSize={8} />
-                    <Text fontSize="sm" color="gray.500" fontWeight="500">¿Listo para un desafío?</Text>
-                    <Button
-                        size="sm"
-                        bg="brand.primary"
-                        color="white"
-                        borderRadius="full"
-                        _hover={{ bg: "brand.primaryHover" }}
-                        onClick={() => navigate('/app/retos')}
-                    >
-                        Explorar Retos
-                    </Button>
-                </VStack>
-            )}
-        </Box>
-    );
-};
-
-const DailyTipVisual = ({ tip, loading }: { tip: DailyTip | null, loading: boolean }) => {
-    return (
-        <Box
-            p={6}
-            bg="brand.accentLight" // Un color suave para destacar
-            borderRadius="24px"
-            boxShadow="lg"
-            mb={8}
-            position="relative"
-            overflow="hidden"
-        >
-            <Icon as={FaLightbulb} position="absolute" right="-20px" bottom="-20px" fontSize="10rem" color="white" opacity="0.5" transform="rotate(20deg)" />
-
-            <Flex align="center" gap={3} mb={3} color="brand.accent" fontSize="lg" fontWeight="800">
-                <Box bg="white" p={2} borderRadius="full" boxShadow="sm">
-                    <Icon as={FaLightbulb} />
-                </Box>
-                <Text>Sabías que...</Text>
-            </Flex>
-
-            {loading ? (
-                <>
-                    <Skeleton height="20px" width="60%" mb={3} />
-                    <SkeletonText mt="4" noOfLines={2} spacing="4" skeletonHeight="2" />
-                </>
-            ) : tip ? (
-                <Box position="relative" zIndex={1}>
-                    <Text fontSize="lg" fontWeight="800" mb={2} color="brand.secondary">{tip.titulo}</Text>
-                    <Text color="brand.secondary" fontSize="md" lineHeight="1.6" fontWeight="500">
-                        {tip.descripcion}
-                    </Text>
-                </Box>
-            ) : (
-                <Text color="brand.textMuted" fontSize="sm">
-                    Hoy no hay consejo, ¡pero tú ya eres sabio! 🦉
-                </Text>
-            )}
-        </Box>
-    );
-};
-
-const MissionCardVisual = ({ mission, onClick }: { mission: DailyMission, onClick: () => void }) => {
-    return (
-        <Box
-            p={4}
-            bg={mission.completed ? "gray.50" : "white"}
-            border="1px solid"
-            borderColor={mission.completed ? "green.100" : "gray.100"}
-            borderRadius="20px"
-            cursor="pointer"
-            transition="all 0.3s ease"
-            opacity={mission.completed ? 0.7 : 1}
-            position="relative"
-            _hover={{
-                borderColor: mission.completed ? "green.300" : "brand.primary",
-                transform: "translateY(-3px)",
-                boxShadow: "md"
-            }}
-            onClick={onClick}
-        >
-            <Flex justify="space-between" align="center">
-                <HStack spacing={4} flex={1}>
-                    <Flex
-                        w="50px"
-                        h="50px"
-                        borderRadius="16px"
-                        bg={mission.completed ? "green.100" : "brand.bgCardLight"}
-                        color={mission.completed ? "green.600" : "brand.primary"}
-                        align="center"
-                        justify="center"
-                        boxShadow="sm"
-                    >
-                        {mission.completed ? <Icon as={FaCircleCheck} fontSize="1.4rem" /> : <Icon as={FaLeaf} fontSize="1.2rem" />}
-                    </Flex>
-                    <Box>
-                        <Text
-                            fontWeight="700"
-                            fontSize="md"
-                            color={mission.completed ? "gray.500" : "brand.secondary"}
-                            mb={1}
-                            textDecoration={mission.completed ? "line-through" : "none"}
-                        >
-                            {mission.titulo}
-                        </Text>
-                        <HStack spacing={2}>
-                            <Badge
-                                variant="subtle"
-                                colorScheme={
-                                    mission.categoria === 'energia' ? 'orange' :
-                                        mission.categoria === 'agua' ? 'cyan' :
-                                            mission.categoria === 'transporte' ? 'purple' :
-                                                'green'
-                                }
-                                borderRadius="full"
-                                px={2}
-                                fontSize="0.65rem"
-                                textTransform="capitalize"
-                            >
-                                {mission.categoria}
-                            </Badge>
-                            <Text fontSize="xs" fontWeight="700" color="brand.primary">+{mission.puntos} XP</Text>
-                        </HStack>
-                    </Box>
-                </HStack>
-            </Flex>
-        </Box>
-    );
-};
-
-const DailyMissionsWidgetVisual = ({
-    missions,
-    loading,
-    onMissionClick
-}: {
-    missions: DailyMission[],
-    loading: boolean,
-    onMissionClick: (m: DailyMission) => void
-}) => {
-    const completedCount = missions.filter(m => m.completed).length;
-    const progress = missions.length > 0 ? (completedCount / missions.length) * 100 : 0;
-
-    return (
-        <Box
-            p={6}
-            bg="white"
-            borderRadius="24px"
-            boxShadow="lg"
-            mb={8}
-            border="1px solid"
-            borderColor="gray.100"
-        >
-            <Flex justify="space-between" align="center" mb={2}>
-                <Text fontSize="lg" fontWeight="800" color="brand.secondary">Misiones de Hoy</Text>
-                <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
-                    {completedCount}/{missions.length}
-                </Badge>
-            </Flex>
-
-            <Box h="6px" w="100%" bg="gray.100" borderRadius="full" mb={6} overflow="hidden">
-                <Box h="100%" w={`${progress}%`} bg="brand.primary" borderRadius="full" transition="width 0.5s ease" />
-            </Box>
-
-            <VStack spacing={4} align="stretch">
-                {loading ? (
-                    <>
-                        <Skeleton height="80px" borderRadius="20px" />
-                        <Skeleton height="80px" borderRadius="20px" />
-                        <Skeleton height="80px" borderRadius="20px" />
-                    </>
-                ) : missions.length > 0 ? (
-                    missions.map((mission) => (
-                        <MissionCardVisual
-                            key={mission.id}
-                            mission={mission}
-                            onClick={() => onMissionClick(mission)}
-                        />
-                    ))
-                ) : (
-                    <Flex direction="column" align="center" py={8} textAlign="center">
-                        <Icon as={FaLeaf} color="green.300" boxSize={10} mb={3} />
-                        <Text color="gray.500" fontWeight="500">¡Todo despejado por hoy!</Text>
-                        <Text fontSize="xs" color="gray.400">Vuelve mañana para más misiones.</Text>
-                    </Flex>
-                )}
-            </VStack>
-        </Box>
-    );
-};
-
-// --- Component ---
 import { ProfileAPIService } from "../profile/services/profile.service";
+
+// Above-the-fold components - carga inmediata
+import { DashboardHeader, StatsOverview, MissionModal } from "./components";
+
+/**
+ * Dado un fecha_fin, retorna el viernes de esa semana a las 23:59:59.999.
+ * Los retos expiran el viernes a medianoche hora Ecuador.
+ */
+function getFridayExpiry(fechaFin: string): Date {
+    const datePart = fechaFin.substring(0, 10);
+    const [y, m, d] = datePart.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const dayOfWeek = date.getDay(); // 0=Dom, 5=Vie, 6=Sab
+
+    let friday: Date;
+    if (dayOfWeek === 5) {
+        friday = date;
+    } else if (dayOfWeek === 6) {
+        friday = new Date(y, m - 1, d - 1);
+    } else if (dayOfWeek === 0) {
+        friday = new Date(y, m - 1, d - 2);
+    } else {
+        friday = new Date(y, m - 1, d + (5 - dayOfWeek));
+    }
+    friday.setHours(23, 59, 59, 999);
+    return friday;
+}
+
+// Below-the-fold components - lazy loading
+const ActiveChallenges = lazy(() => import('./components/ActiveChallenges'));
+const DailyTip = lazy(() => import('./components/DailyTip'));
+const DailyMissionsWidget = lazy(() => import('./components/DailyMissionsWidget'));
+
+// Skeleton optimizado
+const SectionSkeleton = () => (
+    <Box 
+        p={{ base: 6, md: 8 }}
+        bg="white" 
+        borderRadius="32px" 
+        boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)" 
+        border="1px solid rgba(0,0,0,0.03)"
+    >
+        <HStack mb={4} justify="space-between">
+            <Skeleton height="24px" width="140px" borderRadius="xl" />
+            <Skeleton height="20px" width="60px" borderRadius="full" />
+        </HStack>
+        <VStack spacing={4} align="stretch">
+            <Skeleton height="80px" borderRadius="20px" />
+            <Skeleton height="80px" borderRadius="20px" />
+            <HStack spacing={3}>
+                <Skeleton height="40px" width="40px" borderRadius="full" />
+                <Box flex={1}>
+                    <Skeleton height="16px" width="80%" mb={2} borderRadius="lg" />
+                    <Skeleton height="14px" width="60%" borderRadius="lg" />
+                </Box>
+            </HStack>
+        </VStack>
+    </Box>
+);
 
 export const InicioPage = () => {
     const { user } = useAuth();
@@ -419,7 +86,7 @@ export const InicioPage = () => {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedMission, setSelectedMission] = useState<DailyMission | null>(null);
 
-    const [dailyTip, setDailyTip] = useState<DailyTip | null>(null);
+    const [dailyTip, setDailyTip] = useState<DailyTipType | null>(null);
     const [loadingTip, setLoadingTip] = useState(true);
 
     // Stats, Racha and Profile with React Query
@@ -437,6 +104,13 @@ export const InicioPage = () => {
 
     // Use Retos Hook
     const { challenges, isLoading: loadingRetos } = useRetos();
+
+    const activeChallenges = challenges.filter(challenge => {
+        const now = new Date();
+        // Los retos expiran el viernes a medianoche de la semana de fecha_fin
+        const fridayEnd = getFridayExpiry(challenge.fecha_fin);
+        return challenge.joined && fridayEnd >= now && challenge.status !== 'completed' && challenge.status !== 'expired';
+    });
 
     // Missions State
     const [missions, setMissions] = useState<DailyMission[]>([]);
@@ -457,12 +131,12 @@ export const InicioPage = () => {
 
                 setDailyTip(tip);
 
-                const mergedMissions = rawMissions.map((m: any) => ({
+                const mergedMissions = rawMissions.map((m: DailyMission) => ({
                     ...m,
                     completed: completedIds.includes(m.id)
                 }));
 
-                const sortedMissions = mergedMissions.sort((a: any, b: any) => {
+                const sortedMissions = mergedMissions.sort((a: DailyMission, b: DailyMission) => {
                     return Number(a.completed) - Number(b.completed);
                 });
 
@@ -497,13 +171,8 @@ export const InicioPage = () => {
         queryClient.invalidateQueries({ queryKey: ['racha', 'me'] });
     };
 
-
-
     return (
-        <Box
-            maxW="1200px"
-            mx="auto"
-        >
+        <Box minH="calc(100vh - 120px)" w="full" bg="brand.bgBody">
             <MissionModal
                 mission={selectedMission}
                 isOpen={isOpen}
@@ -512,45 +181,69 @@ export const InicioPage = () => {
             />
 
             <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                style={{ minHeight: "calc(100vh - 120px)" }}
             >
-                {/* Header */}
-                <Box mb={3}>
-                    {/* Safe fallback for display name */}
-                    <DashboardHeaderVisual username={profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Guardián'} />
-                </Box>
-
-                {/* Stats */}
-                <Box mb={6}>
-                    <StatsOverviewVisual stats={stats} racha={racha} loading={loadingStats} />
-                </Box>
-
-                {/* Main Grid */}
-                <Grid
-                    templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
-                    gap={8}
-                >
-                    {/* Main Content */}
-                    <GridItem>
+                {/* Hero Section - Optimizado */}
+                <Container maxW="container.xl" py={{ base: 4, md: 6 }}>
+                    <Box 
+                        bg="white"
+                        borderRadius="32px"
+                        p={{ base: 6, md: 8 }}
+                        mb={{ base: 6, md: 8 }}
+                        boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
+                        border="1px solid rgba(0,0,0,0.03)"
+                    >
+                        {/* Header */}
                         <Box mb={6}>
-                            <ActiveChallengesVisual challenges={challenges} loading={loadingRetos} />
+                            <DashboardHeader 
+                                username={profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Guardián'} 
+                            />
                         </Box>
-                        <DailyTipVisual tip={dailyTip} loading={loadingTip} />
-                    </GridItem>
 
-                    {/* Sidebar */}
-                    <GridItem>
-                        <DailyMissionsWidgetVisual
-                            missions={missions}
-                            loading={loadingMissions}
-                            onMissionClick={handleMissionClick}
-                        />
-                    </GridItem>
-                </Grid>
+                        {/* Stats Overview */}
+                        <StatsOverview stats={stats} racha={racha} loading={loadingStats} />
+                    </Box>
+
+                    {/* Main Content Grid */}
+                    <Grid
+                        templateColumns={{ 
+                            base: "1fr", 
+                            lg: "2fr 1fr" 
+                        }}
+                        gap={{ base: 6, md: 8 }}
+                        minH="300px"
+                    >
+                        {/* Contenido Principal */}
+                        <GridItem>
+                            <VStack spacing={{ base: 6, md: 8 }} align="stretch">
+                                {/* Retos Activos */}
+                                <Suspense fallback={<SectionSkeleton />}>
+                                    <ActiveChallenges challenges={activeChallenges} loading={loadingRetos} />
+                                </Suspense>
+
+                                {/* Consejo Diario */}
+                                <Suspense fallback={<SectionSkeleton />}>
+                                    <DailyTip tip={dailyTip} loading={loadingTip} />
+                                </Suspense>
+                            </VStack>
+                        </GridItem>
+
+                        {/* Sidebar - Misiones */}
+                        <GridItem>
+                            <Suspense fallback={<SectionSkeleton />}>
+                                <DailyMissionsWidget
+                                    missions={missions}
+                                    loading={loadingMissions}
+                                    onMissionClick={handleMissionClick}
+                                />
+                            </Suspense>
+                        </GridItem>
+                    </Grid>
+                </Container>
             </motion.div>
-
         </Box>
     );
 };

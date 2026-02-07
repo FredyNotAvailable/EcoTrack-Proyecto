@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { MisionesService } from './misiones.service';
 
-const misionesService = new MisionesService();
+const misionesService = MisionesService.getInstance();
 
 export const getDailyMissions = async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
     Box,
     Container,
@@ -18,7 +19,7 @@ interface FeatureProps {
     step: string;
 }
 
-const Feature = ({ title, text, icon, step }: FeatureProps) => {
+const Feature = memo(({ title, text, icon, step }: FeatureProps) => {
     return (
         <Stack
             align={'center'}
@@ -68,7 +69,9 @@ const Feature = ({ title, text, icon, step }: FeatureProps) => {
             </Text>
         </Stack>
     );
-};
+});
+
+Feature.displayName = 'Feature';
 
 export const HowItWorks = () => {
     return (

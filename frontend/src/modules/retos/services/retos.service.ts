@@ -9,11 +9,13 @@ export interface RetoTarea {
     recompensa_kg_co2: number;
     tipo: 'manual' | 'post' | 'event';
     cantidad_meta: number;
-    completed: boolean;
+    completed?: boolean;
     current_progress: number;
     can_upload_media?: boolean;
     dia_orden: number;
 }
+
+export type RetoStatus = 'active' | 'joined' | 'completed' | 'expired';
 
 export interface Reto {
     id: string;
@@ -26,8 +28,8 @@ export interface Reto {
     recompensa_kg_co2: number;
     imagen_url?: string;
     created_at: string;
-    status: 'joined' | 'completed' | 'expired' | undefined;
-    joined: boolean;
+    status?: RetoStatus;
+    joined?: boolean;
     progress: number;
     tasks: RetoTarea[];
     total_tasks?: number;

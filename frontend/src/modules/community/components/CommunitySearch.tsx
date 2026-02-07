@@ -113,19 +113,21 @@ export const CommunitySearch: React.FC<CommunitySearchProps> = ({ onHashtagClick
 
     return (
         <Box position="relative" w="full" ref={containerRef} zIndex={10}>
-            <InputGroup>
+            <InputGroup size="lg">
                 <InputLeftElement pointerEvents="none">
                     <Icon as={FaSearch} color="gray.400" />
                 </InputLeftElement>
                 <Input
-                    placeholder="Search users or #hashtags..."
+                    placeholder="Buscar usuarios o #hashtags..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     bg={bgColor}
-                    borderRadius="full"
+                    borderRadius="2xl"
+                    variant="filled"
                     _focus={{
-                        boxShadow: '0 0 0 1px var(--chakra-colors-brand-500)',
-                        borderColor: 'brand.500',
+                        bg: "white",
+                        borderColor: "green.300",
+                        boxShadow: "0 0 0 1px var(--chakra-colors-green-300)",
                     }}
                 />
             </InputGroup>
@@ -139,67 +141,69 @@ export const CommunitySearch: React.FC<CommunitySearchProps> = ({ onHashtagClick
                     bg={bgColor}
                     border="1px solid"
                     borderColor={borderColor}
-                    borderRadius="xl"
-                    boxShadow="xl"
-                    overflowY="auto"
-                    maxH="280px" // Limitar para mostrar 5ish y hacer scroll
+                    borderRadius="2xl"
+                    boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.08)"
+                    overflow="hidden"
                 >
-                    {isLoading ? (
-                        <Flex p={4} justify="center" align="center">
-                            <Spinner size="sm" color="brand.500" mr={2} />
-                            <Text fontSize="sm" color="gray.500">Searching...</Text>
-                        </Flex>
-                    ) : results.length > 0 ? (
-                        <VStack align="stretch" spacing={0}>
-                            {results.map((result, idx) => (
-                                <React.Fragment key={idx}>
-                                    <Flex
-                                        p={3}
-                                        align="center"
-                                        cursor="pointer"
-                                        _hover={{ bg: hoverColor }}
-                                        onClick={() => handleSelect(result)}
-                                        gap={3}
-                                    >
-                                        {result.type === 'user' ? (
-                                            <>
-                                                <Avatar size="sm" name={result.title} src={result.avatarUrl} />
-                                                <Box flex={1}>
-                                                    <Text fontWeight="semibold" fontSize="sm">{result.title}</Text>
-                                                    <Text fontSize="xs" color="gray.500">{result.subtitle}</Text>
-                                                </Box>
-                                                <Icon as={FaUser} color="gray.300" boxSize={3} />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Flex
-                                                    w={8} h={8}
-                                                    bg="brand.50"
-                                                    color="brand.600"
-                                                    borderRadius="full"
-                                                    align="center"
-                                                    justify="center"
-                                                >
-                                                    <Icon as={FaHashtag} />
-                                                </Flex>
-                                                <Box flex={1}>
-                                                    <Text fontWeight="semibold" fontSize="sm">#{result.title}</Text>
-                                                    <Text fontSize="xs" color="gray.500">{result.count} posts</Text>
-                                                </Box>
-                                            </>
-                                        )}
-                                    </Flex>
-                                    {idx < results.length - 1 && <Divider />}
-                                </React.Fragment>
-                            ))}
-                        </VStack>
-                    ) : (
-                        <Box p={4}>
-                            <Text fontSize="sm" color="gray.500" textAlign="center">
-                                No results found for "{query}"
-                            </Text>
-                        </Box>
-                    )}
+                    <Box overflowY="auto" maxH="300px">
+                        {isLoading ? (
+                            <Flex p={4} justify="center" align="center">
+                                <Spinner size="sm" color="brand.500" mr={2} />
+                                <Text fontSize="sm" color="gray.500">Buscando...</Text>
+                            </Flex>
+                        ) : results.length > 0 ? (
+                            <VStack align="stretch" spacing={0}>
+                                {results.map((result, idx) => (
+                                    <React.Fragment key={idx}>
+                                        <Flex
+                                            p={3}
+                                            align="center"
+                                            cursor="pointer"
+                                            _hover={{ bg: hoverColor }}
+                                            onClick={() => handleSelect(result)}
+                                            gap={3}
+                                            transition="background-color 0.2s"
+                                        >
+                                            {result.type === 'user' ? (
+                                                <>
+                                                    <Avatar size="sm" name={result.title} src={result.avatarUrl} />
+                                                    <Box flex={1}>
+                                                        <Text fontWeight="semibold" fontSize="sm">{result.title}</Text>
+                                                        <Text fontSize="xs" color="gray.500">{result.subtitle}</Text>
+                                                    </Box>
+                                                    <Icon as={FaUser} color="gray.300" boxSize={3} />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Flex
+                                                        w={8} h={8}
+                                                        bg="green.50"
+                                                        color="green.600"
+                                                        borderRadius="full"
+                                                        align="center"
+                                                        justify="center"
+                                                    >
+                                                        <Icon as={FaHashtag} />
+                                                    </Flex>
+                                                    <Box flex={1}>
+                                                        <Text fontWeight="semibold" fontSize="sm">#{result.title}</Text>
+                                                        <Text fontSize="xs" color="gray.500">{result.count} posts</Text>
+                                                    </Box>
+                                                </>
+                                            )}
+                                        </Flex>
+                                        {idx < results.length - 1 && <Divider />}
+                                    </React.Fragment>
+                                ))}
+                            </VStack>
+                        ) : (
+                            <Box p={4}>
+                                <Text fontSize="sm" color="gray.500" textAlign="center">
+                                    No se encontraron resultados para "{query}"
+                                </Text>
+                            </Box>
+                        )}
+                    </Box>
                 </Box>
             )}
         </Box>

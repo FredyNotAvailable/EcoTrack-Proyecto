@@ -3,12 +3,20 @@ import { NivelesService } from '../niveles/niveles.service';
 import { UserStats } from './user-stats.types';
 
 export class UserStatsService {
+    private static instance: UserStatsService;
     private repository: UserStatsRepository;
     private nivelesService: NivelesService;
 
     constructor() {
         this.repository = new UserStatsRepository();
         this.nivelesService = new NivelesService();
+    }
+
+    static getInstance(): UserStatsService {
+        if (!UserStatsService.instance) {
+            UserStatsService.instance = new UserStatsService();
+        }
+        return UserStatsService.instance;
     }
 
     async getGlobalStats(): Promise<{ total_co2: number; total_users: number }> {

@@ -75,7 +75,7 @@ export const HeroSection = () => {
                                 fontSize="md"
                                 fontWeight="800"
                                 rightIcon={<Icon as={FaArrowRight} />}
-                                onClick={() => navigate('/register')}
+                                onClick={() => navigate('/login')}
                                 _hover={{
                                     bg: 'brand.primaryHover',
                                     transform: 'translateY(-3px)',
@@ -125,6 +125,7 @@ export const HeroSection = () => {
                             <Box
                                 zIndex={2}
                                 animation={`${float} 3s ease-in-out infinite`}
+                                willChange="transform"
                             >
                                 <Icon as={FaGlobeAmericas} fontSize="8rem" color="brand.primary" />
                             </Box>
@@ -139,6 +140,7 @@ export const HeroSection = () => {
                                 borderRadius="24px"
                                 boxShadow="xl"
                                 animation={`${float} 4s ease-in-out infinite`}
+                                willChange="transform"
                             >
                                 <Text fontWeight="900" color="brand.primary">-12kg CO₂</Text>
                             </Box>
@@ -151,6 +153,7 @@ export const HeroSection = () => {
                                 borderRadius="24px"
                                 boxShadow="xl"
                                 animation={`${float} 3.5s ease-in-out infinite 1s`}
+                                willChange="transform"
                             >
                                 <Text fontWeight="900" color="brand.secondary">🌟 Nivel 10</Text>
                             </Box>

@@ -96,23 +96,44 @@ export const CreatePostForm = ({ onBackgroundSubmit }: CreatePostFormProps) => {
 
 
     return (
-        <Box mb={6} textAlign="center">
-            <Button onClick={onOpen} width="100%" borderRadius="2xl" py={6} shadow="sm">
+        <Box 
+            p={5} 
+            bg="white" 
+            borderRadius="32px" 
+            mb={6} 
+            boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
+            border="1px solid rgba(0,0,0,0.03)"
+        >
+            <Button 
+                onClick={onOpen} 
+                width="100%" 
+                borderRadius="2xl" 
+                py={6} 
+                colorScheme="green"
+                variant="ghost"
+                justifyContent="flex-start"
+                px={6}
+                _hover={{
+                    bg: "green.50"
+                }}
+            >
                 ¿Qué estás pensando hoy? 🌿
             </Button>
 
-            <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+            <Modal 
+                isOpen={isOpen} 
+                onClose={onClose} 
+                size="xl" 
+                isCentered
+                blockScrollOnMount={true}
+                preserveScrollBarGap
+            >
                 <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
-                <ModalContent bg="transparent" boxShadow="none">
-                    {/* PostEditor already has its own styling, so we render it directly or wrap it?
-                        PostEditor has a fixed maxW="600px" and card styling.
-                        ModalContent has default white bg. We should make ModalContent transparent 
-                        and let PostEditor be the card.
-                     */}
+                <ModalContent bg="transparent" boxShadow="none" maxH="85vh" my={4}>
                     <PostEditor
+                        key={isOpen ? 'open' : 'closed'}
                         onSubmit={handleSubmit}
                         isSubmitting={createPost.isPending || isUploading}
-                    // Optionally pass initialData if needed
                     />
                 </ModalContent>
             </Modal>

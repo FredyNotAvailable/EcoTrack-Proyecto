@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { PostsService } from './posts.service';
-import { createPostSchema, createCommentSchema, updateCommentSchema } from './posts.validators';
 import { ApiError } from '../../utils/ApiError';
 
-const service = new PostsService();
+const service = PostsService.getInstance();
 
 import { mediaService } from './media.service';
 import multer from 'multer';
@@ -12,16 +11,31 @@ export const getFeed = async (req: Request, res: Response, next: NextFunction) =
     try {
         const { limit, cursor, authorId, hashtag } = req.query;
         const userId = req.user?.id; // Optional auth
+        const requestedLimit = limit ? Number(limit) : 10;
 
         const posts = await service.getFeed({
-            limit: limit ? Number(limit) : 10,
+            limit: requestedLimit + 1, // Pedir uno extra para saber si hay más
             cursor: cursor as string,
             userId,
             authorId: authorId as string,
             hashtag: hashtag as string
         });
 
-        res.json({ data: posts });
+        // Determinar si hay más resultados
+        const hasMore = posts.length > requestedLimit;
+        const resultPosts = hasMore ? posts.slice(0, requestedLimit) : posts;
+        const nextCursor = hasMore && resultPosts.length > 0 
+            ? resultPosts[resultPosts.length - 1].created_at 
+            : null;
+
+        res.json({ 
+            data: resultPosts,
+            pagination: {
+                hasMore,
+                nextCursor,
+                count: resultPosts.length
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -66,15 +80,13 @@ export const uploadMedia = async (req: Request, res: Response, next: NextFunctio
 
 export const createPost = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const validation = createPostSchema.safeParse(req.body);
-        if (!validation.success) {
-            console.error('[CreatePost] Validation Error:', JSON.stringify(validation.error.format(), null, 2));
-            throw new ApiError(400, 'Validation Error');
-        }
-
+        // Body ya validado por middleware validateBody(createPostSchema)
         if (!req.user) throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED');
 
-        const created = await service.createPost(req.user!.id, validation.data);
+        console.log('Backend - createPost received body:', req.body);
+        console.log('Backend - hashtags:', req.body.hashtags);
+
+        const created = await service.createPost(req.user!.id, req.body);
         res.status(201).json({ data: created });
     } catch (error) {
         next(error);
@@ -151,12 +163,8 @@ export const createComment = async (req: Request, res: Response, next: NextFunct
         const { id } = req.params;
         if (!req.user) throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED');
 
-        const validation = createCommentSchema.safeParse(req.body);
-        if (!validation.success) {
-            throw new ApiError(400, 'Validation Error', 'BAD_REQUEST', validation.error.format());
-        }
-
-        const comment = await service.createComment(req.user.id, id as string, validation.data);
+        // Body validado por middleware validateBody(createCommentSchema)
+        const comment = await service.createComment(req.user.id, id as string, req.body);
         res.status(201).json({ data: comment });
     } catch (error) {
         next(error);
@@ -168,12 +176,8 @@ export const updateComment = async (req: Request, res: Response, next: NextFunct
         const { id } = req.params; // Comment ID
         if (!req.user) throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED');
 
-        const validation = updateCommentSchema.safeParse(req.body);
-        if (!validation.success) {
-            throw new ApiError(400, 'Validation Error', 'BAD_REQUEST', validation.error.format());
-        }
-
-        await service.updateComment(req.user.id, id as string, validation.data.content);
+        // Body validado por middleware validateBody(updateCommentSchema)
+        await service.updateComment(req.user.id, id as string, req.body.content);
         res.json({ data: { success: true } });
     } catch (error) {
         next(error);

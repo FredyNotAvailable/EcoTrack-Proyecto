@@ -13,9 +13,10 @@ import {
     Tooltip,
     useToast
 } from '@chakra-ui/react';
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight, FaTimes, FaMapMarkerAlt, FaHashtag, FaPhotoVideo, FaArrowUp } from 'react-icons/fa';
 import { Reorder } from 'framer-motion';
+import { LocationPickerModal } from './LocationPickerModal';
 
 import type { Post } from '../../posts/types';
 
@@ -60,7 +61,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
     const [hashtags, setHashtags] = useState<string[]>(initialData?.hashtags || []);
     const [newHashtag, setNewHashtag] = useState('');
     const [showHashtagInput, setShowHashtagInput] = useState(false);
-    const [showLocationInput, setShowLocationInput] = useState(false);
+    const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
     // Carousel State
     const [previewIndex, setPreviewIndex] = useState(0);
@@ -72,6 +73,17 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
     const bg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
     const btnRawBg = useColorModeValue("gray.50", "whiteAlpha.200");
+
+    // Cleanup blob URLs on unmount
+    useEffect(() => {
+        return () => {
+            mediaItems.forEach(item => {
+                if (item.isNew && item.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(item.url);
+                }
+            });
+        };
+    }, [mediaItems]);
 
     const handleFileSelect = () => {
         if (fileInputRef.current) {
@@ -123,6 +135,13 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
     const removeMedia = (index: number) => {
         setMediaItems(prev => {
             const newItems = [...prev];
+            const removedItem = newItems[index];
+            
+            // Revoke blob URL if it's a new file
+            if (removedItem.isNew && removedItem.url.startsWith('blob:')) {
+                URL.revokeObjectURL(removedItem.url);
+            }
+            
             newItems.splice(index, 1);
             return newItems;
         });
@@ -133,12 +152,45 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
         }
     };
 
-    const handleAddHashtag = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && newHashtag.trim()) {
-            e.preventDefault();
-            if (!hashtags.includes(newHashtag.trim())) {
-                setHashtags([...hashtags, newHashtag.trim()]);
+    const addHashtagToList = (tag: string) => {
+        const cleanTag = tag.trim().replace(/^#/, '');
+        if (cleanTag && !hashtags.includes(cleanTag)) {
+            setHashtags([...hashtags, cleanTag]);
+        }
+    };
+
+    const handleHashtagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        
+        // Si hay un espacio, significa que el usuario terminó un hashtag
+        if (value.includes(' ')) {
+            const parts = value.split(' ');
+            // Agregar todos los hashtags completos
+            parts.slice(0, -1).forEach(tag => {
+                if (tag.trim()) {
+                    addHashtagToList(tag);
+                }
+            });
+            // Mantener la última parte (que está después del último espacio)
+            const lastPart = parts[parts.length - 1];
+            setNewHashtag(lastPart.startsWith('#') ? lastPart : lastPart ? `#${lastPart}` : '#');
+        } else {
+            // Asegurar que siempre comience con #
+            if (value && !value.startsWith('#')) {
+                setNewHashtag(`#${value}`);
+            } else {
+                setNewHashtag(value);
             }
+        }
+    };
+
+    const handleAddHashtag = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && newHashtag.trim() && newHashtag !== '#') {
+            e.preventDefault();
+            addHashtagToList(newHashtag);
+            setNewHashtag('#');
+        } else if (e.key === 'Backspace' && newHashtag === '#') {
+            e.preventDefault();
             setNewHashtag('');
         }
     };
@@ -156,6 +208,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
             });
             return;
         }
+        console.log('PostEditor - Submitting with hashtags:', hashtags);
         onSubmit({
             descripcion: description,
             mediaItems: mediaItems,
@@ -213,8 +266,23 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
     const isSubmitDisabled = !hasChanges || mediaItems.length === 0;
 
     return (
-        <Box bg={bg} p={6} borderRadius="3xl" boxShadow="lg" border="1px" borderColor={borderColor} w="100%" maxW="720px">
-            <VStack spacing={4} align="stretch">
+        <Box bg={bg} borderRadius="3xl" boxShadow="lg" border="1px" borderColor={borderColor} w="100%" maxW="720px" display="flex" flexDirection="column" maxH="85vh">
+            <Box overflowY="auto" px={6} pt={6} pb={2} maxH="calc(85vh - 80px)" css={{
+                '&::-webkit-scrollbar': {
+                    width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                    background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                    background: '#CBD5E0',
+                    borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                    background: '#A0AEC0',
+                },
+            }}>
+                <VStack spacing={3} align="stretch" pb={2}>
 
                 {/* Media Section */}
                 <Box>
@@ -226,7 +294,8 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                             border="2px dashed"
                             borderColor={isDragging ? "green.500" : "gray.300"}
                             bg={isDragging ? "green.50" : "gray.50"}
-                            p={40}
+                            py={16}
+                            px={8}
                             textAlign="center"
                             cursor="pointer"
                             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -252,7 +321,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                     ) : (
                         /* 2. Main Carousel - Visible if media exists */
                         <Box position="relative" w="100%" bg="black" borderRadius="xl" overflow="hidden" mb={4}>
-                            <Box position="relative" pb="100%"> {/* 1:1 Aspect Ratio Container */}
+                            <Box position="relative" pb="75%" h="300px"> {/* Altura fija reducida */}
                                 {mediaItems[previewIndex] && (
                                     mediaItems[previewIndex].type === 'video' ? (
                                         <video
@@ -385,8 +454,8 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                     placeholder="¿Qué estás pensando, cultivando o celebrando? 🌱"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    minH="100px"
-                    resize="none"
+                    minH="80px"
+                    resize="vertical"
                     border="1px solid"
                     borderColor={useColorModeValue('gray.200', 'gray.600')}
                     borderRadius="xl"
@@ -396,9 +465,6 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                     p={3}
                     bg={useColorModeValue('gray.50', 'whiteAlpha.50')}
                 />
-
-
-
 
                 {/* Hashtags Display */}
                 {hashtags.length > 0 && (
@@ -412,25 +478,46 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                     </Flex>
                 )}
 
-                {/* Inputs Extras */}
-                {showLocationInput && (
-                    <Input
-                        placeholder="Ubicación (ej: Quito, Ecuador)"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        _hover={{ bg: "gray.100" }}
-                    />
+                {/* Ubicación seleccionada */}
+                {location && (
+                    <Flex 
+                        align="center" 
+                        justify="space-between"
+                        p={3} 
+                        bg="green.50" 
+                        borderRadius="lg"
+                    >
+                        <HStack spacing={2}>
+                            <Icon as={FaMapMarkerAlt} color="green.600" />
+                            <Text fontSize="sm" fontWeight="600" color="green.700">
+                                {location}
+                            </Text>
+                        </HStack>
+                        <Icon 
+                            as={FaTimes} 
+                            cursor="pointer" 
+                            color="green.600"
+                            onClick={() => setLocation('')}
+                            _hover={{ color: 'green.800' }}
+                        />
+                    </Flex>
                 )}
+
+                {/* Inputs Extras */}
                 {showHashtagInput && (
                     <Input
-                        placeholder="Añadir hashtag (ej: #agricultura)"
+                        placeholder="Escribe #hashtag y separa con espacio"
                         value={newHashtag}
-                        onChange={(e) => setNewHashtag(e.target.value)}
+                        onChange={handleHashtagChange}
                         onKeyDown={handleAddHashtag}
+                        onFocus={() => {
+                            if (!newHashtag) setNewHashtag('#');
+                        }}
                         _hover={{ bg: "gray.100" }}
                     />
                 )}
             </VStack>
+            </Box>
 
             {/* Hidden file input */}
             <input
@@ -440,7 +527,7 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                 style={{ display: 'none' }}
             />
 
-            <Flex mt={4} justify="space-between" align="center">
+            <Flex px={6} py={4} justify="space-between" align="center" borderTop="1px solid" borderColor={borderColor} flexShrink={0} bg={bg}>
                 <HStack spacing={3}>
                     <Tooltip label="Fotos o Videos" hasArrow>
                         <IconButton
@@ -462,10 +549,10 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                             variant="ghost"
                             size="md"
                             borderRadius="2xl"
-                            bg={btnRawBg}
-                            onClick={() => setShowLocationInput(!showLocationInput)}
-                            color="gray.600"
-                            _hover={{ bg: "gray.100" }}
+                            bg={location ? "green.50" : btnRawBg}
+                            onClick={() => setIsLocationModalOpen(true)}
+                            color={location ? "green.600" : "gray.600"}
+                            _hover={{ bg: location ? "green.100" : "gray.100" }}
                         />
                     </Tooltip>
                     <Tooltip label="Añadir hashtag" hasArrow>
@@ -499,6 +586,14 @@ export const PostEditor = ({ onSubmit, isSubmitting = false, initialData }: Post
                     />
                 </HStack>
             </Flex>
+
+            {/* Location Picker Modal */}
+            <LocationPickerModal
+                isOpen={isLocationModalOpen}
+                onClose={() => setIsLocationModalOpen(false)}
+                onSelectLocation={(locationName) => setLocation(locationName)}
+                initialLocation={location}
+            />
         </Box>
     );
 };

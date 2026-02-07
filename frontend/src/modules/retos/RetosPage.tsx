@@ -25,19 +25,43 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
-import { FaFlag, FaTrophy, FaListCheck, FaClock, FaCircleCheck, FaChevronRight } from 'react-icons/fa6';
+import { FaFlag, FaTrophy, FaListCheck, FaClock, FaCircleCheck, FaChevronRight, FaMugHot } from 'react-icons/fa6';
 import { useRetos } from './hooks/useRetos';
 import { RetoCard } from './components/RetoCard';
 
 import { RetoDetailsModal } from './components/RetoDetailsModal';
 import { TaskConfirmationModal } from './components/TaskConfirmationModal';
 import { ChallengeCompletionModal } from './components/ChallengeCompletionModal';
-import type { Reto, RetoTarea } from './services/retos.service';
+import type { Reto, RetoTarea, RetoStatus } from './services/retos.service';
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
+
+/**
+ * Dado un fecha_fin, retorna el viernes de esa semana a las 23:59:59.999.
+ * Los retos expiran el viernes a medianoche hora Ecuador.
+ */
+function getFridayExpiry(fechaFin: string): Date {
+    const datePart = fechaFin.substring(0, 10);
+    const [y, m, d] = datePart.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const dayOfWeek = date.getDay(); // 0=Dom, 5=Vie, 6=Sab
+
+    let friday: Date;
+    if (dayOfWeek === 5) {
+        friday = date;
+    } else if (dayOfWeek === 6) {
+        friday = new Date(y, m - 1, d - 1);
+    } else if (dayOfWeek === 0) {
+        friday = new Date(y, m - 1, d - 2);
+    } else {
+        friday = new Date(y, m - 1, d + (5 - dayOfWeek));
+    }
+    friday.setHours(23, 59, 59, 999);
+    return friday;
+}
 
 // --- READ-ONLY MODALS FOR HISTORY ---
 
@@ -277,57 +301,105 @@ const HistoryCard = ({ reto, onViewTasks }: { reto: Reto; onViewTasks: (reto: Re
 };
 
 export const RetosPage = () => {
-    const { challenges, isLoading, joinChallengeAsync, completeTaskAsync, isCompletingTask } = useRetos();
-    const [searchParams] = useSearchParams();
-    const [activeTab, setActiveTab] = useState(0); // 0: Available, 1: Joined, 2: History
+    const {
+        challenges,
+        isLoading,
+        joinChallengeAsync,
+        isJoining,
+        completeTaskAsync,
+        isCompletingTask,
+    } = useRetos();
+    const queryClient = useQueryClient();
+    const toast = useToast();
+    const [searchParams, setSearchParams] = useSearchParams();
 
+    // State for modals
     const [selectedReto, setSelectedReto] = useState<Reto | null>(null);
-    const [selectedTask, setSelectedTask] = useState<RetoTarea | null>(null);
-    const [taskRetoId, setTaskRetoId] = useState<string | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<RetoTarea | null>(null);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-    const [joiningId, setJoiningId] = useState<string | null>(null);
-    const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
-    const [justJoinedId, setJustJoinedId] = useState<string | null>(null);
-
-    // Completion Modal State
+    const [taskRetoId, setTaskRetoId] = useState<string | null>(null);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [completedRetoData, setCompletedRetoData] = useState<{ reto: Reto, isPerfect: boolean } | null>(null);
 
-    const toast = useToast();
 
-    const queryClient = useQueryClient();
-
-    useEffect(() => {
-        const tab = searchParams.get('tab');
-        if (tab) {
-            setActiveTab(parseInt(tab));
-        }
-    }, [searchParams]);
-
-    // FILTER LOGIC - UPDATED
-    const availableChallenges = challenges.filter(r => !r.joined); // Available = Not joined yet
-    const joinedChallenges = challenges.filter(r => r.joined && (r.status === 'joined' || r.status === undefined)); // Joined = Joined AND Active/Joined status
-    const historyChallenges = challenges.filter(r => r.joined && (r.status === 'completed' || r.status === 'expired')); // History = Joined AND Finished
-
+    // State for history modals
     const [historyReto, setHistoryReto] = useState<Reto | null>(null);
     const [historyRetoOpen, setHistoryRetoOpen] = useState(false);
     const [historyTask, setHistoryTask] = useState<RetoTarea | null>(null);
     const [historyTaskOpen, setHistoryTaskOpen] = useState(false);
 
-    // Handlers for History
-    const handleViewHistoryTasks = (reto: Reto) => {
-        setHistoryReto(reto);
-        setHistoryRetoOpen(true);
-    };
+    // Interaction States
+    const [joiningId, setJoiningId] = useState<string | null>(null);
+    const [justJoinedId, setJustJoinedId] = useState<string | null>(null);
+    const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
 
-    const handleViewHistoryTaskDetail = (task: RetoTarea) => {
-        setHistoryTask(task);
-        setHistoryTaskOpen(true);
-    };
+
+    // Tabs state
+    const [activeTab, setActiveTab] = useState(0);
 
     const handleTabChange = (index: number) => {
         setActiveTab(index);
+    };
+
+
+    // --- Weekend Detection ---
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Dom, 6=Sab
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    // --- Filtering Logic ---
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 4); // Friday
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const availableChallenges = challenges.filter(r => {
+        const fridayEnd = getFridayExpiry(r.fecha_fin);
+        return !r.joined && fridayEnd >= now && r.status !== 'expired';
+    });
+    const myChallenges = challenges.filter(r => {
+        const fridayEnd = getFridayExpiry(r.fecha_fin);
+        return r.joined && fridayEnd >= now && r.status !== 'completed' && r.status !== 'expired';
+    });
+    const historyChallenges = challenges.filter(r => {
+        const fridayEnd = getFridayExpiry(r.fecha_fin);
+        return r.status === 'completed' || r.status === 'expired' || fridayEnd < now;
+    });
+
+
+    // --- Handlers ---
+    const handleJoinChallenge = async (id: string) => {
+        setJoiningId(id);
+        try {
+            await joinChallengeAsync(id);
+
+            // Refresh Global Stats & Racha
+            queryClient.invalidateQueries({ queryKey: ['userStats'] });
+            queryClient.invalidateQueries({ queryKey: ['racha', 'me'] });
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
+
+            // Show success overlay
+            setJustJoinedId(id);
+
+            // Celebration!
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#4CAF50', '#81C784', '#FFFFFF']
+            });
+
+            // Wait 1.5s to show the "Joined" state before card removal
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+        } finally {
+            setJoiningId(null);
+            setJustJoinedId(null);
+        }
     };
 
     const handleCompleteTask = async (retoId: string, taskId: string) => {
@@ -421,35 +493,16 @@ export const RetosPage = () => {
         setIsDetailsOpen(true);
     };
 
-    const handleJoinChallenge = async (id: string) => {
-        setJoiningId(id);
-        try {
-            await joinChallengeAsync(id);
-
-            // Refresh Global Stats & Racha
-            queryClient.invalidateQueries({ queryKey: ['userStats'] });
-            queryClient.invalidateQueries({ queryKey: ['racha', 'me'] });
-            queryClient.invalidateQueries({ queryKey: ['profile'] });
-
-            // Show success overlay
-            setJustJoinedId(id);
-
-            // Celebration!
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#4CAF50', '#81C784', '#FFFFFF']
-            });
-
-            // Wait 1.5s to show the "Joined" state before card removal
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-        } finally {
-            setJoiningId(null);
-            setJustJoinedId(null);
-        }
+    const handleViewHistoryTasks = (reto: Reto) => {
+        setHistoryReto(reto);
+        setHistoryRetoOpen(true);
     };
+
+    const handleViewHistoryTaskDetail = (task: RetoTarea) => {
+        setHistoryTask(task);
+        setHistoryTaskOpen(true);
+    };
+
 
     // --- Dynamic Hero Header Component ---
     const HeroHeader = () => {
@@ -491,6 +544,43 @@ export const RetosPage = () => {
         );
     };
 
+    const WeekendBanner = () => (
+        <Center flexDir="column" py={16} px={6} textAlign="center">
+            <Box
+                position="relative"
+                mb={8}
+                p={8}
+                borderRadius="full"
+                bg="orange.50"
+            >
+                <Icon as={FaMugHot} boxSize={14} color="orange.400" />
+            </Box>
+            <VStack spacing={3} maxW="480px">
+                <Text fontSize="2xl" fontWeight="900" color="brand.secondary" letterSpacing="-0.5px">
+                    ¡Es fin de semana! 🌿
+                </Text>
+                <Text color="gray.500" fontSize="md" fontWeight="500" lineHeight="1.7">
+                    Tómate un descanso bien merecido. El lunes continuamos con nuevos retos
+                    para seguir cuidando el planeta juntos.
+                </Text>
+                <Badge
+                    mt={2}
+                    colorScheme="orange"
+                    variant="subtle"
+                    borderRadius="full"
+                    px={5}
+                    py={1.5}
+                    fontSize="xs"
+                    fontWeight="800"
+                    textTransform="uppercase"
+                    letterSpacing="0.05em"
+                >
+                    Nos vemos el lunes
+                </Badge>
+            </VStack>
+        </Center>
+    );
+
     const EmptyState = ({ message, icon = FaFlag }: { message: string, icon?: any }) => (
         <Center flexDir="column" py={20} px={6} textAlign="center">
             <Box position="relative" mb={8}>
@@ -519,7 +609,7 @@ export const RetosPage = () => {
             <HStack justify="center" spacing={3} mb={10} overflowX="auto" py={2} css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
                 {[
                     { label: "Disponibles", icon: FaFlag, count: availableChallenges.length, color: "brand" },
-                    { label: "Mis Retos", icon: FaListCheck, count: joinedChallenges.length, color: "brand" },
+                    { label: "Mis Retos", icon: FaListCheck, count: myChallenges.length, color: "brand" },
                     { label: "Historial", icon: FaClock, count: historyChallenges.length, color: "gray" },
                 ].map((tab, index) => {
                     const isActive = activeTab === index;
@@ -569,7 +659,9 @@ export const RetosPage = () => {
                 <Box>
                     {activeTab === 0 && (
                         <Box animation={`${fadeInUp} 0.5s ease-out`}>
-                            {availableChallenges.length > 0 ? (
+                            {isWeekend ? (
+                                <WeekendBanner />
+                            ) : availableChallenges.length > 0 ? (
                                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
                                     {availableChallenges.map(reto => (
                                         <RetoCard
@@ -592,14 +684,16 @@ export const RetosPage = () => {
 
                     {activeTab === 1 && (
                         <Box animation={`${fadeInUp} 0.5s ease-out`}>
-                            {joinedChallenges.length > 0 ? (
+                            {isWeekend ? (
+                                <WeekendBanner />
+                            ) : myChallenges.length > 0 ? (
                                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                                    {joinedChallenges.map(reto => (
+                                    {myChallenges.map((reto: Reto) => (
                                         <RetoCard
                                             key={reto.id}
                                             reto={reto}
                                             onJoin={handleJoinChallenge}
-                                            onViewDetails={() => handleViewDetails(reto)} // Should not be needed for joined, but harmless
+                                            onViewDetails={() => handleViewDetails(reto)}
                                             onCompleteTask={handleCompleteTask}
                                             isJoining={joiningId === reto.id}
                                             completingTaskId={completingTaskId}

@@ -13,12 +13,16 @@ import {
     MenuList,
     MenuItem,
     useColorModeValue,
-    Skeleton
+    Skeleton,
+    useDisclosure
 } from "@chakra-ui/react";
-import { keyframes } from "@emotion/react";
-import { FaEllipsisH, FaRegHeart, FaRegComment, FaHeart, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaEllipsisH, FaRegHeart, FaRegComment, FaHeart, FaChevronLeft, FaChevronRight, FaMapMarkerAlt } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { LocationViewModal } from './LocationViewModal';
+
+const MotionBox = motion(Box);
 
 export interface PostCardProps {
     id: string;
@@ -34,6 +38,7 @@ export interface PostCardProps {
         text: string;
         hashtags?: string[];
         timeAgo: string;
+        location?: string;
         media?: {
             id: string;
             media_url: string;
@@ -59,17 +64,10 @@ export interface PostCardProps {
 export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment, onEdit, onDelete, onHashtagClick, isOwner }: PostCardProps) => {
     const navigate = useNavigate();
     const cardBg = useColorModeValue("white", "gray.800");
-    const borderColor = useColorModeValue("gray.100", "gray.700");
     const verifiedColor = "blue.400";
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const [isMediaLoaded, setIsMediaLoaded] = useState(false);
-
-    const heartBeat = keyframes`
-      0% { transform: scale(1); }
-      25% { transform: scale(1.2); }
-      50% { transform: scale(0.95); }
-      100% { transform: scale(1); }
-    `;
+    const { isOpen: isLocationOpen, onOpen: onLocationOpen, onClose: onLocationClose } = useDisclosure();
 
     const handleUserClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -110,37 +108,37 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
     }, [id, content.media?.length]);
 
     return (
-        <Box
+        <MotionBox
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
             bg={cardBg}
-            borderRadius="3xl"
-            border="1px solid"
-            borderColor={borderColor}
+            borderRadius="24px"
+            border="1px solid rgba(0,0,0,0.03)"
             overflow="hidden"
-            boxShadow="sm"
+            boxShadow="0 4px 12px -4px rgba(31, 64, 55, 0.05)"
             className="post-card"
         >
             {/* Header */}
-            <Flex align="center" justify="space-between" p={4}>
-                <HStack spacing={3}>
-                    <Box position="relative" cursor="pointer" onClick={handleUserClick}>
-                        <Avatar
-                            size="md"
-                            name={user.name}
-                            src={user.avatar}
-                            border="2px solid"
-                            borderColor="brand.primary"
-                        />
-                    </Box>
-                    <Box>
-                        <HStack spacing={1} cursor="pointer" onClick={handleUserClick}>
-                            <Text fontWeight="700" fontSize="sm" color="brand.textMain">
+            <Flex justify="space-between" align="flex-start" p={5} pb={3}>
+                <HStack spacing={3} flex={1}>
+                    <Avatar
+                        name={user.name}
+                        src={user.avatar}
+                        size="md"
+                        cursor="pointer"
+                        onClick={handleUserClick}
+                    />
+                    <Box flex={1}>
+                        <HStack spacing={2} cursor="pointer" onClick={handleUserClick}>
+                            <Text fontWeight="700" fontSize="sm" color="brand.secondary">
                                 {user.username}
                             </Text>
                             {user.verified && (
-                                <Icon as={MdVerified} color={verifiedColor} boxSize={3.5} />
+                                <Icon as={MdVerified} color={verifiedColor} boxSize={4} />
                             )}
                         </HStack>
-                        <HStack spacing={1} fontSize="xs" color="gray.400" fontWeight="500">
+                        <HStack spacing={2} fontSize="xs" color="brand.textMuted" fontWeight="500">
                             {user.location && (
                                 <>
                                     <Text>{user.location}</Text>
@@ -284,84 +282,94 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                 </Box>
             )}
 
-            {/* Actions & Content */}
-            <Box px={5} pb={5}>
-                {/* Action Row */}
-                <Flex justify="space-between" align="center" mb={3}>
-                    <HStack spacing={4}>
-                        <HStack spacing={1}>
-                            <IconButton
-                                aria-label="Like"
-                                icon={isLiked ? <FaHeart size={22} color="#E53E3E" /> : <FaRegHeart size={22} />}
-                                variant="unstyled"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                _hover={{ color: "red.400" }}
-                                color={isLiked ? "red.400" : "brand.textMain"}
-                                onClick={() => onLike && onLike(id)}
-                                animation={isLiked ? `${heartBeat} 0.45s ease-in-out` : undefined}
-                            />
-                            {stats.likes > 0 && (
-                                <Text fontSize="sm" fontWeight="600" color="brand.textMain">
-                                    {stats.likes}
-                                </Text>
-                            )}
-                        </HStack>
-
-                        <IconButton
-                            aria-label="Comment"
-                            icon={<FaRegComment size={22} />}
-                            variant="unstyled"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            _hover={{ color: "brand.primary" }}
-                            color="brand.textMain"
-                            onClick={() => onComment && onComment(id)}
-                        />
+                {/* Content */}
+            <Box px={5} pb={2}>
+                <Text fontSize="sm" color="brand.text" mb={2}>
+                    {content.text}
+                </Text>
+                {content.hashtags && content.hashtags.length > 0 && (
+                    <HStack spacing={2} wrap="wrap" mb={3}>
+                        {content.hashtags.map((tag, index) => (
+                            <Text
+                                key={index}
+                                fontSize="sm"
+                                color="brand.primary"
+                                fontWeight="600"
+                                cursor="pointer"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onHashtagClick && onHashtagClick(tag);
+                                }}
+                            >
+                                #{tag}
+                            </Text>
+                        ))}
                     </HStack>
-                    {/* <IconButton
-                        aria-label="Save"
-                        icon={<FaRegBookmark size={20} />}
-                        variant="unstyled"
-                        color="brand.textMuted"
-                    /> */}
-                </Flex>
+                )}
+                {content.location && (
+                    <HStack
+                        cursor="pointer"
+                        onClick={onLocationOpen}
+                        spacing={1.5}
+                        align="center"
+                        mb={3}
+                        color="gray.500"
+                        _hover={{ color: 'brand.primary' }}
+                        transition="color 0.2s"
+                    >
+                        <Icon as={FaMapMarkerAlt} boxSize={3} />
+                        <Text fontSize="xs" fontWeight="500">
+                            {content.location}
+                        </Text>
+                    </HStack>
+                )}
+            </Box>
 
-                {/* Caption */}
-                <Text fontSize="sm" color="brand.textMuted" noOfLines={2} lineHeight="1.5">
-                    <Text as="span" fontWeight="700" color="brand.textMain" mr={2}>
-                        {user.username}
-                    </Text>
-                    <Text as="span" fontSize="sm" color="brand.textMain">
-                        {content.text}
-                        {content.hashtags && content.hashtags.length > 0 && (
-                            <Text as="span" ml={2}>
-                                {content.hashtags.map((tag, idx) => (
-                                    <Text
-                                        key={`${tag}-${idx}`}
-                                        as="span"
-                                        color="blue.500"
-                                        cursor="pointer"
-                                        _hover={{ textDecoration: 'underline', color: 'blue.600' }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onHashtagClick && onHashtagClick(tag);
-                                        }}
-                                        mr={1}
-                                    >
-                                        #{tag}
-                                    </Text>
-                                ))}
+            {/* Actions */}
+            <Flex justify="space-between" align="center" px={5} pb={4}>
+                <HStack spacing={4}>
+                    <HStack spacing={2}>
+                        <IconButton
+                            aria-label="Like"
+                            icon={isLiked ? <FaHeart /> : <FaRegHeart />}
+                            variant="ghost"
+                            size="sm"
+                            color={isLiked ? "red.500" : "gray.500"}
+                            onClick={() => onLike && onLike(id)}
+                        />
+                        {stats.likes > 0 && (
+                            <Text fontSize="sm" fontWeight="600" color="brand.secondary">
+                                {stats.likes}
                             </Text>
                         )}
-                    </Text>
-                </Text>
+                    </HStack>
 
-                {/* Timestamp */}
+                    <HStack spacing={2}>
+                        <IconButton
+                            aria-label="Comment"
+                            icon={<FaRegComment />}
+                            variant="ghost"
+                            size="sm"
+                            color="gray.500"
+                            onClick={() => onComment && onComment(id)}
+                        />
+                        {stats.comments > 0 && (
+                            <Text fontSize="sm" fontWeight="600" color="brand.secondary">
+                                {stats.comments}
+                            </Text>
+                        )}
+                    </HStack>
+                </HStack>
+            </Flex>
 
-            </Box>
-        </Box>
+            {/* Modal de visualización de ubicación */}
+            {content.location && (
+                <LocationViewModal
+                    isOpen={isLocationOpen}
+                    onClose={onLocationClose}
+                    locationName={content.location}
+                />
+            )}
+        </MotionBox>
     );
 };

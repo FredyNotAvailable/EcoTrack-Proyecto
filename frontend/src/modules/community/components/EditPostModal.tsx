@@ -85,10 +85,19 @@ export const EditPostModal = ({ isOpen, onClose, post, onCloseComplete }: EditPo
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} onCloseComplete={onCloseComplete} size="xl" isCentered>
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose} 
+            onCloseComplete={onCloseComplete} 
+            size="xl" 
+            isCentered
+            blockScrollOnMount={true}
+            preserveScrollBarGap
+        >
             <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
-            <ModalContent bg="transparent" boxShadow="none">
+            <ModalContent bg="transparent" boxShadow="none" maxH="85vh" my={4}>
                 <PostEditor
+                    key={isOpen ? 'open' : 'closed'}
                     onSubmit={handleSubmit}
                     isSubmitting={updatePost.isPending || isUploading}
                     initialData={{

@@ -23,5 +23,10 @@ export const getAuthErrorMessage = (error: any): string => {
         return "Error de conexión. Revisa tu internet.";
     }
 
-    return "Hubo un problema. Por favor intenta de nuevo.";
+    // Errores específicos de OAuth
+    if (message.includes("oauth") || message.includes("provider")) {
+        return "Esta cuenta está vinculada a Google. Usa el botón de Google para iniciar sesión.";
+    }
+
+    return "El correo o la contraseña son incorrectos, o la cuenta está vinculada a Google.";
 };

@@ -6,7 +6,7 @@ export class NivelesRepository {
     async getAll(): Promise<Nivel[]> {
         const { data, error } = await supabase
             .from('niveles')
-            .select('*')
+            .select('nivel, puntos_minimos')
             .order('nivel', { ascending: true });
 
         if (error) {

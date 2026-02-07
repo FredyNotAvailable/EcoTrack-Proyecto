@@ -36,28 +36,6 @@ const RankingPage = () => {
         queryFn: () => userStatsService.getLeaderboard(period)
     });
 
-    const FilterButton = ({ value, label }: { value: typeof period, label: string }) => {
-        const isActive = period === value;
-        return (
-            <Box
-                as="button"
-                onClick={() => setPeriod(value)}
-                px={4}
-                py={1}
-                borderRadius="full"
-                fontWeight="bold"
-                fontSize="sm"
-                transition="all 0.2s"
-                bg={isActive ? "brand.primary" : "transparent"}
-                color={isActive ? "white" : "gray.500"}
-                _hover={{
-                    bg: isActive ? "brand.primary" : "gray.100"
-                }}
-            >
-                {label}
-            </Box>
-        );
-    };
 
     if (isLoading) {
         return (
@@ -83,23 +61,6 @@ const RankingPage = () => {
                         </Text>
                     </VStack>
 
-                    {/* Filter Tabs */}
-                    <Flex
-                        justify="center"
-                        mb={8}
-                        bg="white"
-                        p={1}
-                        borderRadius="full"
-                        boxShadow="sm"
-                        border="1px solid"
-                        borderColor="gray.100"
-                        gap={1}
-                    >
-                        <FilterButton value="global" label="Global" />
-                        <FilterButton value="day" label="Día" />
-                        <FilterButton value="week" label="Semana" />
-                        <FilterButton value="month" label="Mes" />
-                    </Flex>
 
                     <VStack spacing={4} align="stretch" w="100%">
                         {ranking?.map((user, index) => {

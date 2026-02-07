@@ -6,7 +6,7 @@ export class UserStatsRepository {
     async getStats(userId: string): Promise<UserStats | null> {
         const { data, error } = await supabase
             .from('user_stats')
-            .select('*')
+            .select('user_id, puntos_totales, nivel, experiencia, kg_co2_ahorrado, retos_completados, misiones_diarias_completadas, posts_creados, comentarios_creados, likes_recibidos, ultimo_evento, updated_at')
             .eq('user_id', userId)
             .single();
 
@@ -79,7 +79,7 @@ export class UserStatsRepository {
         // 1. Fetch top stats
         const { data: stats, error } = await supabase
             .from('user_stats')
-            .select('*')
+            .select('user_id, puntos_totales, kg_co2_ahorrado, nivel, retos_completados, misiones_diarias_completadas')
             .order('puntos_totales', { ascending: false })
             .limit(limit);
 

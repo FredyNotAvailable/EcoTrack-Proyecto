@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
     Box,
     Container,
@@ -7,7 +8,6 @@ import {
     SimpleGrid,
     Icon,
     Flex,
-    useColorModeValue,
 } from '@chakra-ui/react';
 import { FaUsers, FaGlobeAmericas, FaHandsHelping } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
@@ -18,17 +18,17 @@ interface CommunityFeatureProps {
     icon: IconType;
 }
 
-const CommunityFeature = ({ title, text, icon }: CommunityFeatureProps) => {
+const CommunityFeature = memo(({ title, text, icon }: CommunityFeatureProps) => {
     return (
         <Stack
-            bg={useColorModeValue('white', 'gray.800')}
+            bg="white"
             p={8}
             rounded={'3xl'}
             align={'center'}
             textAlign={'center'}
             boxShadow={'xl'}
             border="1px solid"
-            borderColor={useColorModeValue('gray.100', 'gray.700')}
+            borderColor="gray.100"
             transition="all 0.3s ease"
             _hover={{
                 transform: 'translateY(-5px)',
@@ -56,7 +56,9 @@ const CommunityFeature = ({ title, text, icon }: CommunityFeatureProps) => {
             </Text>
         </Stack>
     );
-};
+});
+
+CommunityFeature.displayName = 'CommunityFeature';
 
 export const CommunitySection = () => {
     return (

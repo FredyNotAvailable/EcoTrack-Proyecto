@@ -8,7 +8,7 @@ import {
     Skeleton,
     Flex,
     useColorModeValue,
-    Divider
+    Button
 } from '@chakra-ui/react';
 import { FaHashtag, FaFire } from 'react-icons/fa6';
 import { useQuery } from '@tanstack/react-query';
@@ -27,36 +27,30 @@ export const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onSelectHash
     });
 
     const bgColor = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.100', 'gray.700');
     const hoverBg = useColorModeValue('gray.50', 'whiteAlpha.100');
-    const activeBg = useColorModeValue('brand.primary', 'brand.primary');
-    const activeColor = 'white';
+    const activeBg = "linear-gradient(135deg, brand.primary, #48BB78)";
 
     if (isLoading) {
-        return <Skeleton height="250px" borderRadius="16px" />;
+        return <Skeleton height="250px" borderRadius="32px" />;
     }
 
     if (!trending || trending.length === 0) return null;
 
-    // Limit to top 5 as requested
     const topHashtags = trending.slice(0, 5);
 
     return (
         <Box
             bg={bgColor}
             p={5}
-            borderRadius="16px"
-            border="1px solid"
-            borderColor={borderColor}
-            boxShadow="sm"
+            borderRadius="32px"
+            border="1px solid rgba(0,0,0,0.03)"
+            boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
             mb={6}
         >
             <Flex align="center" mb={4} gap={2}>
-                <Icon as={FaFire} color="orange.400" />
-                <Text fontWeight="bold" fontSize="lg">Trending #EcoTags</Text>
+                <Icon as={FaFire} color="orange.400" fontSize="xl" />
+                <Text fontWeight="800" fontSize="lg" color="brand.secondary">Tendencias Globales</Text>
             </Flex>
-
-            <Divider mb={4} />
 
             <VStack align="stretch" spacing={2}>
                 {topHashtags.map((item: { hashtag: string; count: number }) => {
@@ -66,19 +60,24 @@ export const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onSelectHash
                             key={item.hashtag}
                             align="center"
                             justify="space-between"
-                            p={2}
-                            borderRadius="lg"
+                            p={3}
+                            borderRadius="xl"
                             cursor="pointer"
                             bg={isActive ? activeBg : 'transparent'}
-                            color={isActive ? activeColor : 'inherit'}
-                            _hover={{ bg: isActive ? activeBg : hoverBg }}
+                            color={isActive ? "white" : 'inherit'}
+                            _hover={{ 
+                                bg: isActive ? activeBg : hoverBg,
+                                transform: 'translateY(-2px)',
+                                boxShadow: 'md'
+                            }}
                             onClick={() => onSelectHashtag(item.hashtag)}
-                            transition="all 0.2s"
+                            transition="all 0.2s ease-out"
+                            boxShadow={isActive ? 'lg' : 'none'}
                         >
                             <HStack spacing={3}>
                                 <Icon
                                     as={FaHashtag}
-                                    fontSize="xs"
+                                    fontSize="sm"
                                     color={isActive ? "white" : "brand.primary"}
                                     opacity={isActive ? 1 : 0.7}
                                 />
@@ -91,7 +90,8 @@ export const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onSelectHash
                                 colorScheme={isActive ? 'whiteAlpha' : 'green'}
                                 variant={isActive ? 'solid' : 'subtle'}
                                 fontSize="xs"
-                                px={2}
+                                px={2.5}
+                                py={0.5}
                             >
                                 {item.count}
                             </Badge>
@@ -101,18 +101,16 @@ export const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onSelectHash
             </VStack>
 
             {selectedHashtag && (
-                <Text
+                <Button
                     mt={4}
-                    fontSize="xs"
-                    color="brand.primary"
-                    fontWeight="600"
-                    cursor="pointer"
-                    textAlign="center"
-                    _hover={{ textDecoration: 'underline' }}
+                    size="sm"
+                    variant="ghost"
+                    colorScheme="red"
+                    width="100%"
                     onClick={() => onSelectHashtag('')}
                 >
                     Limpiar filtro
-                </Text>
+                </Button>
             )}
         </Box>
     );

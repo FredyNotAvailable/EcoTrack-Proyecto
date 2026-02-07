@@ -88,5 +88,28 @@ export const AuthService = {
             console.error("Error al verificar estado de registro:", error);
             return { registered: false };
         }
+    },
+
+    /**
+     * Solicita un correo de restablecimiento de contraseña
+     */
+    async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+        try {
+            console.log(`[AuthService] Requesting password reset for: ${email}`);
+            const response = await apiClient.post('/auth/forgot-password', { email });
+            
+            return {
+                success: response.data.success,
+                message: response.data.message
+            };
+        } catch (error: any) {
+            console.error("Error al solicitar reset de contraseña:", error);
+            // Extraer mensaje del backend si existe
+            const backendMessage = error.response?.data?.message;
+            return {
+                success: false,
+                message: backendMessage || 'El correo no existe o está vinculado a una cuenta de Google.'
+            };
+        }
     }
 };

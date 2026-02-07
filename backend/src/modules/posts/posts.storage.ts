@@ -2,7 +2,15 @@ import { supabase } from '../../config/supabaseClient';
 import { UploadResponse } from './posts.types';
 
 export class PostsStorage {
+    private static instance: PostsStorage;
     private bucketName = 'posts';
+
+    static getInstance(): PostsStorage {
+        if (!PostsStorage.instance) {
+            PostsStorage.instance = new PostsStorage();
+        }
+        return PostsStorage.instance;
+    }
 
     async createUploadUrl(userId: string, postId: string, mimeType: string): Promise<UploadResponse> {
         const ext = this.getExtension(mimeType);

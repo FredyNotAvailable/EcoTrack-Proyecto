@@ -5,7 +5,7 @@ export class RetosController {
     private service: RetosService;
 
     constructor() {
-        this.service = new RetosService();
+        this.service = RetosService.getInstance();
     }
 
     getAll = async (req: Request, res: Response) => {

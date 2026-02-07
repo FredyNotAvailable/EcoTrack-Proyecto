@@ -14,16 +14,16 @@ export const POSTS_KEYS = {
 export const usePostsFeed = (hashtag?: string) => {
     return useInfiniteQuery({
         queryKey: hashtag ? [...POSTS_KEYS.feed(), { hashtag }] : POSTS_KEYS.feed(),
-        initialPageParam: 1,
-        queryFn: ({ pageParam = 1 }) =>
+        initialPageParam: undefined as string | undefined,
+        queryFn: ({ pageParam }) =>
             PostsService.getPosts({
-                page: pageParam as number,
-                limit: 5,
+                cursor: pageParam,
+                limit: 10,
                 hashtag
             }),
         getNextPageParam: (lastPage) => {
-            const hasMore = lastPage?.meta?.currentPage < lastPage?.meta?.totalPages;
-            return hasMore ? lastPage.meta.currentPage + 1 : undefined;
+            // Backend devuelve { data: [], pagination: { hasMore, nextCursor } }
+            return lastPage?.pagination?.hasMore ? lastPage.pagination.nextCursor : undefined;
         },
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
@@ -33,16 +33,16 @@ export const usePostsFeed = (hashtag?: string) => {
 export const useUserPosts = (userId?: string) => {
     return useInfiniteQuery({
         queryKey: userId ? POSTS_KEYS.userPosts(userId) : [],
-        initialPageParam: 1,
-        queryFn: ({ pageParam = 1 }) =>
+        initialPageParam: undefined as string | undefined,
+        queryFn: ({ pageParam }) =>
             PostsService.getPosts({
-                page: pageParam as number,
+                cursor: pageParam,
                 limit: 9, // Grid usually looks better with 3x3
                 authorId: userId
             }),
         getNextPageParam: (lastPage) => {
-            const hasMore = lastPage?.meta?.currentPage < lastPage?.meta?.totalPages;
-            return hasMore ? lastPage.meta.currentPage + 1 : undefined;
+            // Backend devuelve { data: [], pagination: { hasMore, nextCursor } }
+            return lastPage?.pagination?.hasMore ? lastPage.pagination.nextCursor : undefined;
         },
         enabled: !!userId,
         staleTime: 1000 * 60 * 5,

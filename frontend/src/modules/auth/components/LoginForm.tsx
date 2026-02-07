@@ -15,6 +15,7 @@ import {
     useToast,
     Divider,
     HStack,
+    useDisclosure,
 } from "@chakra-ui/react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { keyframes } from "@emotion/react";
@@ -22,16 +23,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { OAuthButtons } from "./OAuthButtons";
 import { getAuthErrorMessage } from "../utils/authErrors";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
-`;
-
-const pulseSoft = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(53, 122, 98, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(53, 122, 98, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(53, 122, 98, 0); }
 `;
 
 export const LoginForm = () => {
@@ -40,6 +36,7 @@ export const LoginForm = () => {
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { signIn } = useAuth();
+    const { isOpen: isForgotOpen, onOpen: onForgotOpen, onClose: onForgotClose } = useDisclosure();
 
     const navigate = useNavigate();
     const toast = useToast();
@@ -73,12 +70,12 @@ export const LoginForm = () => {
     };
 
     return (
-        <VStack spacing={5} as="form" onSubmit={handleLogin} animation={`${fadeInUp} 0.5s ease`}>
+        <VStack spacing={4} as="form" onSubmit={handleLogin} animation={`${fadeInUp} 0.5s ease`}>
             <FormControl isRequired>
-                <FormLabel fontWeight="600">Correo Electrónico</FormLabel>
-                <InputGroup>
+                <FormLabel fontWeight="600" fontSize="sm" mb={1}>Correo Electrónico</FormLabel>
+                <InputGroup size="md">
                     <InputLeftElement pointerEvents="none" color="brand.textMuted">
-                        <Icon as={FaEnvelope} />
+                        <Icon as={FaEnvelope} boxSize={4} />
                     </InputLeftElement>
                     <Input
                         type="email"
@@ -87,15 +84,16 @@ export const LoginForm = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         focusBorderColor="brand.primary"
+                        borderRadius="xl"
                     />
                 </InputGroup>
             </FormControl>
 
             <FormControl isRequired>
-                <FormLabel fontWeight="600">Contraseña</FormLabel>
-                <InputGroup>
+                <FormLabel fontWeight="600" fontSize="sm" mb={1}>Contraseña</FormLabel>
+                <InputGroup size="md">
                     <InputLeftElement pointerEvents="none" color="brand.textMuted">
-                        <Icon as={FaLock} />
+                        <Icon as={FaLock} boxSize={4} />
                     </InputLeftElement>
                     <Input
                         type={showPassword ? "text" : "password"}
@@ -104,17 +102,25 @@ export const LoginForm = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         focusBorderColor="brand.primary"
+                        borderRadius="xl"
                     />
-                    <InputRightElement width="4.5rem">
-                        <Button h="1.75rem" size="sm" onClick={() => setShowPassword(!showPassword)} variant="ghost">
-                            <Icon as={showPassword ? FaEyeSlash : FaEye} color="brand.textMuted" />
+                    <InputRightElement width="3rem">
+                        <Button h="1.5rem" size="xs" onClick={() => setShowPassword(!showPassword)} variant="ghost">
+                            <Icon as={showPassword ? FaEyeSlash : FaEye} color="brand.textMuted" boxSize={3} />
                         </Button>
                     </InputRightElement>
                 </InputGroup>
             </FormControl>
 
-            <Flex justify="flex-end" w="full">
-                <Link color="brand.primary" fontSize="sm" fontWeight="600">
+            <Flex justify="flex-end" w="full" mt={-1}>
+                <Link 
+                    color="brand.primary" 
+                    fontSize="xs" 
+                    fontWeight="600"
+                    onClick={onForgotOpen}
+                    cursor="pointer"
+                    _hover={{ textDecoration: "underline" }}
+                >
                     ¿Olvidaste tu contraseña?
                 </Link>
             </Flex>
@@ -122,24 +128,31 @@ export const LoginForm = () => {
             <Button
                 w="full"
                 variant="solid"
-                size="lg"
-                h="50px"
+                size="md"
+                h="44px"
                 type="submit"
                 isLoading={isLoading}
-                animation={`${pulseSoft} 2s infinite`}
+                borderRadius="xl"
+                fontWeight="700"
             >
                 Entrar
             </Button>
 
-            <HStack w="full" spacing={4} my={2}>
+            <HStack w="full" spacing={3} my={1}>
                 <Divider />
-                <Text fontSize="sm" color="brand.textMuted" whiteSpace="nowrap">
+                <Text fontSize="xs" color="brand.textMuted" whiteSpace="nowrap">
                     O continúa con
                 </Text>
                 <Divider />
             </HStack>
 
             <OAuthButtons />
+
+            <ForgotPasswordModal 
+                isOpen={isForgotOpen} 
+                onClose={onForgotClose}
+                initialEmail={email}
+            />
         </VStack>
     );
 };

@@ -4,7 +4,6 @@ import {
     HStack,
     Button,
     Container,
-    Icon,
     Text,
     IconButton,
     Drawer,
@@ -16,10 +15,11 @@ import {
     useDisclosure,
     VStack,
     useColorModeValue,
+    Image,
 } from '@chakra-ui/react';
 import { NavLink as RouterLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../modules/auth/AuthContext';
-import { FaLeaf, FaBars } from 'react-icons/fa';
+import { FaBars } from 'react-icons/fa';
 import React from 'react';
 import { Link } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
@@ -88,7 +88,7 @@ export const MainLayout: React.FC = () => {
 
                         {/* Logo */}
                         <HStack spacing={2} as={RouterLink} to="/app/inicio" _hover={{ textDecoration: 'none' }}>
-                            <Icon as={FaLeaf} color="brand.primary" w={6} h={6} />
+                            <Image src="/logo.png" alt="EcoTrack" boxSize="32px" objectFit="contain" />
                             <Text fontSize="2xl" fontWeight="800" color="brand.textMain">
                                 EcoTrack
                             </Text>

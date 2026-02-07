@@ -5,8 +5,25 @@ import theme from './theme';
 import { AuthProvider } from './modules/auth';
 import { AppRouter } from './routes';
 import { PostUploadProvider } from './modules/community/context/PostUploadContext';
+import { ScrollToTop } from './components/ScrollToTop';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { userStatsService } from './services/userStatsService';
 
 const queryClient = new QueryClient();
+
+const PrefetchRankingData = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['leaderboard', 'global'],
+      queryFn: () => userStatsService.getLeaderboard('global'),
+    });
+  }, [queryClient]);
+
+  return null;
+};
 
 function App() {
   return (
@@ -15,6 +32,8 @@ function App() {
         <AuthProvider>
           <PostUploadProvider>
             <Router>
+              <PrefetchRankingData />
+              <ScrollToTop />
               <AppRouter />
             </Router>
           </PostUploadProvider>

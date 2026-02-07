@@ -4,13 +4,12 @@ import {
     Button,
     Stack,
     Container,
-    Icon,
     Heading,
     HStack,
-    Link as ChakraLink
+    Link as ChakraLink,
+    Image,
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
-import { FaEnvira } from 'react-icons/fa';
 
 export const Navbar = () => {
 
@@ -40,7 +39,7 @@ export const Navbar = () => {
                         _hover={{ transform: 'scale(1.02)' }}
                         transition="all 0.2s"
                     >
-                        <Icon as={FaEnvira} color="brand.primary" boxSize={6} />
+                        <Image src="/logo.png" alt="EcoTrack" boxSize="32px" objectFit="contain" />
                         <Heading
                             fontSize="1.5rem"
                             fontWeight="900"
@@ -70,16 +69,16 @@ export const Navbar = () => {
                             fontWeight={600}
                             variant={'ghost'}
                             color="brand.textMain"
+                            display={{ base: 'none', md: 'inline-flex' }}
                             _hover={{
                                 bg: 'brand.bgCardLight',
                             }}
                         >
-                            Iniciar Sesión
+                            Ya tengo cuenta
                         </Button>
                         <Button
                             as={RouterLink}
-                            to="/login"
-                            display={{ base: 'none', md: 'inline-flex' }}
+                            to="/login?mode=register"
                             fontSize={'sm'}
                             fontWeight={700}
                             bg={'brand.primary'}
@@ -92,7 +91,7 @@ export const Navbar = () => {
                                 boxShadow: 'lg',
                             }}
                         >
-                            Unirme ahora
+                            Comenzar
                         </Button>
                     </Stack>
                 </Flex>

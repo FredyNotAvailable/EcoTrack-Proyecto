@@ -6,7 +6,7 @@ export class UserStatsController {
     private service: UserStatsService;
 
     constructor() {
-        this.service = new UserStatsService();
+        this.service = UserStatsService.getInstance();
     }
 
     getStats = async (req: Request, res: Response) => {

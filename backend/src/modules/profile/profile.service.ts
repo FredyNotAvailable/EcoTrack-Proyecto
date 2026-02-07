@@ -1,7 +1,19 @@
 import { ProfileRepository } from './profile.repository';
 
 export class ProfileService {
-    private repository = new ProfileRepository();
+    private static instance: ProfileService;
+    private repository: ProfileRepository;
+
+    constructor() {
+        this.repository = ProfileRepository.getInstance();
+    }
+
+    static getInstance(): ProfileService {
+        if (!ProfileService.instance) {
+            ProfileService.instance = new ProfileService();
+        }
+        return ProfileService.instance;
+    }
 
     async getProfile(userId: string) {
         const profile = await this.repository.getById(userId);

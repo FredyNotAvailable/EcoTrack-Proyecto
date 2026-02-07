@@ -1,8 +1,25 @@
 import { Router } from 'express';
+import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import * as postsController from './posts.controller';
 import { authMiddleware } from '../../middlewares/auth.middleware';
+import { validateBody, validateParams, uuidSchema } from '../../utils/validators';
+import { createPostSchema, createCommentSchema, updateCommentSchema } from './posts.validators';
 
 const router = Router();
+
+// Schemas de validación
+const postIdSchema = z.object({ id: uuidSchema });
+const commentIdSchema = z.object({ id: uuidSchema });
+
+// Rate limiting para upload (10 req/min)
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 10,
+    message: { error: { code: 'TOO_MANY_UPLOADS', message: 'Demasiadas subidas, espera un minuto' } },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 // Feed
 router.get('/', authMiddleware, postsController.getFeed); // Auth optional usually but middleware implies required? 
@@ -46,50 +63,21 @@ router.get('/:id', optionalAuth, postsController.getPost);
 
 import { uploadMiddleware } from '../../middlewares/upload.middleware';
 
-router.post('/', authMiddleware, postsController.createPost);
-router.put('/:id', authMiddleware, postsController.updatePost);
-router.delete('/:id', authMiddleware, postsController.deletePost);
-router.post('/upload', authMiddleware, uploadMiddleware.array('files', 10), postsController.uploadMedia);
-router.post('/:id/like', authMiddleware, postsController.likePost);
-router.delete('/:id/like', authMiddleware, postsController.unlikePost);
+router.post('/', authMiddleware, validateBody(createPostSchema), postsController.createPost);
+router.put('/:id', authMiddleware, validateParams(postIdSchema), postsController.updatePost);
+router.delete('/:id', authMiddleware, validateParams(postIdSchema), postsController.deletePost);
+router.post('/upload', authMiddleware, uploadLimiter, uploadMiddleware.array('files', 10), postsController.uploadMedia);
+router.post('/:id/like', authMiddleware, validateParams(postIdSchema), postsController.likePost);
+router.delete('/:id/like', authMiddleware, validateParams(postIdSchema), postsController.unlikePost);
 
-router.get('/:id/comments', postsController.getComments); // Comments are public? "Lista comentarios".
-router.post('/:id/comments', authMiddleware, postsController.createComment);
+router.get('/:id/comments', validateParams(postIdSchema), postsController.getComments);
+router.post('/:id/comments', authMiddleware, validateParams(postIdSchema), validateBody(createCommentSchema), postsController.createComment);
 
-// Comments routes separate or nested?
-// User said: "H) PATCH /comments/:id"
-// So I need global routes for comments too?
-// Or I can mount a sub-router.
-// I will just add them here:
-router.patch('/comments/:id', authMiddleware, postsController.updateComment); // Note path is /posts/comments/:id if mounted on /posts
-// But user asked for /comments/:id.
-// So I should prob have two files or mount this router on /posts AND /comments?
-// Or just handle /comments/:id in the main router mapping?
-// I'll export a separate router for comments?
-// Or I'll just put all in `postsRouter` and mount it on `/` in index.ts?
-// No, standard is `/posts`.
-// PROPOSAL:
-// `router` handles `/` (which becomes `/posts`), `/:id`, etc.
-// And I add `comments/:id` here? That would be `/posts/comments/:id`. User asked `/comments/:id`.
-// I will create a separate `commentsRouter` inside this file or `posts.routes.ts` and export it too.
-
-router.patch('/comments/:id', authMiddleware, postsController.updateComment); // This will be /posts/comments/:id which is wrong.
-// I need `PATCH /comments/:id`.
-// I will handle this in `src/routes/index.ts` by mounting the SAME router or a subset?
-// "Móntalo en el router principal: /posts -> posts.routes, /comments -> comments routes si lo separas".
-// I will separate `comments` routes to a variable and export it.
-
+// Comments router separado (se monta en /comments en index.ts)
 export const commentsRouter = Router();
-commentsRouter.patch('/:id', authMiddleware, postsController.updateComment);
-commentsRouter.delete('/:id', authMiddleware, postsController.deleteComment);
+commentsRouter.patch('/:id', authMiddleware, validateParams(commentIdSchema), validateBody(updateCommentSchema), postsController.updateComment);
+commentsRouter.delete('/:id', authMiddleware, validateParams(commentIdSchema), postsController.deleteComment);
 
 export default router;
-
-// Wait, the "optionalAuth" above:
-// If I use `authMiddleware` and it fails, it returns 401.
-// If header is missing, it returns 401.
-// My `optionalAuth` check `if header`. If header exists but is invalid, `authMiddleware` returns 401. That is CORRECT.
-// If header missing, it calls next(), `req.user` is undefined. CORRECT.
-// EXCEPT: `authMiddleware` has `req`, `res`, `next` typed.
 // I need to import it.
 

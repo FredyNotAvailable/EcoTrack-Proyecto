@@ -1,10 +1,19 @@
 import { supabase } from '../../config/supabaseClient';
 
 export class ProfileRepository {
+    private static instance: ProfileRepository;
+
+    static getInstance(): ProfileRepository {
+        if (!ProfileRepository.instance) {
+            ProfileRepository.instance = new ProfileRepository();
+        }
+        return ProfileRepository.instance;
+    }
+
     async getById(id: string) {
         const { data, error } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, username, avatar_url, bio, created_at, updated_at')
             .eq('id', id)
             .single();
 
@@ -15,7 +24,7 @@ export class ProfileRepository {
     async getByUsername(username: string) {
         const { data, error } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, username, avatar_url, bio, created_at, updated_at')
             .eq('username', username)
             .single();
 

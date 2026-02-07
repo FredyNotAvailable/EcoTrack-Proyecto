@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ProfileService } from './profile.service';
 
 export class ProfileController {
-    private service = new ProfileService();
+    private service = ProfileService.getInstance();
 
     getMe = async (req: any, res: Response, next: NextFunction) => {
         try {

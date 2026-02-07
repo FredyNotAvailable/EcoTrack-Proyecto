@@ -10,11 +10,11 @@ const LoginPage = () => {
         <Box
             minH="100vh"
             bg="brand.bgBody"
-            py={{ base: 10, md: 20 }}
+            py={{ base: 6, md: 10 }}
             display="flex"
             alignItems="center"
         >
-            <Container maxW="container.xl">
+            <Container maxW="container.xl" px={{ base: 4, md: 6 }}>
                 <Flex justify="center" align="center" w="100%">
                     <AuthForm />
                 </Flex>

@@ -2,6 +2,14 @@ import { supabase } from '../../config/supabaseClient';
 import { Post, PostComment, PostListOptions } from './posts.types';
 
 export class PostsRepository {
+    private static instance: PostsRepository;
+
+    static getInstance(): PostsRepository {
+        if (!PostsRepository.instance) {
+            PostsRepository.instance = new PostsRepository();
+        }
+        return PostsRepository.instance;
+    }
 
     // --- Posts ---
 
@@ -9,9 +17,9 @@ export class PostsRepository {
         let query = supabase
             .from('posts')
             .select(`
-                *,
+                id, user_id, descripcion, ubicacion, hashtags, is_public, is_reported, created_at, updated_at,
                 user:profiles(username, avatar_url),
-                media:post_media(*),
+                media:post_media(id, post_id, media_url, media_type, position),
                 likes_count:post_likes(count),
                 comments_count:post_comments(count),
                 my_like:post_likes!left(user_id)
@@ -45,40 +53,41 @@ export class PostsRepository {
     }
 
     async findById(id: string, userId?: string): Promise<Post | null> {
-        // Query to get post details
-        const query = supabase
+        // Query post + opcionalmente verificar like en paralelo
+        const postQuery = supabase
             .from('posts')
             .select(`
-                *,
+                id, user_id, descripcion, ubicacion, hashtags, is_public, is_reported, created_at, updated_at,
                 user:profiles(username, avatar_url),
-                media:post_media(*),
+                media:post_media(id, post_id, media_url, media_type, position),
                 likes_count:post_likes(count),
                 comments_count:post_comments(count)
             `)
             .eq('id', id)
             .single();
 
-        const { data, error } = await query;
+        // Ejecutar ambas queries en paralelo si hay userId
+        const [postResult, likeResult] = await Promise.all([
+            postQuery,
+            userId 
+                ? supabase
+                    .from('post_likes')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('post_id', id)
+                    .eq('user_id', userId)
+                : Promise.resolve({ count: 0 })
+        ]);
+
+        const { data, error } = postResult;
         if (error || !data) return null;
 
-        let likedByMe = false;
-        if (userId) {
-            const { count } = await supabase
-                .from('post_likes')
-                .select('id', { count: 'exact', head: true })
-                .eq('post_id', id)
-                .eq('user_id', userId);
-            likedByMe = Boolean(count);
-        }
+        const likedByMe = Boolean((likeResult as any).count);
 
         return {
             ...data,
-            // Sort media by position
             media: (data.media || []).sort((a: any, b: any) => a.position - b.position),
-            _count: {
-                likes: data.likes_count?.[0]?.count || 0,
-                comments: data.comments_count?.[0]?.count || 0
-            },
+            likes_count: data.likes_count?.[0]?.count || 0,
+            comments_count: data.comments_count?.[0]?.count || 0,
             liked_by_me: likedByMe,
             user: Array.isArray(data.user) ? data.user[0] : data.user
         };
@@ -181,7 +190,7 @@ export class PostsRepository {
     async findCommentById(commentId: string): Promise<PostComment | null> {
         const { data, error } = await supabase
             .from('post_comments')
-            .select('*')
+            .select('id, post_id, user_id, content, created_at, updated_at')
             .eq('id', commentId)
             .single();
 

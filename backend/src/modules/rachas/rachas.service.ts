@@ -1,10 +1,18 @@
 import { RachasRepository } from './rachas.repository';
 
 export class RachasService {
+    private static instance: RachasService;
     private repository: RachasRepository;
 
     constructor() {
         this.repository = new RachasRepository();
+    }
+
+    static getInstance(): RachasService {
+        if (!RachasService.instance) {
+            RachasService.instance = new RachasService();
+        }
+        return RachasService.instance;
     }
 
     async getRacha(userId: string) {

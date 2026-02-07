@@ -23,7 +23,7 @@ import {
     Skeleton
 } from '@chakra-ui/react';
 import { keyframes } from "@emotion/react";
-import { FaHeart, FaRegHeart, FaEllipsisH, FaTrash, FaPen, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaEllipsisH, FaTrash, FaPen, FaChevronLeft, FaChevronRight, FaMapMarkerAlt } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import type { Post, Comment } from '../../posts/types';
 import { usePostComments, useCreateComment, useLikePost, useDeleteComment } from '../../posts/hooks/usePosts';
@@ -31,6 +31,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useNavigate } from "react-router-dom";
 import { getTimeAgo } from "../../../utils/dateUtils";
+import { LocationViewModal } from './LocationViewModal';
 
 interface PostDetailModalProps {
     isOpen: boolean;
@@ -74,6 +75,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
     // Comment Deletion Logic
     const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
     const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+    const { isOpen: isLocationOpen, onOpen: onLocationOpen, onClose: onLocationClose } = useDisclosure();
 
     const handleDeleteClick = (commentId: string) => {
         setDeleteCommentId(commentId);
@@ -279,11 +281,6 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                                 <Text fontWeight="bold" fontSize="sm">
                                     {post.user?.username || 'usuario'}
                                 </Text>
-                                {post.ubicacion && (
-                                    <Text fontSize="xs" color="gray.500">
-                                        {post.ubicacion}
-                                    </Text>
-                                )}
                             </VStack>
                         </HStack>
 
@@ -335,7 +332,22 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                         </HStack>
 
                         <Divider />
-
+                                {post.ubicacion && (
+                                    <HStack 
+                                        spacing={1} 
+                                        mt={1}
+                                        cursor="pointer"
+                                        onClick={onLocationOpen}
+                                        _hover={{ opacity: 0.7 }}
+                                        transition="opacity 0.2s"
+                                    >
+                                        <FaMapMarkerAlt size={12} color="gray" />
+                                        <Text fontSize="xs" color="gray.600" fontWeight="500">
+                                            {post.ubicacion}
+                                        </Text>
+                                    </HStack>
+                                )}
+                                
                         {/* Real Comments */}
                         {comments.map((comment: Comment) => (
                             <HStack key={comment.id} align="start" spacing={3}>
@@ -457,6 +469,15 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                 cancelText="Cancelar"
                 isLoading={deleteComment.isPending}
             />
+
+            {/* Modal de visualización de ubicación */}
+            {post.ubicacion && (
+                <LocationViewModal
+                    isOpen={isLocationOpen}
+                    onClose={onLocationClose}
+                    locationName={post.ubicacion}
+                />
+            )}
         </Modal >
     );
 };

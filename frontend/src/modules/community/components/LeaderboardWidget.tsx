@@ -5,15 +5,19 @@ import {
     Avatar,
     VStack,
     Icon,
-    Divider,
     Button,
-    Skeleton
+    Skeleton,
+    HStack
 } from "@chakra-ui/react";
-import { FaTrophy, FaMedal } from "react-icons/fa6";
+import { FaTrophy, FaMedal, FaCrown, FaStar } from "react-icons/fa6";
 import { FaChevronRight } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 import { userStatsService } from "../../../services/userStatsService";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+
+const MotionBox = motion(Box);
+const MotionFlex = motion(Flex);
 
 export const LeaderboardWidget = () => {
     const navigate = useNavigate();
@@ -23,81 +27,97 @@ export const LeaderboardWidget = () => {
     });
 
     if (isLoading) {
-        return <Skeleton height="250px" borderRadius="16px" />;
+        return <Skeleton height="250px" borderRadius="32px" />;
     }
 
-    // Limit to top 3
     const topLeaders = leaders?.slice(0, 3) || [];
 
-    return (
-        <Box
-            bg="white"
-            borderRadius="16px"
-            p={5}
-            boxShadow="sm"
-            border="1px solid"
-            borderColor="gray.100"
-            mb={6}
-        >
-            <Flex align="center" mb={4} gap={2}>
-                <Icon as={FaTrophy} color="brand.accentYellow" />
-                <Text fontWeight="bold" fontSize="lg">Top Eco-Leaders</Text>
-            </Flex>
-            <Divider mb={4} />
+    const getRankIcon = (index: number) => {
+        switch (index) {
+            case 0: return { icon: FaCrown, color: "yellow.400" };
+            case 1: return { icon: FaTrophy, color: "gray.400" };
+            case 2: return { icon: FaMedal, color: "orange.400" };
+            default: return { icon: FaStar, color: "gray.300" };
+        }
+    };
 
-            <VStack spacing={4} align="stretch" mb={4}>
-                {topLeaders.map((leader, index) => (
-                    <Flex
-                        key={leader.user_id}
-                        align="center"
-                        justify="space-between"
-                        borderRadius="md"
-                        _hover={{ bg: "gray.50" }}
-                        p={2}
-                        transition="all 0.2s"
-                    >
-                        <Flex
+    return (
+        <MotionBox
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            bg="white"
+            borderRadius="32px"
+            p={{ base: 5, md: 6 }}
+            boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
+            border="1px solid rgba(0,0,0,0.03)"
+        >
+            <Flex 
+                align="center" 
+                justify="space-between"
+                mb={4}
+            >
+                <HStack spacing={3}>
+                    <Icon as={FaTrophy} fontSize="xl" color="orange.400" />
+                    <Text fontWeight="800" fontSize="lg" color="brand.secondary">
+                        Top Eco-Líderes
+                    </Text>
+                </HStack>
+            </Flex>
+
+            <VStack spacing={3} align="stretch" mb={5}>
+                {topLeaders.map((leader, index) => {
+                    const rankStyle = getRankIcon(index);
+                    return (
+                        <MotionFlex
+                            key={leader.user_id}
+                            whileHover={{ backgroundColor: "var(--chakra-colors-gray-50)" }}
                             align="center"
-                            gap={3}
+                            justify="space-between"
+                            borderRadius="xl"
+                            p={2.5}
                             cursor="pointer"
                             onClick={() => leader.user?.username && navigate(`/app/perfil/${leader.user.username}`)}
-                            _hover={{ opacity: 0.8 }}
                         >
-                            <Flex
-                                w="24px" h="24px"
-                                align="center" justify="center"
-                                fontWeight="bold"
-                                fontSize="sm"
-                                color={index < 3 ? "brand.primary" : "gray.500"}
-                            >
-                                {index === 0 ? <Icon as={FaMedal} color="#FFD700" /> :
-                                    index === 1 ? <Icon as={FaMedal} color="#C0C0C0" /> :
-                                        index === 2 ? <Icon as={FaMedal} color="#CD7F32" /> :
-                                            (index + 1)}
-                            </Flex>
-                            <Avatar size="sm" name={leader.user?.username} src={leader.user?.avatar_url} />
-                            <Text fontSize="sm" fontWeight="600" noOfLines={1} maxW="120px" title={leader.user?.username}>
-                                {leader.user?.username || 'Usuario'}
+                            <HStack spacing={4}>
+                                <Icon as={rankStyle.icon} color={rankStyle.color} fontSize="lg" w="20px" />
+
+                                <Avatar 
+                                    size="sm" 
+                                    name={leader.user?.username} 
+                                    src={leader.user?.avatar_url}
+                                />
+
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="700" color="brand.secondary" noOfLines={1}>
+                                        {leader.user?.username || 'Usuario'}
+                                    </Text>
+                                    <Text fontSize="xs" color="brand.textMuted" fontWeight="500">
+                                        Nivel {leader.nivel || 1}
+                                    </Text>
+                                </Box>
+                            </HStack>
+
+                            <Text fontSize="sm" fontWeight="700" color="green.500">
+                                {(leader.puntos_totales || 0).toLocaleString()} XP
                             </Text>
-                        </Flex>
-                        <Text fontSize="sm" fontWeight="bold" color="brand.primary">
-                            {leader.puntos_totales}
-                        </Text>
-                    </Flex>
-                ))}
-                {topLeaders.length === 0 && <Text fontSize="sm" color="gray.500">No hay datos aún.</Text>}
+                        </MotionFlex>
+                    );
+                })}
             </VStack>
 
             <Button
+                w="full"
                 variant="ghost"
-                size="sm"
-                width="100%"
-                rightIcon={<FaChevronRight />}
-                color="brand.primary"
+                colorScheme="green"
+                rightIcon={<FaChevronRight size={12} />}
                 onClick={() => navigate('/app/ranking')}
+                _hover={{
+                    bg: "green.50"
+                }}
             >
-                Ver más
+                Ver Ranking Completo
             </Button>
-        </Box>
+        </MotionBox>
     );
 };
