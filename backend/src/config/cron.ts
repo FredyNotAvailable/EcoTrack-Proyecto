@@ -7,13 +7,11 @@ export const initCrons = () => {
 
   // Tarea programada: todos los viernes a las 23:59 (zona horaria Ecuador)
   cron.schedule('59 23 * * 5', expireOldRetos, {
-    scheduled: true,
     timezone: "America/Guayaquil"
   });
 
   // Tarea adicional: verificar diariamente a medianoche por si algún reto se pasó
   cron.schedule('0 0 * * *', expireOldRetos, {
-    scheduled: true,
     timezone: "America/Guayaquil"
   });
 

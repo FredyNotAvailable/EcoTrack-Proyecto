@@ -29,7 +29,7 @@ const fadeInUp = keyframes`
 const RankingPage = () => {
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
-    const [period, setPeriod] = useState<'global' | 'day' | 'week' | 'month'>('global');
+    const [period] = useState<'global' | 'day' | 'week' | 'month'>('global');
 
     const { data: ranking, isLoading } = useQuery({
         queryKey: ['leaderboard', period],

@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flex, Spinner, useToast, Heading, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '../AuthContext';
+import { supabase } from '../../../config/supabase';
+import { AuthService } from '../services/auth.service';
 import { ProfileAPIService } from '../../profile/services/profile.service';
 import { StorageService } from '../../shared/services/storage.service';
 import { base64ToBlob } from '../../../utils/ImageConverter';
@@ -99,13 +101,19 @@ const AuthCallbackPage = () => {
                     // --- FLUJO DE LOGIN / CALLBACK GOOGLE ---
                     console.log("AuthCallbackPage: Callback Google / Login flow");
 
-                    // 1. Obtener el token de la sesión
-                    const token = session.access_token;
+                    // 1. Obtener el ID del usuario
+                    const userId = session.user.id;
 
-                    // 2. Consultar nuestro backend para ver si tiene perfil
-                    const { AuthService } = await import('../services/auth.service');
-                    const { registered } = await AuthService.checkRegistrationStatus(token);
-                    console.log("AuthCallbackPage: Registered status from backend:", registered);
+                    // 2. Consultar Supabase directamente para ver si tiene perfil
+                    console.log("AuthCallbackPage: Checking profile for userId:", userId);
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('id', userId)
+                        .single();
+
+                    const registered = !!profile && !profileError;
+                    console.log("AuthCallbackPage: Registered status from Supabase:", registered);
 
                     // 3. Verificar origen
                     const authOrigin = localStorage.getItem('auth_origin');

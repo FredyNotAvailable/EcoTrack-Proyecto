@@ -21,8 +21,8 @@ import {
     Circle,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+
 import { useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
 import { FaFlag, FaTrophy, FaListCheck, FaClock, FaCircleCheck, FaChevronRight, FaMugHot } from 'react-icons/fa6';
@@ -32,7 +32,7 @@ import { RetoCard } from './components/RetoCard';
 import { RetoDetailsModal } from './components/RetoDetailsModal';
 import { TaskConfirmationModal } from './components/TaskConfirmationModal';
 import { ChallengeCompletionModal } from './components/ChallengeCompletionModal';
-import type { Reto, RetoTarea, RetoStatus } from './services/retos.service';
+import type { Reto, RetoTarea } from './services/retos.service';
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -305,13 +305,12 @@ export const RetosPage = () => {
         challenges,
         isLoading,
         joinChallengeAsync,
-        isJoining,
         completeTaskAsync,
         isCompletingTask,
     } = useRetos();
     const queryClient = useQueryClient();
     const toast = useToast();
-    const [searchParams, setSearchParams] = useSearchParams();
+
 
     // State for modals
     const [selectedReto, setSelectedReto] = useState<Reto | null>(null);
