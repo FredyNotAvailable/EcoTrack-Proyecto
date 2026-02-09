@@ -114,7 +114,7 @@ export const RegisterForm = () => {
                     </InputRightElement>
                 </InputGroup>
             </FormControl>
-            
+
             <Button
                 w="full"
                 variant="solid"
@@ -136,7 +136,7 @@ export const RegisterForm = () => {
                 <Divider />
             </HStack>
 
-            <OAuthButtons />
+            <OAuthButtons origin="register" />
         </VStack>
     );
 };

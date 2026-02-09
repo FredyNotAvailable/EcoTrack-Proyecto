@@ -29,6 +29,8 @@ import { ProfileAPIService } from "../../profile/services/profile.service";
 import { StorageService } from "../../shared/services/storage.service";
 import { supabase } from "../../../config/supabase";
 import { FaArrowLeft, FaCamera, FaLeaf, FaUserAstronaut } from "react-icons/fa";
+import { validateUsername, validateBio } from "../../profile/utils/profileValidation";
+import { getProfileErrorMessage, isRecoverableError, getRetryDelay } from "../../profile/utils/profileErrors";
 
 const OnboardingPage = () => {
     const { signInWithGoogle, user, signUp } = useAuth();
@@ -51,21 +53,34 @@ const OnboardingPage = () => {
 
     const [errors, setErrors] = useState({
         username: false,
+        usernameMessage: '',
         acceptedTerms: false,
-        bio: false
+        bio: false,
+        bioMessage: ''
     });
 
+    const [retryCount, setRetryCount] = useState(0);
+
     // Validar en tiempo real para mejor UX
-    const isFormValid = formData.username.trim().length >= 3 && formData.acceptedTerms;
+    const isFormValid = formData.username.trim().length >= 3 &&
+        formData.acceptedTerms &&
+        validateUsername(formData.username).valid &&
+        validateBio(formData.bio).valid;
 
     const validate = () => {
+        const usernameValidation = validateUsername(formData.username);
+        const bioValidation = validateBio(formData.bio);
+
         const newErrors = {
-            username: formData.username.trim().length < 3,
+            username: !usernameValidation.valid,
+            usernameMessage: usernameValidation.error || '',
             acceptedTerms: !formData.acceptedTerms,
-            bio: formData.bio.length > 300
+            bio: !bioValidation.valid,
+            bioMessage: bioValidation.error || ''
         };
+
         setErrors(newErrors);
-        return !newErrors.username && !newErrors.acceptedTerms;
+        return usernameValidation.valid && bioValidation.valid && formData.acceptedTerms;
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,19 +112,34 @@ const OnboardingPage = () => {
 
             // 1. Manejo de Registro Diferido y Creación de Sesión
             if (deferredCreds?.email && deferredCreds?.password) {
+                console.log('[Onboarding] Processing deferred registration');
                 await signUp({ email: deferredCreds.email, password: deferredCreds.password });
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.user) {
                     // Upload Avatar if needed
                     if (avatarFile) {
+                        console.log('[Onboarding] Uploading avatar');
                         avatarUrl = await StorageService.uploadAvatar(session.user.id, avatarFile);
                     }
-                    await ProfileAPIService.create({
+
+                    console.log('[Onboarding] Creating profile with data:', {
                         username: formData.username,
-                        bio: formData.bio,
-                        avatar_url: avatarUrl
+                        hasBio: !!formData.bio,
+                        hasAvatar: !!avatarUrl
                     });
-                    toast({ title: "¡Bienvenido a bordo!", description: "Tu perfil ha sido creado.", status: "success", duration: 3000 });
+
+                    await ProfileAPIService.create({
+                        username: formData.username.trim(),
+                        bio: formData.bio.trim() || undefined,
+                        avatar_url: avatarUrl || undefined
+                    });
+
+                    toast({
+                        title: "¡Bienvenido a bordo!",
+                        description: "Tu perfil ha sido creado exitosamente.",
+                        status: "success",
+                        duration: 3000
+                    });
                     navigate("/app/inicio");
                     return;
                 }
@@ -117,38 +147,102 @@ const OnboardingPage = () => {
 
             // 2. Usuario ya autenticado (Google)
             if (user) {
+                console.log('[Onboarding] User already authenticated, creating profile');
                 if (avatarFile) {
+                    console.log('[Onboarding] Uploading avatar');
                     avatarUrl = await StorageService.uploadAvatar(user.id, avatarFile);
                 }
-                await ProfileAPIService.create({
+
+                console.log('[Onboarding] Creating profile with data:', {
                     username: formData.username,
-                    bio: formData.bio,
-                    avatar_url: avatarUrl
+                    hasBio: !!formData.bio,
+                    hasAvatar: !!avatarUrl
                 });
-                toast({ title: "¡Perfil listo!", description: "Es hora de empezar a hacer el cambio.", status: "success", duration: 3000 });
+
+                await ProfileAPIService.create({
+                    username: formData.username.trim(),
+                    bio: formData.bio.trim() || undefined,
+                    avatar_url: avatarUrl || undefined
+                });
+
+                toast({
+                    title: "¡Perfil listo!",
+                    description: "Es hora de empezar a hacer el cambio.",
+                    status: "success",
+                    duration: 3000
+                });
                 navigate("/app/inicio");
                 return;
             }
 
             // 3. Fallback (Guest -> Google)
+            console.log('[Onboarding] Guest user, saving data for OAuth callback');
             let avatarBase64 = "";
             if (avatarFile) {
                 avatarBase64 = await fileToBase64(avatarFile);
             }
+
+            // Agregar timestamp para validar frescura de datos
             localStorage.setItem("onboarding_data", JSON.stringify({
-                username: formData.username,
-                bio: formData.bio,
-                avatar_base64: avatarBase64
+                username: formData.username.trim(),
+                bio: formData.bio.trim(),
+                avatar_base64: avatarBase64,
+                timestamp: Date.now()
             }));
+
             await signInWithGoogle();
 
         } catch (error: any) {
+            console.error('[Onboarding] Error creating profile:', error);
+
+            // Limpiar localStorage si hay error
+            localStorage.removeItem('onboarding_data');
+
+            // Obtener mensaje de error específico
+            const errorDetails = getProfileErrorMessage(error);
+
+            // Verificar si es un error recuperable
+            if (isRecoverableError(error) && retryCount < 3) {
+                const delay = getRetryDelay(retryCount + 1);
+
+                toast({
+                    title: errorDetails.title,
+                    description: `${errorDetails.description}. Reintentando en ${delay / 1000}s...`,
+                    status: "warning",
+                    duration: delay,
+                });
+
+                // Reintentar después del delay
+                setTimeout(() => {
+                    setRetryCount(retryCount + 1);
+                    handleContinue();
+                }, delay);
+
+                return;
+            }
+
+            // Mostrar error específico
             toast({
-                title: "Error al crear perfil",
-                description: "Parece que hubo un pequeño problema. Inténtalo de nuevo.", // getAuthErrorMessage(error) puede ser muy técnico
+                title: errorDetails.title,
+                description: errorDetails.description,
                 status: "error",
-                duration: 4000,
+                duration: 5000,
+                isClosable: true
             });
+
+            // Si hay una acción sugerida, mostrarla
+            if (errorDetails.action) {
+                toast({
+                    title: "💡 Sugerencia",
+                    description: errorDetails.action,
+                    status: "info",
+                    duration: 4000,
+                    isClosable: true
+                });
+            }
+
+            // Resetear contador de reintentos
+            setRetryCount(0);
         } finally {
             setIsSubmitting(false);
         }
@@ -253,7 +347,7 @@ const OnboardingPage = () => {
                                     _focus={{ bg: "white", boxShadow: "0 0 0 2px var(--chakra-colors-brand-primary)" }}
                                 />
                                 {errors.username && (
-                                    <FormErrorMessage>El nombre es muy corto (mínimo 3 letras).</FormErrorMessage>
+                                    <FormErrorMessage>{errors.usernameMessage || 'El nombre es muy corto (mínimo 3 letras).'}</FormErrorMessage>
                                 )}
                             </FormControl>
 

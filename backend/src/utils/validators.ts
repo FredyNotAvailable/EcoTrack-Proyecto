@@ -25,10 +25,6 @@ export const createProfileSchema = z.object({
         .min(3, 'El username debe tener al menos 3 caracteres')
         .max(30, 'El username no puede exceder 30 caracteres')
         .regex(/^[a-zA-Z0-9_]+$/, 'El username solo puede contener letras, números y guiones bajos'),
-    nombre_completo: z.string()
-        .min(2, 'El nombre debe tener al menos 2 caracteres')
-        .max(100, 'El nombre no puede exceder 100 caracteres')
-        .optional(),
     bio: z.string().max(300, 'La bio no puede exceder 300 caracteres').optional(),
     avatar_url: z.string().url('URL de avatar inválida').optional()
 });

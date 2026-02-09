@@ -2,7 +2,11 @@ import { Button, Icon } from "@chakra-ui/react";
 import { FaGoogle } from "react-icons/fa";
 import { useAuth } from "../AuthContext";
 
-export const OAuthButtons = () => {
+interface OAuthButtonsProps {
+    origin?: 'login' | 'register';
+}
+
+export const OAuthButtons = ({ origin = 'login' }: OAuthButtonsProps) => {
     const { signInWithGoogle } = useAuth();
 
     return (
@@ -16,7 +20,7 @@ export const OAuthButtons = () => {
             color="gray.600"
             _hover={{ bg: "gray.50", borderColor: "gray.300" }}
             onClick={() => {
-                localStorage.setItem('auth_origin', 'login');
+                localStorage.setItem('auth_origin', origin);
                 signInWithGoogle();
             }}
         >

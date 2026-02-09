@@ -27,27 +27,51 @@ export class ProfileService {
     }
 
     async createProfile(userId: string, data: any) {
-        console.log(`[ProfileService] Creating profile for ${userId}`);
+        console.log(`[ProfileService] Creating profile for ${userId}`, {
+            username: data.username,
+            bioLength: data.bio?.length || 0,
+            hasAvatar: !!data.avatar_url
+        });
+
         // Verificar si ya existe para evitar duplicados/errores
         const existing = await this.repository.getById(userId);
         if (existing) {
             console.warn(`[ProfileService] Profile already exists for ${userId}`);
-            throw new Error('El perfil ya existe');
+            const error: any = new Error('El perfil ya existe');
+            error.statusCode = 409; // Conflict
+            throw error;
         }
 
         if (data.bio && data.bio.length > 300) {
-            throw new Error('La biografía no puede exceder los 300 caracteres.');
+            const error: any = new Error('La biografía no puede exceder los 300 caracteres.');
+            error.statusCode = 400;
+            throw error;
         }
 
         try {
-            return await this.repository.create({
+            const profile = await this.repository.create({
                 id: userId,
                 ...data
             });
+
+            console.log(`[ProfileService] Profile created successfully for ${userId}`);
+            return profile;
         } catch (error: any) {
+            console.error(`[ProfileService] Error creating profile:`, {
+                userId,
+                errorCode: error.code,
+                errorMessage: error.message
+            });
+
+            // Error de username duplicado (PostgreSQL unique violation)
             if (error.code === '23505') {
-                throw new Error('El nombre de usuario ya está en uso. Por favor elige otro.');
+                const duplicateError: any = new Error('El nombre de usuario ya está en uso. Por favor elige otro.');
+                duplicateError.statusCode = 409;
+                duplicateError.code = 'DUPLICATE_USERNAME';
+                throw duplicateError;
             }
+
+            // Re-lanzar otros errores
             throw error;
         }
     }

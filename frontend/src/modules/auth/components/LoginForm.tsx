@@ -113,9 +113,9 @@ export const LoginForm = () => {
             </FormControl>
 
             <Flex justify="flex-end" w="full" mt={-1}>
-                <Link 
-                    color="brand.primary" 
-                    fontSize="xs" 
+                <Link
+                    color="brand.primary"
+                    fontSize="xs"
                     fontWeight="600"
                     onClick={onForgotOpen}
                     cursor="pointer"
@@ -146,10 +146,10 @@ export const LoginForm = () => {
                 <Divider />
             </HStack>
 
-            <OAuthButtons />
+            <OAuthButtons origin="login" />
 
-            <ForgotPasswordModal 
-                isOpen={isForgotOpen} 
+            <ForgotPasswordModal
+                isOpen={isForgotOpen}
                 onClose={onForgotClose}
                 initialEmail={email}
             />

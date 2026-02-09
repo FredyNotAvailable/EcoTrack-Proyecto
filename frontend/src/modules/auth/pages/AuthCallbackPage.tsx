@@ -26,6 +26,25 @@ const AuthCallbackPage = () => {
                     // --- FLUJO DE REGISTRO ---
                     console.log("AuthCallbackPage: Starting registration flow");
                     const onboardingData = JSON.parse(onboardingDataStr);
+
+                    // Validar que los datos no sean muy antiguos (máximo 10 minutos)
+                    const MAX_AGE_MS = 10 * 60 * 1000; // 10 minutos
+                    const dataAge = Date.now() - (onboardingData.timestamp || 0);
+
+                    if (dataAge > MAX_AGE_MS) {
+                        console.warn('AuthCallbackPage: Onboarding data expired');
+                        localStorage.removeItem('onboarding_data');
+                        toast({
+                            title: "Sesión expirada",
+                            description: "Los datos del formulario expiraron. Por favor completa el registro nuevamente.",
+                            status: "warning",
+                            duration: 5000,
+                            isClosable: true,
+                        });
+                        navigate('/onboarding');
+                        return;
+                    }
+
                     let avatarUrl = '';
 
                     // Si hay avatar en base64, subirlo primero
@@ -33,27 +52,37 @@ const AuthCallbackPage = () => {
                         try {
                             console.log("AuthCallbackPage: Uploading avatar...");
                             const blob = await base64ToBlob(onboardingData.avatar_base64);
-                            // Usar StorageService para subir
                             const userId = session.user.id;
                             avatarUrl = await StorageService.uploadAvatar(userId, blob);
                             console.log("AuthCallbackPage: Avatar uploaded to:", avatarUrl);
                         } catch (uploadError) {
                             console.error("Error subiendo avatar:", uploadError);
-                            // Continuamos sin avatar si falla, notificando al log
+                            // Continuamos sin avatar si falla
+                            toast({
+                                title: "Avatar no subido",
+                                description: "No pudimos subir tu foto de perfil, pero tu cuenta fue creada.",
+                                status: "warning",
+                                duration: 3000,
+                            });
                         }
                     }
 
-                    // Preparar datos finales del perfil
+                    // Preparar datos finales del perfil (limpiar y normalizar)
                     const profileData = {
-                        username: onboardingData.username,
-                        bio: onboardingData.bio,
-                        avatar_url: avatarUrl // Añadimos la URL si existe
+                        username: onboardingData.username?.trim(),
+                        bio: onboardingData.bio?.trim() || undefined,
+                        avatar_url: avatarUrl || undefined
                     };
 
                     // Crear el perfil explícitamente
-                    console.log("AuthCallbackPage: Calling ProfileAPIService.create with:", profileData);
+                    console.log("AuthCallbackPage: Calling ProfileAPIService.create with:", {
+                        username: profileData.username,
+                        hasBio: !!profileData.bio,
+                        hasAvatar: !!profileData.avatar_url
+                    });
+
                     await ProfileAPIService.create(profileData);
-                    console.log("AuthCallbackPage: Create successful");
+                    console.log("AuthCallbackPage: Profile created successfully");
 
                     // Limpiar datos y notificar
                     localStorage.removeItem('onboarding_data');

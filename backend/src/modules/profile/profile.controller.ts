@@ -54,12 +54,29 @@ export class ProfileController {
     createMe = async (req: any, res: Response, next: NextFunction) => {
         try {
             const userId = req.user.id;
-            console.log(`[ProfileController] createMe requested for userId: ${userId} with data:`, req.body);
+            console.log(`[ProfileController] createMe requested for userId: ${userId} with data:`, {
+                username: req.body.username,
+                hasBio: !!req.body.bio,
+                hasAvatar: !!req.body.avatar_url,
+                timestamp: new Date().toISOString()
+            });
+
             const profile = await this.service.createProfile(userId, req.body);
             console.log(`[ProfileController] Profile created successfully for userId: ${userId}`);
             res.status(201).json(profile);
-        } catch (error) {
-            console.error(`[ProfileController] Error in createMe:`, error);
+        } catch (error: any) {
+            console.error(`[ProfileController] Error in createMe:`, {
+                userId: req.user?.id,
+                error: error.message,
+                code: error.code,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+
+            // Pasar el error al middleware de manejo de errores
+            // pero asegurar que tenga un statusCode apropiado
+            if (!error.statusCode) {
+                error.statusCode = 400;
+            }
             next(error);
         }
     };
