@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flex, Spinner, useToast, Heading, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '../AuthContext';
-import { supabase } from '../../../config/supabase';
+
 import { AuthService } from '../services/auth.service';
 import { ProfileAPIService } from '../../profile/services/profile.service';
 import { StorageService } from '../../shared/services/storage.service';
