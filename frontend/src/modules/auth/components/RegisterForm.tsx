@@ -58,7 +58,20 @@ export const RegisterForm = () => {
                     return;
                 }
             }
-            navigate("/onboarding", { state: { email, password } });
+
+            // Create account in Supabase
+            await AuthService.signUp({ email, password });
+
+            toast({
+                title: "¡Cuenta creada!",
+                description: "Bienvenido a EcoTrack. Completa tu perfil ahora.",
+                status: "success",
+                duration: 5000,
+                isClosable: true,
+                position: "top",
+            });
+
+            navigate("/onboarding");
         } catch (error: any) {
             toast({
                 title: "Error al registrarse",

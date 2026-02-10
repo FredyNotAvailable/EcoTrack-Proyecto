@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabaseClient';
+import { ProfileRepository } from '../modules/profile/profile.repository';
 
 /**
  * Middleware para validar el token de Supabase Auth
@@ -39,12 +40,33 @@ export const authMiddleware = async (
             });
         }
 
+
         console.log('[Backend Auth] ✅ Token valid for user:', user.email);
+
+        // Check admin status from App Metadata (Supreme Authority) or Profile (Database)
+        let role = (user.app_metadata?.role as string) || 'user';
+        let isAdmin = role === 'admin';
+        let profile = null;
+
+        // Si no es admin por metadata, verificamos en base de datos (para usuarios promovidos manualmente en DB)
+        // O si queremos tener el perfil disponible en req.user.profile
+        try {
+            profile = await ProfileRepository.getInstance().getById(user.id);
+            if (profile?.role === 'admin') {
+                isAdmin = true;
+                role = 'admin';
+            }
+        } catch (error) {
+            console.log(`[Backend Auth] Note: Profile not found for user ${user.id} (might be pure admin)`);
+        }
+
         // Adjuntar en req.user un objeto tipado
         req.user = {
             id: user.id,
             email: user.email,
-            role: (user.app_metadata?.role as string) || 'user'
+            role: role,
+            isAdmin: isAdmin,
+            profile: profile // Optional attachment
         };
 
         next();

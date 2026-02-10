@@ -4,6 +4,8 @@ declare namespace Express {
             id: string;
             email?: string;
             role?: string;
+            isAdmin?: boolean;
+            profile?: any; // Optional profile data
         };
     }
 }

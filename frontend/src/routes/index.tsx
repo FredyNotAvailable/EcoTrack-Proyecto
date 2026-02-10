@@ -10,12 +10,12 @@ import { MainLayout } from '../components/Layout/MainLayout';
 
 // Skeletons para loading states
 import {
-  PageSkeleton,
-  InicioPageSkeleton,
-  RetosPageSkeleton,
-  CommunityPageSkeleton,
-  RankingPageSkeleton,
-  ProfilePageSkeleton,
+    PageSkeleton,
+    InicioPageSkeleton,
+    RetosPageSkeleton,
+    CommunityPageSkeleton,
+    RankingPageSkeleton,
+    ProfilePageSkeleton,
 } from '../components/Skeletons';
 
 // Lazy loading - se cargan bajo demanda
@@ -32,6 +32,11 @@ const ProfilePage = lazy(() => import('../modules/profile/ProfilePage'));
 const TermsPage = lazy(() => import('../modules/landing/pages/TermsPage'));
 const PrivacyPage = lazy(() => import('../modules/landing/pages/PrivacyPage'));
 const AboutPage = lazy(() => import('../modules/landing/pages/AboutPage'));
+
+// Admin Components
+import { AdminRoute } from './AdminRoute'; // Admin Guard
+import { AdminLayout } from '../modules/admin/layout/AdminLayout';
+import { AdminDashboard } from '../modules/admin/pages/AdminDashboard';
 
 export const AppRouter = () => {
     return (
@@ -110,6 +115,14 @@ export const AppRouter = () => {
                             <ProfilePage />
                         </Suspense>
                     } />
+                </Route>
+            </Route>
+
+            {/* Rutas de Administrador */}
+            <Route path="/admin" element={<AdminRoute />}>
+                <Route element={<AdminLayout />}>
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<AdminDashboard />} />
                 </Route>
             </Route>
 

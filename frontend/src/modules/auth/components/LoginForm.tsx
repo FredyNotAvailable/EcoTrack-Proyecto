@@ -38,7 +38,7 @@ export const LoginForm = () => {
     const { signIn } = useAuth();
     const { isOpen: isForgotOpen, onOpen: onForgotOpen, onClose: onForgotClose } = useDisclosure();
 
-    const navigate = useNavigate();
+    // const navigate = useNavigate(); // Removed unused navigation
     const toast = useToast();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -54,7 +54,8 @@ export const LoginForm = () => {
                 isClosable: true,
                 position: "top",
             });
-            navigate("/app/inicio");
+            // La redirección es manejada por PublicRoute automáticamente al detectar sesión
+            // navigate("/app/inicio"); 
         } catch (error: any) {
             toast({
                 title: "Error al iniciar sesión",

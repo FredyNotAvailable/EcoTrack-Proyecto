@@ -7,6 +7,7 @@ export interface Profile {
     avatar_url?: string;
     level?: number;
     xp?: number;
+    role?: 'user' | 'admin';
     // Add other fields as needed
 }
 

@@ -13,7 +13,7 @@ export class ProfileRepository {
     async getById(id: string) {
         const { data, error } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url, bio, created_at, updated_at')
+            .select('id, username, avatar_url, bio, role, created_at, updated_at')
             .eq('id', id)
             .single();
 
