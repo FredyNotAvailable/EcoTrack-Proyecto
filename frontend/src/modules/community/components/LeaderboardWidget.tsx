@@ -52,8 +52,8 @@ export const LeaderboardWidget = () => {
             boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
             border="1px solid rgba(0,0,0,0.03)"
         >
-            <Flex 
-                align="center" 
+            <Flex
+                align="center"
                 justify="space-between"
                 mb={4}
             >
@@ -82,9 +82,9 @@ export const LeaderboardWidget = () => {
                             <HStack spacing={4}>
                                 <Icon as={rankStyle.icon} color={rankStyle.color} fontSize="lg" w="20px" />
 
-                                <Avatar 
-                                    size="sm" 
-                                    name={leader.user?.username} 
+                                <Avatar
+                                    size="sm"
+                                    name={leader.user?.username}
                                     src={leader.user?.avatar_url}
                                 />
 

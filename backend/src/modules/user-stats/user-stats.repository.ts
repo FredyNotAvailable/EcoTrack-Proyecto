@@ -76,12 +76,12 @@ export class UserStatsRepository {
         };
     }
     async getLeaderboard(limit: number, period: string = 'global'): Promise<any[]> {
-        // 1. Fetch top stats
+        // 1. Fetch top stats (fetch more to account for admins that will be filtered)
         const { data: stats, error } = await supabase
             .from('user_stats')
             .select('user_id, puntos_totales, kg_co2_ahorrado, nivel, retos_completados, misiones_diarias_completadas')
             .order('puntos_totales', { ascending: false })
-            .limit(limit);
+            .limit(limit * 2);
 
         if (error) {
             console.error('Error fetching leaderboard stats:', error);
@@ -90,26 +90,32 @@ export class UserStatsRepository {
 
         if (!stats || stats.length === 0) return [];
 
-        // 2. Fetch profiles for these users
+        // 2. Fetch profiles for these users (including role to filter admins)
         const userIds = stats.map(s => s.user_id);
         const { data: profiles, error: profilesError } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url')
+            .select('id, username, avatar_url, role')
             .in('id', userIds);
 
         if (profilesError) {
             console.error('Error fetching leaderboard profiles:', profilesError);
-            // Return stats without profile info as fallback
-            return stats.map(s => ({ ...s, user: null }));
+            throw new ApiError(500, 'Error fetching leaderboard profiles');
         }
 
-        // 3. Merge data
-        // Create a map for faster lookup
-        const profilesMap = new Map(profiles?.map(p => [p.id, p]));
+        // 3. Create a map of non-admin profiles
+        const profilesMap = new Map(
+            profiles
+                ?.filter(p => p.role !== 'admin')
+                .map(p => [p.id, { id: p.id, username: p.username, avatar_url: p.avatar_url }])
+        );
 
-        return stats.map((stat: any) => ({
-            ...stat,
-            user: profilesMap.get(stat.user_id) || null
-        }));
+        // 4. Merge data and filter out admins, then limit to requested amount
+        return stats
+            .filter((stat: any) => profilesMap.has(stat.user_id))
+            .slice(0, limit)
+            .map((stat: any) => ({
+                ...stat,
+                user: profilesMap.get(stat.user_id) || null
+            }));
     }
 }

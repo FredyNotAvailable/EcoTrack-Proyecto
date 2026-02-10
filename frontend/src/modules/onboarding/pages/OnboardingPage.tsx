@@ -268,7 +268,7 @@ const OnboardingPage = () => {
     };
 
     return (
-        <Box minH="100vh" bg={bg} py={20} position="relative" overflow="hidden">
+        <Box minH="100vh" h="100vh" bg={bg} py={4} position="relative" overflow="hidden" display="flex" alignItems="center">
             {/* Decorative Background Elements */}
             <Box position="absolute" top="-10%" right="-10%" w="400px" h="400px" bg="brand.primary" opacity="0.05" rounded="full" blur="3xl" />
             <Box position="absolute" bottom="-10%" left="-10%" w="300px" h="300px" bg="brand.secondary" opacity="0.05" rounded="full" blur="2xl" />
@@ -277,30 +277,30 @@ const OnboardingPage = () => {
                 icon={<Icon as={FaArrowLeft} />}
                 aria-label="Volver"
                 position="absolute"
-                top={6}
-                left={6}
+                top={4}
+                left={4}
                 onClick={() => navigate('/login')}
                 variant="ghost"
                 color="brand.textMuted"
                 _hover={{ bg: 'whiteAlpha.500' }}
+                size="sm"
             />
 
             <Container maxW="lg">
-                <VStack spacing={10}>
-                    <VStack spacing={3} textAlign="center">
-                        <Icon as={FaLeaf} w={12} h={12} color="brand.primary" mb={2} />
-                        <Heading size="xl" fontWeight="900" color="brand.secondary" lineHeight="1.2">
-                            Configura tu <br />
-                            <Text as="span" color="brand.primary">Perfil de Guardián</Text>
+                <VStack spacing={4}>
+                    <VStack spacing={1} textAlign="center">
+                        <Icon as={FaLeaf} w={8} h={8} color="brand.primary" />
+                        <Heading size="lg" fontWeight="900" color="brand.secondary" lineHeight="1.2">
+                            Configura tu <Text as="span" color="brand.primary">Perfil de Guardián</Text>
                         </Heading>
-                        <Text color="brand.textMuted" fontSize="lg">
-                            Solo unos pasos más para unirte a la comunidad que está transformando el mundo.
+                        <Text color="brand.textMuted" fontSize="sm">
+                            Solo unos pasos más para unirte a la comunidad.
                         </Text>
                     </VStack>
 
                     <Box
                         bg={cardBg}
-                        p={{ base: 6, md: 10 }}
+                        p={{ base: 5, md: 6 }}
                         borderRadius="3xl"
                         boxShadow="2xl"
                         w="full"
@@ -308,30 +308,30 @@ const OnboardingPage = () => {
                         position="relative"
                         zIndex={1}
                     >
-                        <VStack spacing={6}>
+                        <VStack spacing={4}>
                             {/* Avatar Section */}
-                            <Center position="relative" mb={2}>
+                            <Center position="relative">
                                 <Box position="relative">
                                     <Avatar
-                                        size="2xl"
+                                        size="xl"
                                         src={avatarPreview}
                                         name={formData.username || "G"}
                                         bg="brand.bgCardLight"
                                         color="brand.primary"
-                                        border="4px solid white"
-                                        boxShadow="xl"
-                                        icon={<Icon as={FaUserAstronaut} fontSize="3rem" />}
+                                        border="3px solid white"
+                                        boxShadow="lg"
+                                        icon={<Icon as={FaUserAstronaut} fontSize="2rem" />}
                                     />
                                     <IconButton
                                         aria-label="Subir foto"
                                         icon={<Icon as={FaCamera} />}
-                                        size="sm"
+                                        size="xs"
                                         isRound
                                         bg="brand.primary"
                                         color="white"
                                         _hover={{ bg: "brand.primaryHover", transform: "scale(1.1)" }}
                                         position="absolute"
-                                        bottom="2"
+                                        bottom="0"
                                         right="0"
                                         boxShadow="md"
                                         onClick={() => fileInputRef.current?.click()}
@@ -346,12 +346,12 @@ const OnboardingPage = () => {
                                 />
                             </Center>
 
-                            <Text fontSize="sm" color="brand.textMuted" textAlign="center" mt={-4}>
+                            <Text fontSize="xs" color="brand.textMuted" textAlign="center" mt={-2}>
                                 Sube una foto para que la comunidad te reconozca
                             </Text>
 
                             <FormControl isInvalid={errors.username} isRequired>
-                                <FormLabel fontWeight="700" color="brand.secondary" pl={1}>
+                                <FormLabel fontWeight="700" color="brand.secondary" pl={1} fontSize="sm" mb={1}>
                                     ¿Cómo quieres llamarte?
                                 </FormLabel>
                                 <Input
@@ -359,20 +359,20 @@ const OnboardingPage = () => {
                                     value={formData.username}
                                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     borderRadius="xl"
-                                    height="50px"
+                                    height="44px"
                                     focusBorderColor="brand.primary"
                                     bg="brand.bgBody"
                                     border="none"
                                     _focus={{ bg: "white", boxShadow: "0 0 0 2px var(--chakra-colors-brand-primary)" }}
                                 />
                                 {errors.username && (
-                                    <FormErrorMessage>{errors.usernameMessage || 'El nombre es muy corto (mínimo 3 letras).'}</FormErrorMessage>
+                                    <FormErrorMessage fontSize="xs">{errors.usernameMessage || 'El nombre es muy corto (mínimo 3 letras).'}</FormErrorMessage>
                                 )}
                             </FormControl>
 
                             <FormControl isInvalid={errors.bio}>
-                                <FormLabel fontWeight="700" color="brand.secondary" pl={1}>
-                                    Tu Manifiesto Personal <Badge colorScheme="green" ml={2} rounded="full" fontSize="0.6em">Opcional</Badge>
+                                <FormLabel fontWeight="700" color="brand.secondary" pl={1} fontSize="sm" mb={1}>
+                                    Tu Manifiesto <Badge colorScheme="green" ml={1} rounded="full" fontSize="0.55em">Opcional</Badge>
                                 </FormLabel>
                                 <Textarea
                                     placeholder="Cuéntanos qué te inspira a cuidar el planeta..."
@@ -383,8 +383,9 @@ const OnboardingPage = () => {
                                     bg="brand.bgBody"
                                     border="none"
                                     _focus={{ bg: "white", boxShadow: "0 0 0 2px var(--chakra-colors-brand-primary)" }}
-                                    rows={3}
+                                    rows={2}
                                     maxLength={300}
+                                    fontSize="sm"
                                 />
                                 <Flex justify="flex-end" mt={1}>
                                     <Text fontSize="xs" color={formData.bio.length > 250 ? "orange.400" : "gray.400"}>
@@ -394,35 +395,35 @@ const OnboardingPage = () => {
                             </FormControl>
 
                             <FormControl isInvalid={errors.acceptedTerms} isRequired>
-                                <Stack direction="row" align="start" bg="brand.bgBody" p={4} borderRadius="xl" cursor="pointer" onClick={() => setFormData({ ...formData, acceptedTerms: !formData.acceptedTerms })}>
+                                <Stack direction="row" align="start" bg="brand.bgBody" p={3} borderRadius="xl" cursor="pointer" onClick={() => setFormData({ ...formData, acceptedTerms: !formData.acceptedTerms })}>
                                     <Checkbox
                                         colorScheme="green"
                                         isChecked={formData.acceptedTerms}
                                         onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
-                                        mt={1}
+                                        mt={0.5}
                                     />
                                     <Box>
-                                        <Text fontSize="sm" fontWeight="600" color="brand.secondary">
+                                        <Text fontSize="xs" fontWeight="600" color="brand.secondary">
                                             Compromiso de Honor
                                         </Text>
                                         <Text fontSize="xs" color="brand.textMuted">
-                                            Acepto los <Text as="span" color="brand.primary" fontWeight="bold">Términos del Servicio</Text> y me comprometo a ser un miembro respetuoso de la comunidad EcoTrack.
+                                            Acepto los <Text as="span" color="brand.primary" fontWeight="bold">Términos del Servicio</Text> y me comprometo a ser un miembro respetuoso.
                                         </Text>
                                     </Box>
                                 </Stack>
-                                {errors.acceptedTerms && <FormErrorMessage>Necesitamos tu compromiso para continuar.</FormErrorMessage>}
+                                {errors.acceptedTerms && <FormErrorMessage fontSize="xs">Necesitamos tu compromiso para continuar.</FormErrorMessage>}
                             </FormControl>
 
                             <Button
                                 w="full"
-                                size="lg"
+                                size="md"
                                 bgGradient="linear(to-r, brand.primary, brand.secondary)"
                                 color="white"
                                 _hover={{ opacity: 0.9, transform: "translateY(-2px)", boxShadow: "lg" }}
                                 _active={{ transform: "translateY(0)" }}
                                 borderRadius="2xl"
-                                h="56px"
-                                fontSize="lg"
+                                h="48px"
+                                fontSize="md"
                                 fontWeight="800"
                                 onClick={handleContinue}
                                 isLoading={isSubmitting}
