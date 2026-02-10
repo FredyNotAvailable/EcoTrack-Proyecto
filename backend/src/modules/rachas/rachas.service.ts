@@ -1,5 +1,7 @@
 import { RachasRepository } from './rachas.repository';
 
+import { UserRacha } from './rachas.types';
+
 export class RachasService {
     private static instance: RachasService;
     private repository: RachasRepository;
@@ -15,8 +17,24 @@ export class RachasService {
         return RachasService.instance;
     }
 
-    async getRacha(userId: string) {
-        return this.repository.getRacha(userId);
+    async getRacha(userId: string): Promise<UserRacha | null> {
+        const racha = await this.repository.getRacha(userId);
+        if (!racha) return null;
+
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        // Si la última actividad no fue hoy ni ayer, la racha se perdió (es 0 visualmente)
+        if (racha.ultima_fecha !== today && racha.ultima_fecha !== yesterdayStr) {
+            return {
+                ...racha,
+                racha_actual: 0
+            };
+        }
+
+        return racha;
     }
 
     async updateStreak(userId: string): Promise<void> {
