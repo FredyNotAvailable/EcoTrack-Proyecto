@@ -33,7 +33,7 @@ import { validateUsername, validateBio } from "../../profile/utils/profileValida
 import { getProfileErrorMessage, isRecoverableError, getRetryDelay } from "../../profile/utils/profileErrors";
 
 const OnboardingPage = () => {
-    const { signInWithGoogle, user, signUp, isRegistered } = useAuth();
+    const { signInWithGoogle, user, signUp, isRegistered, refreshRegistration } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
     const location = useLocation();
@@ -141,6 +141,7 @@ const OnboardingPage = () => {
                         avatar_url: avatarUrl || undefined
                     });
 
+                    await refreshRegistration();
                     toast({
                         title: "¡Bienvenido a bordo!",
                         description: "Tu perfil ha sido creado exitosamente.",
@@ -172,6 +173,7 @@ const OnboardingPage = () => {
                     avatar_url: avatarUrl || undefined
                 });
 
+                await refreshRegistration();
                 toast({
                     title: "¡Perfil listo!",
                     description: "Es hora de empezar a hacer el cambio.",

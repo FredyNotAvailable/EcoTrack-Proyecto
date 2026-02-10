@@ -22,45 +22,46 @@ export const DashboardHeader = ({ username }: DashboardHeaderProps) => {
   };
 
   return (
-    <Stack 
-      direction={{ base: 'column', md: 'row' }} 
-      spacing={{ base: 3, md: 4 }} 
+    <Stack
+      direction={{ base: 'column', md: 'row' }}
+      spacing={{ base: 3, md: 4 }}
       align="center"
       justify={{ base: 'center', md: 'flex-start' }}
       textAlign="center"
     >
       <Badge
-        bg="brand.bgCardLight"
-        color="brand.primary"
+        bg="green.100"
+        color="green.800"
         px={4}
         py={2}
         borderRadius="full"
         fontSize="sm"
-        fontWeight="700"
+        fontWeight="800"
         textTransform="uppercase"
         letterSpacing="wide"
         w="fit-content"
         flexShrink={0}
+        boxShadow="sm"
       >
         {getGreeting()}
       </Badge>
-      
-      <Heading 
-        as="h1" 
-        fontSize={{ base: "lg", md: "xl", lg: "2xl" }} 
-        lineHeight="1.2" 
-        color="brand.secondary" 
-        fontWeight="800"
+
+      <Heading
+        as="h1"
+        fontSize={{ base: "xl", md: "2xl", lg: "3xl" }}
+        lineHeight="1.2"
+        color="brand.secondary"
+        fontWeight="900"
         flexShrink={0}
       >
-        ¡Hola, {username}!
-        <MotionText 
+        ¡Hola, <Text as="span" color="brand.primary">{username}</Text>!
+        <MotionText
           as="span"
           display="inline-block"
           ml={2}
           initial={{ rotate: 0 }}
           animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ 
+          transition={{
             duration: 0.5,
             delay: 0.5,
             repeat: Infinity,
@@ -70,9 +71,9 @@ export const DashboardHeader = ({ username }: DashboardHeaderProps) => {
           👋
         </MotionText>
       </Heading>
-      
-      <Text 
-        color="brand.textMuted" 
+
+      <Text
+        color="brand.textMuted"
         fontSize={{ base: "sm", md: "md" }}
         fontWeight="600"
         lineHeight="1.4"

@@ -1,3 +1,4 @@
+
 import { Router } from 'express';
 import { AdminController } from './admin.controller';
 import { authMiddleware, requireRole } from '../../middlewares/auth.middleware';
@@ -13,7 +14,9 @@ import {
     taskSchema,
     updateTaskSchema,
     levelSchema,
-    updateLevelSchema
+    updateLevelSchema,
+    dailyTipSchema,
+    updateDailyTipSchema
 } from '../../utils/validators';
 
 const router = Router();
@@ -22,6 +25,9 @@ const controller = new AdminController();
 // Todas las rutas de administración requieren ser ADMIN
 router.use(authMiddleware);
 router.use(requireRole(['admin']));
+
+// Dashboard Stats
+router.get('/stats', controller.getDashboardStats);
 
 // Rutas de gestión de usuarios
 router.get('/users', controller.getUsers);
@@ -33,8 +39,11 @@ router.delete('/users/:id', controller.deleteUser);
 
 // Rutas de moderación de posts
 router.get('/posts', controller.getPosts);
+router.get('/reports', controller.getPostReports);
+router.post('/reports/:id/resolve', controller.resolvePostReport);
+router.get('/posts/:id', controller.getPostDetails);
 router.delete('/posts/:id', controller.deletePost);
-router.patch('/posts/:id/dismiss-report', controller.dismissPostReport);
+router.patch('/posts/:id/dismiss-report', controller.dismissPostReport); // Deprecated but kept for backward compatibility if needed
 
 // Rutas de gestión de misiones
 router.get('/missions', controller.getMissions);
@@ -59,5 +68,11 @@ router.get('/levels', controller.getLevels);
 router.post('/levels', validateBody(levelSchema), controller.createLevel);
 router.put('/levels/:nivel', validateBody(updateLevelSchema), controller.updateLevel);
 router.delete('/levels/:nivel', controller.deleteLevel);
+
+// Rutas de gestión de consejos diarios
+router.get('/daily-tips', controller.getDailyTips);
+router.post('/daily-tips', validateBody(dailyTipSchema), controller.createDailyTip);
+router.put('/daily-tips/:id', validateBody(updateDailyTipSchema), controller.updateDailyTip);
+router.delete('/daily-tips/:id', controller.deleteDailyTip);
 
 export default router;

@@ -8,16 +8,18 @@ import {
     useColorModeValue,
     Icon,
     Flex,
+    StatArrow,
 } from '@chakra-ui/react';
-import { HiOutlineCalendar, HiOutlineCollection, HiOutlineChartBar, HiOutlineCheckCircle } from 'react-icons/hi';
+import { HiCollection, HiFlag, HiChartBar, HiGlobe } from 'react-icons/hi';
 
 interface ChallengeStatsProps {
     challenges: any[];
 }
 
 export const ChallengeStats = ({ challenges }: ChallengeStatsProps) => {
-    const cardBg = useColorModeValue('white', 'gray.800');
+    const bg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
+    const secondaryColor = useColorModeValue('gray.500', 'gray.400');
 
     const total = challenges.length;
     const active = challenges.filter(c => c.activo).length;
@@ -30,66 +32,65 @@ export const ChallengeStats = ({ challenges }: ChallengeStatsProps) => {
         {
             label: 'Total Retos',
             value: total,
-            help: 'Historial completo',
-            icon: HiOutlineCollection,
+            helpText: 'Repositorio de desafíos',
+            icon: HiCollection,
             color: 'blue.500',
         },
         {
             label: 'Retos Activos',
             value: active,
-            help: 'Disponibles hoy',
-            icon: HiOutlineCheckCircle,
+            helpText: 'Disponibles actualmente',
+            icon: HiFlag,
             color: 'green.500',
         },
         {
-            label: 'Eco-Inversión',
+            label: 'Incentivos Totales',
             value: totalPoints.toLocaleString(),
-            help: 'Puntos en juego',
-            icon: HiOutlineChartBar,
+            helpText: 'Eco-puntos en circulación',
+            icon: HiChartBar,
             color: 'purple.500',
         },
         {
-            label: 'Impacto Promedio',
+            label: 'Impacto Global',
             value: `${avgCO2} kg`,
-            help: 'CO2 por reto',
-            icon: HiOutlineCalendar,
+            helpText: 'CO2 evitado por reto',
+            icon: HiGlobe,
             color: 'orange.500',
         }
     ];
 
     return (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8}>
             {stats.map((stat, index) => (
                 <Box
                     key={index}
-                    p={5}
-                    bg={cardBg}
-                    borderRadius="2xl"
+                    px={6}
+                    py={6}
+                    bg={bg}
                     border="1px"
                     borderColor={borderColor}
+                    borderRadius="3xl"
                     shadow="sm"
+                    transition="all 0.3s"
+                    _hover={{ transform: 'translateY(-4px)', shadow: 'xl', borderColor: stat.color }}
                 >
                     <Stat>
-                        <Flex justify="space-between" align="start">
+                        <Flex justify="space-between" align="start" mb={4}>
                             <Box>
-                                <StatLabel color="gray.500" fontWeight="medium" fontSize="sm">
+                                <StatLabel fontWeight="800" fontSize="xs" color={secondaryColor} textTransform="uppercase" letterSpacing="widest">
                                     {stat.label}
                                 </StatLabel>
-                                <StatNumber fontSize="2xl" fontWeight="bold" mt={1}>
+                                <StatNumber fontSize="3xl" fontWeight="900" mt={1}>
                                     {stat.value}
                                 </StatNumber>
                             </Box>
-                            <Flex
-                                p={2}
-                                bg={`${stat.color.split('.')[0]}.50`}
-                                borderRadius="xl"
-                                color={stat.color}
-                            >
-                                <Icon as={stat.icon} boxSize={6} />
-                            </Flex>
+                            <Box p={3} bg={`${stat.color.split('.')[0]}.50`} borderRadius="2xl" color={stat.color}>
+                                <Icon as={stat.icon} fontSize="24px" />
+                            </Box>
                         </Flex>
-                        <StatHelpText mb={0} mt={2} fontSize="xs">
-                            {stat.help}
+                        <StatHelpText m={0} display="flex" alignItems="center" fontSize="xs" color={secondaryColor} fontWeight="600">
+                            <StatArrow type="increase" />
+                            {stat.helpText}
                         </StatHelpText>
                     </Stat>
                 </Box>

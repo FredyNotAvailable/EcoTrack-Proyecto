@@ -6,7 +6,11 @@ import {
     StatHelpText,
     StatArrow,
     useColorModeValue,
+    Box,
+    Icon,
+    Flex,
 } from '@chakra-ui/react';
+import { HiUserGroup, HiGlobe, HiLightningBolt } from 'react-icons/hi';
 import type { AdminUser } from '../../services/admin.service';
 
 interface UserStatsProps {
@@ -15,7 +19,8 @@ interface UserStatsProps {
 
 export const UserStats = ({ users }: UserStatsProps) => {
     const bg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
+    const borderColor = useColorModeValue('gray.100', 'gray.700');
+    const secondaryColor = useColorModeValue('gray.500', 'gray.400');
 
     const totalUsers = users.length;
     const activeUsers = users.filter(u => u.status === 'active').length;
@@ -25,35 +30,64 @@ export const UserStats = ({ users }: UserStatsProps) => {
     const newUsersToday = users.filter(u => u.created_at.startsWith(today)).length;
 
     const stats = [
-        { label: 'Total Usuarios', number: totalUsers, helpText: 'En el sistema', type: 'increase' },
-        { label: 'Usuarios Activos', number: activeUsers, helpText: `${((activeUsers / totalUsers || 0) * 100).toFixed(1)}% del total`, type: 'increase' },
-        { label: 'Nuevos hoy', number: newUsersToday, helpText: 'Registros diarios', type: 'increase' },
+        {
+            label: 'Total Eco-Ciudadanos',
+            number: totalUsers,
+            helpText: 'Registrados en la plataforma',
+            icon: HiUserGroup,
+            color: 'blue.500'
+        },
+        {
+            label: 'Impacto Activo',
+            number: activeUsers,
+            helpText: `${((activeUsers / totalUsers || 0) * 100).toFixed(1)}% de actividad`,
+            icon: HiGlobe,
+            color: 'green.500'
+        },
+        {
+            label: 'Nuevos hoy',
+            number: newUsersToday,
+            helpText: 'Nuevas mentes unidas',
+            icon: HiLightningBolt,
+            color: 'orange.500'
+        },
     ];
 
     return (
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
             {stats.map((stat, index) => (
-                <Stat
+                <Box
                     key={index}
-                    px={6}
-                    py={5}
+                    px={8}
+                    py={6}
                     bg={bg}
                     border="1px"
                     borderColor={borderColor}
-                    borderRadius="xl"
+                    borderRadius="3xl"
                     shadow="sm"
+                    transition="all 0.3s"
+                    _hover={{ transform: 'translateY(-4px)', shadow: 'xl', borderColor: stat.color }}
                 >
-                    <StatLabel fontWeight="medium" color="gray.500">
-                        {stat.label}
-                    </StatLabel>
-                    <StatNumber fontSize="3xl" fontWeight="800">
-                        {stat.number}
-                    </StatNumber>
-                    <StatHelpText>
-                        <StatArrow type={stat.type as 'increase' | 'decrease'} />
-                        {stat.helpText}
-                    </StatHelpText>
-                </Stat>
+                    <Stat>
+                        <Flex justify="space-between" align="start" mb={4}>
+                            <Box>
+                                <StatLabel fontWeight="800" fontSize="xs" color={secondaryColor} textTransform="uppercase" letterSpacing="widest">
+                                    {stat.label}
+                                </StatLabel>
+                                <StatNumber fontSize="4xl" fontWeight="900" mt={1}>
+                                    {stat.number}
+                                </StatNumber>
+                            </Box>
+                            <Box p={3} bg={`${stat.color.split('.')[0]}.50`} borderRadius="2xl" color={stat.color}>
+                                <Icon as={stat.icon} fontSize="24px" />
+                            </Box>
+                        </Flex>
+                        <StatHelpText m={0} display="flex" alignItems="center" fontSize="xs" color={secondaryColor} fontWeight="600">
+                            <StatArrow type="increase" />
+                            {stat.helpText}
+                        </StatHelpText>
+                    </Stat>
+                </Box>
             ))}
         </SimpleGrid>
     );

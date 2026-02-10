@@ -25,9 +25,9 @@ export const DailyTip = ({ tip, loading }: DailyTipProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
       p={{ base: 5, md: 6 }}
-      bgGradient="linear(135deg, #FFF9E6 0%, #FFF3CC 100%)"
-      borderRadius="24px"
-      boxShadow="0 2px 12px rgba(0,0,0,0.04)"
+      bgGradient="linear(135deg, orange.50 0%, yellow.50 100%)"
+      borderRadius="2xl"
+      boxShadow="sm"
       position="relative"
       overflow="hidden"
       border="1px solid"
@@ -61,19 +61,19 @@ export const DailyTip = ({ tip, loading }: DailyTipProps) => {
         </>
       ) : tip ? (
         <Box position="relative" zIndex={1}>
-          <Text 
-            fontSize={{ base: "md", md: "lg" }} 
-            fontWeight="700" 
-            mb={2} 
+          <Text
+            fontSize={{ base: "md", md: "lg" }}
+            fontWeight="700"
+            mb={2}
             color="brand.secondary"
             lineHeight="1.3"
           >
             {tip.titulo}
           </Text>
-          <Text 
-            color="gray.600" 
-            fontSize={{ base: "sm", md: "md" }} 
-            lineHeight="1.6" 
+          <Text
+            color="gray.600"
+            fontSize={{ base: "sm", md: "md" }}
+            lineHeight="1.6"
             fontWeight="500"
           >
             {tip.descripcion}

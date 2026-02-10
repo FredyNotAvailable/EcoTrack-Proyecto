@@ -78,6 +78,9 @@ export const commentsRouter = Router();
 commentsRouter.patch('/:id', authMiddleware, validateParams(commentIdSchema), validateBody(updateCommentSchema), postsController.updateComment);
 commentsRouter.delete('/:id', authMiddleware, validateParams(commentIdSchema), postsController.deleteComment);
 
+// Report
+router.post('/:id/report', authMiddleware, validateParams(postIdSchema), postsController.reportPost);
+
 export default router;
 // I need to import it.
 

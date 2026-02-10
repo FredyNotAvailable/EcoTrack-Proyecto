@@ -17,14 +17,16 @@ export class PostsRepository {
         let query = supabase
             .from('posts')
             .select(`
-                id, user_id, descripcion, ubicacion, hashtags, is_public, is_reported, created_at, updated_at,
+                id, user_id, descripcion, ubicacion, hashtags, is_public, is_reported, status, created_at, updated_at,
                 user:profiles(username, avatar_url),
                 media:post_media(id, post_id, media_url, media_type, position),
                 likes_count:post_likes(count),
                 comments_count:post_comments(count),
-                my_like:post_likes!left(user_id)
+                my_like:post_likes!left(user_id),
+                my_report:post_reports!left(reporter_id)
             `)
             .eq('is_public', true)
+            .eq('status', 'active')
             .order('created_at', { ascending: false })
             .limit(options.limit || 10);
 
@@ -57,11 +59,12 @@ export class PostsRepository {
         const postQuery = supabase
             .from('posts')
             .select(`
-                id, user_id, descripcion, ubicacion, hashtags, is_public, is_reported, created_at, updated_at,
+                id, user_id, descripcion, ubicacion, hashtags, is_public, is_reported, status, created_at, updated_at,
                 user:profiles(username, avatar_url),
                 media:post_media(id, post_id, media_url, media_type, position),
                 likes_count:post_likes(count),
-                comments_count:post_comments(count)
+                comments_count:post_comments(count),
+                my_report:post_reports!left(reporter_id)
             `)
             .eq('id', id)
             .single();
@@ -69,7 +72,7 @@ export class PostsRepository {
         // Ejecutar ambas queries en paralelo si hay userId
         const [postResult, likeResult] = await Promise.all([
             postQuery,
-            userId 
+            userId
                 ? supabase
                     .from('post_likes')
                     .select('id', { count: 'exact', head: true })
@@ -82,6 +85,7 @@ export class PostsRepository {
         if (error || !data) return null;
 
         const likedByMe = Boolean((likeResult as any).count);
+        const reportedByMe = userId && Array.isArray(data.my_report) && data.my_report.length > 0;
 
         return {
             ...data,
@@ -89,6 +93,7 @@ export class PostsRepository {
             likes_count: data.likes_count?.[0]?.count || 0,
             comments_count: data.comments_count?.[0]?.count || 0,
             liked_by_me: likedByMe,
+            reported_by_me: Boolean(reportedByMe),
             user: Array.isArray(data.user) ? data.user[0] : data.user
         };
     }
@@ -130,7 +135,7 @@ export class PostsRepository {
     async delete(id: string): Promise<void> {
         const { error } = await supabase
             .from('posts')
-            .delete()
+            .update({ status: 'deleted' })
             .eq('id', id);
 
         if (error) throw error;
@@ -259,6 +264,27 @@ export class PostsRepository {
         return data || [];
     }
 
+    // --- Reports ---
+
+    async hasUserReportedPost(postId: string, userId: string): Promise<boolean> {
+        const { count, error } = await supabase
+            .from('post_reports')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', postId)
+            .eq('reporter_id', userId);
+
+        if (error) throw error;
+        return (count || 0) > 0;
+    }
+
+    async createReport(reportData: { post_id: string, reporter_id: string, reason: string, details?: string }): Promise<void> {
+        const { error } = await supabase
+            .from('post_reports')
+            .insert(reportData);
+
+        if (error) throw error;
+    }
+
     // Helper to map post data including "liked_by_me" extraction from left join
     private mapPostData(post: any, userId?: string): Post {
         // "my_like" will be an array of objects if match, or empty array if no match
@@ -267,6 +293,7 @@ export class PostsRepository {
         // If we filtered by options.userId, then my_like will contain [{user_id: ...}] if liked, or [] if not.
 
         const isLiked = userId && Array.isArray(post.my_like) && post.my_like.length > 0 && post.my_like.some((l: any) => l.user_id === userId);
+        const isReported = userId && Array.isArray(post.my_report) && post.my_report.length > 0 && post.my_report.some((r: any) => r.reporter_id === userId);
 
         return {
             ...post,
@@ -277,7 +304,8 @@ export class PostsRepository {
                 likes: post.likes_count?.[0]?.count || 0,
                 comments: post.comments_count?.[0]?.count || 0
             },
-            liked_by_me: Boolean(isLiked)
+            liked_by_me: Boolean(isLiked),
+            reported_by_me: Boolean(isReported)
         };
     }
 }

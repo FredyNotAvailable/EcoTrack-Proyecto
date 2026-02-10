@@ -14,7 +14,6 @@ import {
     Textarea,
     Select,
     SimpleGrid,
-    Switch,
     Text,
 } from '@chakra-ui/react';
 import { useEffect } from 'react';
@@ -39,8 +38,8 @@ export const ChallengeModal = ({ isOpen, onClose, onSave, challenge, isLoading }
                 categoria: challenge.categoria,
                 recompensa_puntos: challenge.recompensa_puntos,
                 recompensa_kg_co2: challenge.recompensa_kg_co2,
-                fecha_inicio: challenge.fecha_inicio.split('T')[0],
-                fecha_fin: challenge.fecha_fin.split('T')[0],
+                fecha_inicio: challenge.fecha_inicio ? new Date(challenge.fecha_inicio).toISOString().split('T')[0] : '',
+                fecha_fin: challenge.fecha_fin ? new Date(challenge.fecha_fin).toISOString().split('T')[0] : '',
                 activo: challenge.activo !== false
             });
         } else {
@@ -110,10 +109,6 @@ export const ChallengeModal = ({ isOpen, onClose, onSave, challenge, isLoading }
                                         <option value="transporte">Transporte</option>
                                         <option value="residuos">Residuos</option>
                                     </Select>
-                                </FormControl>
-                                <FormControl display="flex" alignItems="center" pt={8}>
-                                    <FormLabel mb="0" fontSize="sm" fontWeight="bold">Reto Activo</FormLabel>
-                                    <Switch size="lg" colorScheme="green" {...register('activo')} />
                                 </FormControl>
                             </SimpleGrid>
                         </VStack>

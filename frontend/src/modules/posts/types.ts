@@ -32,6 +32,7 @@ export interface Post {
         comments: number;
     };
     liked_by_me: boolean;
+    reported_by_me?: boolean;
 }
 
 export interface Comment {

@@ -21,6 +21,7 @@ import { NavLink as RouterLink, useNavigate, useLocation, Outlet } from 'react-r
 import { useAuth } from '../../modules/auth/AuthContext';
 import { FaBars } from 'react-icons/fa';
 import React from 'react';
+import { NotificationBell } from '../../modules/notifications/components/NotificationBell';
 import { Link } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import { ProfileAPIService } from '../../modules/profile/services/profile.service';
@@ -102,6 +103,7 @@ export const MainLayout: React.FC = () => {
                         {/* Action Button */}
                         <Flex alignItems="center">
                             <HStack spacing={4}>
+                                <NotificationBell />
                                 <Button
                                     variant="ghost"
                                     color="brand.textMain"

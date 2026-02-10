@@ -41,9 +41,10 @@ interface PostDetailModalProps {
     onDelete?: () => void;
     onHashtagClick?: (hashtag: string) => void;
     onCloseComplete?: () => void;
+    onReport?: (id: string) => void;
 }
 
-export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHashtagClick, onCloseComplete }: PostDetailModalProps) => {
+export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onReport, onHashtagClick, onCloseComplete }: PostDetailModalProps) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const bg = useColorModeValue('white', 'gray.800');
@@ -297,7 +298,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                             </VStack>
                         </HStack>
 
-                        {isOwner && (
+                        {isOwner ? (
                             <Menu>
                                 <MenuButton
                                     as={IconButton}
@@ -308,6 +309,24 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                                 <MenuList>
                                     <MenuItem icon={<FaPen />} onClick={onEdit}>Editar</MenuItem>
                                     <MenuItem icon={<FaTrash />} color="red.500" onClick={onDelete}>Eliminar</MenuItem>
+                                </MenuList>
+                            </Menu>
+                        ) : (
+                            <Menu>
+                                <MenuButton
+                                    as={IconButton}
+                                    icon={<FaEllipsisH />}
+                                    variant="ghost"
+                                    size="sm"
+                                />
+                                <MenuList>
+                                    <MenuItem
+                                        color={post.reported_by_me ? "gray.400" : "red.500"}
+                                        onClick={() => !post.reported_by_me && onReport && onReport(post.id)}
+                                        isDisabled={post.reported_by_me}
+                                    >
+                                        {post.reported_by_me ? 'Ya reportado' : 'Reportar'}
+                                    </MenuItem>
                                 </MenuList>
                             </Menu>
                         )}

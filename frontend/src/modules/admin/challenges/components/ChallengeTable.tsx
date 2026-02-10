@@ -14,8 +14,6 @@ import {
     MenuItem,
     useColorModeValue,
     Box,
-    Spinner,
-    Center,
     VStack,
     AlertDialog,
     AlertDialogBody,
@@ -25,9 +23,15 @@ import {
     AlertDialogOverlay,
     useDisclosure,
     Button,
+    Tooltip,
+    Skeleton
 } from '@chakra-ui/react';
 import React from 'react';
-import { HiDotsVertical, HiPencil, HiTrash, HiViewList } from 'react-icons/hi';
+import { HiDotsVertical, HiPencil, HiTrash, HiViewList, HiFlag } from 'react-icons/hi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { tableRowVariants } from '../../shared/animations';
+import { EmptyState } from '../../shared/EmptyState';
+import { LiveStatus } from '../../shared/LiveStatus';
 
 interface ChallengeTableProps {
     challenges: any[];
@@ -37,9 +41,13 @@ interface ChallengeTableProps {
     onManageTasks: (challenge: any) => void;
 }
 
+const MotionTr = motion(Tr);
+
 export const ChallengeTable = ({ challenges, isLoading, onEdit, onDelete, onManageTasks }: ChallengeTableProps) => {
     const bg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
+    const borderColor = useColorModeValue('gray.100', 'gray.700');
+    const theadBg = useColorModeValue('gray.50', 'gray.700');
+    const hoverBg = useColorModeValue('gray.50', 'gray.700');
 
     // Alert Dialog state
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -60,17 +68,42 @@ export const ChallengeTable = ({ challenges, isLoading, onEdit, onDelete, onMana
 
     if (isLoading) {
         return (
-            <Center py={20}>
-                <Spinner size="xl" color="brand.primary" thickness="4px" />
-            </Center>
+            <Box bg={bg} borderRadius="3xl" border="1px" borderColor={borderColor} p={4}>
+                <Table variant="simple">
+                    <Thead>
+                        <Tr>
+                            <Th>Reto Semanal</Th>
+                            <Th>Categoría</Th>
+                            <Th>Vigencia</Th>
+                            <Th>Recompensa</Th>
+                            <Th>Estado</Th>
+                            <Th isNumeric>Acciones</Th>
+                        </Tr>
+                    </Thead>
+                    <Tbody>
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <Tr key={i}>
+                                <Td><Skeleton height="40px" width="200px" /></Td>
+                                <Td><Skeleton height="20px" width="80px" /></Td>
+                                <Td><Skeleton height="20px" width="120px" /></Td>
+                                <Td><Skeleton height="20px" width="80px" /></Td>
+                                <Td><Skeleton height="20px" width="80px" /></Td>
+                                <Td isNumeric><Skeleton height="32px" width="32px" ml="auto" /></Td>
+                            </Tr>
+                        ))}
+                    </Tbody>
+                </Table>
+            </Box>
         );
     }
 
     if (challenges.length === 0) {
         return (
-            <Center py={20} bg={bg} borderRadius="2xl" border="1px" borderColor={borderColor}>
-                <Text color="gray.500">No se encontraron retos semanales.</Text>
-            </Center>
+            <EmptyState
+                title="Sin Retos Activos"
+                description="No hay desafíos que coincidan con tus criterios de búsqueda."
+                icon={HiFlag}
+            />
         );
     }
 
@@ -87,88 +120,107 @@ export const ChallengeTable = ({ challenges, isLoading, onEdit, onDelete, onMana
     return (
         <Box
             bg={bg}
-            borderRadius="2xl"
+            borderRadius="3xl"
             border="1px"
             borderColor={borderColor}
             overflow="hidden"
             shadow="sm"
         >
             <Table variant="simple">
-                <Thead bg={useColorModeValue('gray.50', 'gray.700')}>
+                <Thead bg={theadBg}>
                     <Tr>
-                        <Th>Reto Semanal</Th>
-                        <Th>Categoría</Th>
-                        <Th>Vigencia</Th>
-                        <Th>Recompensa</Th>
-                        <Th>Estado</Th>
-                        <Th isNumeric>Acciones</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Reto Semanal</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Categoría</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Vigencia</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Recompensa</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Estado</Th>
+                        <Th isNumeric fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Acciones</Th>
                     </Tr>
                 </Thead>
                 <Tbody>
-                    {challenges.map((challenge) => (
-                        <Tr key={challenge.id} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}>
-                            <Td>
-                                <VStack align="start" spacing={0}>
-                                    <Text fontWeight="bold" fontSize="sm">{challenge.titulo}</Text>
-                                    <Text fontSize="xs" color="gray.500" noOfLines={1} maxW="300px">
-                                        {challenge.descripcion}
+                    <AnimatePresence mode='popLayout'>
+                        {challenges.map((challenge, index) => (
+                            <MotionTr
+                                key={challenge.id}
+                                _hover={{ bg: hoverBg }}
+                                variants={tableRowVariants}
+                                initial="hidden"
+                                animate="visible"
+                                custom={index}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <Td py={4}>
+                                    <VStack align="start" spacing={0}>
+                                        <Text fontWeight="800" fontSize="sm">{challenge.titulo}</Text>
+                                        <Text fontSize="xs" color="gray.400" fontWeight="600" noOfLines={1} maxW="300px">
+                                            {challenge.descripcion}
+                                        </Text>
+                                    </VStack>
+                                </Td>
+                                <Td py={4}>
+                                    <Badge
+                                        colorScheme={getCategoryColor(challenge.categoria)}
+                                        borderRadius="full"
+                                        px={3}
+                                        py={0.5}
+                                        fontSize="10px"
+                                        textTransform="uppercase"
+                                    >
+                                        {challenge.categoria}
+                                    </Badge>
+                                </Td>
+                                <Td py={4} fontSize="xs">
+                                    <Text fontWeight="800" color="gray.700">
+                                        {new Date(challenge.fecha_inicio).toLocaleDateString()}
                                     </Text>
-                                </VStack>
-                            </Td>
-                            <Td>
-                                <Badge colorScheme={getCategoryColor(challenge.categoria)} borderRadius="full" px={2}>
-                                    {challenge.categoria.toUpperCase()}
-                                </Badge>
-                            </Td>
-                            <Td fontSize="xs">
-                                <Text fontWeight="medium">
-                                    {new Date(challenge.fecha_inicio).toLocaleDateString()}
-                                </Text>
-                                <Text color="gray.500">
-                                    al {new Date(challenge.fecha_fin).toLocaleDateString()}
-                                </Text>
-                            </Td>
-                            <Td>
-                                <VStack align="start" spacing={0}>
-                                    <Text fontSize="sm" fontWeight="bold" color="brand.primary">{challenge.recompensa_puntos} pts</Text>
-                                    <Text fontSize="xs" color="gray.500">{challenge.recompensa_kg_co2} kg CO2</Text>
-                                </VStack>
-                            </Td>
-                            <Td>
-                                <Badge
-                                    colorScheme={challenge.activo ? 'green' : 'gray'}
-                                    variant="solid"
-                                    borderRadius="full"
-                                    px={2}
-                                    fontSize="0.7em"
-                                >
-                                    {challenge.activo ? 'ACTIVO' : 'INACTIVO'}
-                                </Badge>
-                            </Td>
-                            <Td isNumeric>
-                                <Menu>
-                                    <MenuButton
-                                        as={IconButton}
-                                        icon={<HiDotsVertical />}
-                                        variant="ghost"
-                                        size="sm"
-                                        borderRadius="xl"
+                                    <Text color="gray.400" fontWeight="bold">
+                                        al {new Date(challenge.fecha_fin).toLocaleDateString()}
+                                    </Text>
+                                </Td>
+                                <Td py={4}>
+                                    <VStack align="start" spacing={0}>
+                                        <Text fontSize="sm" fontWeight="900" color="brand.500">{challenge.recompensa_puntos} pts</Text>
+                                        <Text fontSize="10px" fontWeight="800" color="green.500">{challenge.recompensa_kg_co2} kg CO2</Text>
+                                    </VStack>
+                                </Td>
+                                <Td py={4}>
+                                    <LiveStatus
+                                        isActive={
+                                            new Date() >= new Date(challenge.fecha_inicio) &&
+                                            new Date() <= new Date(challenge.fecha_fin)
+                                        }
+                                        activeLabel="Activo"
+                                        inactiveLabel="Inactivo"
                                     />
-                                    <MenuList borderRadius="xl" shadow="xl" border="none">
-                                        <MenuItem icon={<HiViewList />} onClick={() => onManageTasks(challenge)}>
-                                            Gestionar Tareas
-                                        </MenuItem>
-                                        <MenuItem icon={<HiPencil />} onClick={() => onEdit(challenge)}>
-                                            Editar Reto
-                                        </MenuItem>
-                                        <MenuItem icon={<HiTrash />} color="red.500" onClick={() => handleDeleteClick(challenge.id)}>
-                                            Eliminar
-                                        </MenuItem>
-                                    </MenuList>
-                                </Menu>
-                            </Td>
-                        </Tr>
-                    ))}
+                                </Td>
+                                <Td py={4} isNumeric>
+                                    <Menu>
+                                        <Tooltip label="Opciones de reto" placement="top" hasArrow>
+                                            <MenuButton
+                                                as={IconButton}
+                                                icon={<HiDotsVertical />}
+                                                variant="ghost"
+                                                size="sm"
+                                                borderRadius="lg"
+                                            />
+                                        </Tooltip>
+                                        <MenuList borderRadius="xl" shadow="2xl" border="none" py={2}>
+                                            <MenuItem icon={<HiViewList size={18} />} onClick={() => onManageTasks(challenge)} fontWeight="800" fontSize="sm" py={3}>
+                                                Gestionar Tareas
+                                            </MenuItem>
+                                            <MenuItem icon={<HiPencil size={18} />} onClick={() => onEdit(challenge)} fontWeight="800" fontSize="sm" py={3}>
+                                                Editar Reto
+                                            </MenuItem>
+                                            <MenuItem icon={<HiTrash size={18} />} color="red.500" onClick={() => handleDeleteClick(challenge.id)} fontWeight="800" fontSize="sm" py={3}>
+                                                Eliminar
+                                            </MenuItem>
+                                        </MenuList>
+                                    </Menu>
+                                </Td>
+                            </MotionTr>
+                        ))}
+                    </AnimatePresence>
                 </Tbody>
             </Table>
 

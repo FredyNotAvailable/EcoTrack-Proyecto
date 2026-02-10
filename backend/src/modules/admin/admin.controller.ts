@@ -2,6 +2,53 @@ import { Request, Response, NextFunction } from 'express';
 import { AdminService } from './admin.service';
 
 export class AdminController {
+    // --- Daily Tips Management ---
+    getDailyTips = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const tips = await this.service.getDailyTips();
+            res.json(tips);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    createDailyTip = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const tip = await this.service.createDailyTip(req.body);
+            res.status(201).json(tip);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateDailyTip = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = req.params.id as string;
+            const tip = await this.service.updateDailyTip(id, req.body);
+            res.json(tip);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const stats = await this.service.getDashboardStats();
+            res.json(stats);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    deleteDailyTip = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = req.params.id as string;
+            await this.service.deleteDailyTip(id);
+            res.json({ message: 'Consejo eliminado correctamente' });
+        } catch (error) {
+            next(error);
+        }
+    };
     private service = AdminService.getInstance();
 
     getUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -84,11 +131,41 @@ export class AdminController {
         }
     };
 
+    getPostDetails = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = req.params.id as string;
+            const post = await this.service.getPostDetails(id);
+            res.json(post);
+        } catch (error) {
+            next(error);
+        }
+    };
+
     dismissPostReport = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const id = req.params.id as string;
             await this.service.dismissReport(id);
             res.json({ message: 'Reporte descartado correctamente' });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getPostReports = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const reports = await this.service.getPostReports();
+            res.json(reports);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    resolvePostReport = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = req.params.id as string;
+            const { action } = req.body; // 'dismiss' | 'delete_post'
+            await this.service.resolveReport(id, action);
+            res.json({ message: 'Reporte resuelto correctamente' });
         } catch (error) {
             next(error);
         }

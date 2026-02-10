@@ -3,13 +3,13 @@ import type { Post, Comment, CreatePostPayload, CreateCommentPayload } from '../
 
 export const PostsService = {
     async getPosts(params?: { cursor?: string; limit?: number; authorId?: string; hashtag?: string }) {
-        const { data } = await apiClient.get<{ 
-            data: Post[]; 
-            pagination: { 
-                hasMore: boolean; 
-                nextCursor: string | null; 
-                count: number 
-            } 
+        const { data } = await apiClient.get<{
+            data: Post[];
+            pagination: {
+                hasMore: boolean;
+                nextCursor: string | null;
+                count: number
+            }
         }>('/posts', { params });
         return data;
     },
@@ -82,5 +82,13 @@ export const PostsService = {
         });
 
         return data.data.urls[0]; // Backend returns array of URLs, we take the first one since we upload one by one
+    },
+
+    async reportPost(postId: string, reason: string, details?: string) {
+        const { data } = await apiClient.post<{ data: { success: boolean } }>('/posts/' + postId + '/report', {
+            reason,
+            details
+        });
+        return data.data;
     }
 };

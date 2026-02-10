@@ -57,11 +57,13 @@ export interface PostCardProps {
     onShare?: (id: string) => void;
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onReport?: (id: string) => void;
     onHashtagClick?: (hashtag: string) => void;
     isOwner?: boolean;
+    isReported?: boolean;
 }
 
-export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment, onEdit, onDelete, onHashtagClick, isOwner }: PostCardProps) => {
+export const PostCard = ({ id, user, content, stats, isLiked, isReported, onLike, onComment, onEdit, onDelete, onReport, onHashtagClick, isOwner }: PostCardProps) => {
     const navigate = useNavigate();
     const cardBg = useColorModeValue("white", "gray.800");
     const verifiedColor = "blue.400";
@@ -163,6 +165,27 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                         <MenuList>
                             <MenuItem onClick={() => onEdit && onEdit(id)}>Editar</MenuItem>
                             <MenuItem onClick={() => onDelete && onDelete(id)} color="red.500">Eliminar</MenuItem>
+                        </MenuList>
+                    </Menu>
+                )}
+                {!isOwner && (
+                    <Menu>
+                        <MenuButton
+                            as={IconButton}
+                            aria-label="Options"
+                            icon={<Icon as={FaEllipsisH} />}
+                            variant="ghost"
+                            color="gray.400"
+                            size="sm"
+                        />
+                        <MenuList>
+                            <MenuItem
+                                onClick={() => onReport && onReport(id)}
+                                color={isReported ? "gray.400" : "red.500"}
+                                isDisabled={isReported}
+                            >
+                                {isReported ? 'Ya reportado' : 'Reportar'}
+                            </MenuItem>
                         </MenuList>
                     </Menu>
                 )}
@@ -282,7 +305,7 @@ export const PostCard = ({ id, user, content, stats, isLiked, onLike, onComment,
                 </Box>
             )}
 
-                {/* Content */}
+            {/* Content */}
             <Box px={5} pb={2}>
                 <Text fontSize="sm" color="brand.text" mb={2}>
                     {content.text}

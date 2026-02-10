@@ -14,7 +14,7 @@ export const AdminLayout = () => {
 
             <Flex direction="column" flex="1" overflow="hidden">
                 <AdminNavbar onSidebarToggle={() => setSidebarOpen(!isSidebarOpen)} />
-                <Box as="main" flex="1" overflowY="auto" p={6}>
+                <Box as="main" flex="1" overflowY="auto" p={{ base: 4, md: 8 }} bg={bg}>
                     <Outlet />
                 </Box>
             </Flex>

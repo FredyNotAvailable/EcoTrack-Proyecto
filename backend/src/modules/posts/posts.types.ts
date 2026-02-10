@@ -22,6 +22,7 @@ export interface Post {
     likes_count?: number;
     comments_count?: number;
     liked_by_me?: boolean;
+    reported_by_me?: boolean;
 
     // User data (joined)
     user?: {
@@ -69,4 +70,21 @@ export interface PostListOptions {
 export interface UploadResponse {
     path: string;
     signedUrl: string;
+}
+
+export interface PostReport {
+    id: string;
+    post_id: string;
+    reporter_id: string;
+    reason: string;
+    details?: string;
+    status: 'pending' | 'reviewed' | 'dismissed' | 'resolved';
+    created_at: string;
+}
+
+export interface CreateReportDTO {
+    post_id: string;
+    reporter_id: string;
+    reason: string;
+    details?: string;
 }

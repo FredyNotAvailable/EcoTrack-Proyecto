@@ -24,11 +24,11 @@ export const getFeed = async (req: Request, res: Response, next: NextFunction) =
         // Determinar si hay más resultados
         const hasMore = posts.length > requestedLimit;
         const resultPosts = hasMore ? posts.slice(0, requestedLimit) : posts;
-        const nextCursor = hasMore && resultPosts.length > 0 
-            ? resultPosts[resultPosts.length - 1].created_at 
+        const nextCursor = hasMore && resultPosts.length > 0
+            ? resultPosts[resultPosts.length - 1].created_at
             : null;
 
-        res.json({ 
+        res.json({
             data: resultPosts,
             pagination: {
                 hasMore,
@@ -210,6 +210,21 @@ export const searchHashtags = async (req: Request, res: Response, next: NextFunc
         const query = req.query.query as string;
         const hashtags = await service.searchHashtags(query);
         res.json({ data: hashtags });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const reportPost = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { reason, details } = req.body;
+
+        if (!req.user) throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED');
+
+        await service.reportPost(req.user.id, id as string, reason, details);
+
+        res.json({ data: { success: true } });
     } catch (error) {
         next(error);
     }

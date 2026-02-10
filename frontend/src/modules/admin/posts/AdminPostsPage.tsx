@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import {
-    Heading,
     Container,
     VStack,
     useDisclosure,
     Box,
-    Flex,
     Input,
     InputGroup,
     InputLeftElement,
     Select,
     HStack,
-    Text,
     useColorModeValue,
     useToast
 } from '@chakra-ui/react';
@@ -88,14 +85,8 @@ export const AdminPostsPage = () => {
     const borderColor = useColorModeValue('gray.200', 'gray.700');
 
     return (
-        <Container maxW="container.xl" py={8}>
+        <Container maxW="full" py={4} px={{ base: 0, md: 4 }}>
             <VStack spacing={8} align="stretch">
-                <Flex justify="space-between" align="center">
-                    <VStack align="start" spacing={1}>
-                        <Heading size="lg" fontWeight="800">Control de Comunidad</Heading>
-                        <Text color="gray.500" fontSize="sm">Gestiona y modera las publicaciones de los usuarios.</Text>
-                    </VStack>
-                </Flex>
 
                 <PostStats posts={posts} />
 

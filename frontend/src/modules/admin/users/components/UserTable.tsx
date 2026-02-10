@@ -26,12 +26,17 @@ import {
     AlertDialogContent,
     AlertDialogOverlay,
     useDisclosure,
-    Button
+    Button,
+    Tooltip
 } from '@chakra-ui/react';
 import React from 'react';
-import { HiDotsVertical, HiTrash, HiBan, HiCheckCircle, HiInformationCircle } from 'react-icons/hi';
+import { HiDotsVertical, HiTrash, HiBan, HiCheckCircle, HiInformationCircle, HiUsers } from 'react-icons/hi';
 import { useAuth } from '../../../auth/AuthContext';
 import type { AdminUser } from '../../services/admin.service';
+import { LiveStatus } from '../../shared/LiveStatus';
+import { EmptyState } from '../../shared/EmptyState';
+import { motion, AnimatePresence } from 'framer-motion';
+import { tableRowVariants } from '../../shared/animations';
 
 interface UserTableProps {
     users: AdminUser[];
@@ -41,10 +46,12 @@ interface UserTableProps {
     onViewDetails: (id: string) => void;
 }
 
+const MotionTr = motion(Tr);
+
 export const UserTable = ({ users, isLoading, onDelete, onChangeStatus, onViewDetails }: UserTableProps) => {
     const { user: currentUser } = useAuth();
     const bg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
+    const borderColor = useColorModeValue('gray.100', 'gray.700');
     const theadBg = useColorModeValue('gray.50', 'gray.700');
     const hoverBg = useColorModeValue('gray.50', 'gray.700');
 
@@ -58,22 +65,6 @@ export const UserTable = ({ users, isLoading, onDelete, onChangeStatus, onViewDe
 
     // Filter out current admin user if present in list
     const filteredUsers = users.filter(u => u.id !== currentUser?.id);
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active': return 'green';
-            case 'suspended': return 'red';
-            default: return 'gray';
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'active': return 'Activo';
-            case 'suspended': return 'Suspendido';
-            default: return status;
-        }
-    };
 
     const handleDeleteClick = (user: AdminUser) => {
         setSelectedUser(user);
@@ -113,26 +104,29 @@ export const UserTable = ({ users, isLoading, onDelete, onChangeStatus, onViewDe
 
     if (isLoading) {
         return (
-            <Center py={20}>
-                <Spinner size="xl" color="brand.primary" thickness="4px" />
+            <Center py={20} bg={bg} borderRadius="3xl" border="1px" borderColor={borderColor}>
+                <VStack spacing={4}>
+                    <Spinner size="xl" color="brand.500" thickness="4px" />
+                    <Text fontWeight="bold" color="gray.500">Cargando ciudadanos...</Text>
+                </VStack>
             </Center>
         );
     }
 
     if (filteredUsers.length === 0) {
         return (
-            <Center py={20} bg={bg} borderRadius="xl" border="1px" borderColor={borderColor}>
-                <VStack>
-                    <Text color="gray.500">No se encontraron usuarios.</Text>
-                </VStack>
-            </Center>
+            <EmptyState
+                title="Sin Ciudadanos"
+                description="No se encontraron usuarios que coincidan con los filtros actuales."
+                icon={HiUsers}
+            />
         );
     }
 
     return (
         <Box
             bg={bg}
-            borderRadius="xl"
+            borderRadius="3xl"
             border="1px"
             borderColor={borderColor}
             overflow="hidden"
@@ -141,95 +135,133 @@ export const UserTable = ({ users, isLoading, onDelete, onChangeStatus, onViewDe
             <Table variant="simple">
                 <Thead bg={theadBg}>
                     <Tr>
-                        <Th>Usuario</Th>
-                        <Th>Rol</Th>
-                        <Th>Puntos / Nivel</Th>
-                        <Th>Estado</Th>
-                        <Th>Fecha Registro</Th>
-                        <Th isNumeric>Acciones</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Usuario</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Rol</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Puntos / Nivel</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Estado</Th>
+                        <Th fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Fecha Registro</Th>
+                        <Th isNumeric fontSize="xs" fontWeight="900" textTransform="uppercase" letterSpacing="widest" py={5}>Acciones</Th>
                     </Tr>
                 </Thead>
                 <Tbody>
-                    {filteredUsers.map((user) => (
-                        <Tr key={user.id} _hover={{ bg: hoverBg }}>
-                            <Td>
-                                <HStack spacing={3}>
-                                    <Avatar size="sm" name={user.username} src={user.avatar_url} />
-                                    <Box>
-                                        <Text fontWeight="bold" fontSize="sm">{user.username}</Text>
-                                        <Text fontSize="xs" color="gray.500">{user.email}</Text>
-                                    </Box>
-                                </HStack>
-                            </Td>
-                            <Td>
-                                <Badge colorScheme={user.role === 'admin' ? 'purple' : 'blue'}>
-                                    {user.role}
-                                </Badge>
-                            </Td>
-                            <Td>
-                                <HStack spacing={1}>
-                                    <Text fontWeight="bold" fontSize="sm">{user.puntos}</Text>
-                                    <Text fontSize="xs" color="gray.400">pts</Text>
-                                    <Badge variant="subtle" colorScheme="orange" ml={2}>
-                                        Nv. {user.nivel}
+                    <AnimatePresence mode='popLayout'>
+                        {filteredUsers.map((user, index) => (
+                            <MotionTr
+                                key={user.id}
+                                _hover={{ bg: hoverBg }}
+                                variants={tableRowVariants}
+                                initial="hidden"
+                                animate="visible"
+                                custom={index}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <Td py={4}>
+                                    <HStack spacing={3}>
+                                        <Avatar size="sm" name={user.username} src={user.avatar_url} border="2px solid white" shadow="sm" />
+                                        <Box>
+                                            <Text fontWeight="800" fontSize="sm" color="gray.700">@{user.username}</Text>
+                                            <Text fontSize="xs" color="gray.400" fontWeight="600">{user.email}</Text>
+                                        </Box>
+                                    </HStack>
+                                </Td>
+                                <Td py={4}>
+                                    <Badge
+                                        colorScheme={user.role === 'admin' ? 'purple' : 'blue'}
+                                        px={3}
+                                        py={0.5}
+                                        borderRadius="full"
+                                        fontSize="10px"
+                                        textTransform="uppercase"
+                                    >
+                                        {user.role}
                                     </Badge>
-                                </HStack>
-                            </Td>
-                            <Td>
-                                <Badge colorScheme={getStatusColor(user.status)}>
-                                    {getStatusLabel(user.status)}
-                                </Badge>
-                            </Td>
-                            <Td fontSize="sm" color="gray.500">
-                                {new Date(user.created_at).toLocaleDateString()}
-                            </Td>
-                            <Td isNumeric>
-                                <Menu>
-                                    <MenuButton
-                                        as={IconButton}
-                                        aria-label="Options"
-                                        icon={<HiDotsVertical />}
-                                        variant="ghost"
-                                        size="sm"
+                                </Td>
+                                <Td py={4}>
+                                    <HStack spacing={2}>
+                                        <VStack align="start" spacing={0}>
+                                            <HStack spacing={1}>
+                                                <Text fontWeight="900" fontSize="sm">{user.puntos}</Text>
+                                                <Text fontSize="10px" fontWeight="800" color="gray.400">PTS</Text>
+                                            </HStack>
+                                            <Badge variant="subtle" colorScheme="orange" fontSize="9px" borderRadius="full" px={2}>
+                                                NV. {user.nivel}
+                                            </Badge>
+                                        </VStack>
+                                    </HStack>
+                                </Td>
+                                <Td py={4}>
+                                    <LiveStatus
+                                        isActive={user.status === 'active'}
+                                        activeLabel="Activo"
+                                        inactiveLabel="Suspendido"
                                     />
-                                    <MenuList shadow="xl" borderRadius="xl">
-                                        <MenuItem
-                                            icon={<HiInformationCircle />}
-                                            onClick={() => onViewDetails(user.id)}
-                                            fontWeight="bold"
-                                        >
-                                            Ver Detalles
-                                        </MenuItem>
-                                        {user.status === 'suspended' ? (
+                                </Td>
+                                <Td py={4} fontSize="xs" fontWeight="bold" color="gray.500">
+                                    {new Date(user.created_at).toLocaleDateString()}
+                                </Td>
+                                <Td py={4} isNumeric>
+                                    <Menu>
+                                        <Tooltip label="Opciones de gestión" placement="top" hasArrow>
+                                            <MenuButton
+                                                as={IconButton}
+                                                aria-label="Options"
+                                                icon={<HiDotsVertical />}
+                                                variant="ghost"
+                                                size="sm"
+                                                borderRadius="lg"
+                                            />
+                                        </Tooltip>
+                                        <MenuList shadow="2xl" borderRadius="xl" border="none" py={2}>
                                             <MenuItem
-                                                icon={<HiCheckCircle />}
-                                                color="green.500"
-                                                onClick={() => handleReactivateClick(user)}
+                                                icon={<HiInformationCircle size={18} />}
+                                                onClick={() => onViewDetails(user.id)}
+                                                fontWeight="800"
+                                                fontSize="sm"
+                                                py={3}
                                             >
-                                                Levantar Suspensión
+                                                Ver Expediente
                                             </MenuItem>
-                                        ) : (
-                                            <MenuItem
-                                                icon={<HiBan />}
-                                                color="orange.500"
-                                                onClick={() => handleSuspendClick(user)}
-                                            >
-                                                Suspender Cuenta
-                                            </MenuItem>
-                                        )}
+                                            {user.status === 'suspended' ? (
+                                                <MenuItem
+                                                    icon={<HiCheckCircle size={18} />}
+                                                    color="green.500"
+                                                    onClick={() => handleReactivateClick(user)}
+                                                    fontWeight="800"
+                                                    fontSize="sm"
+                                                    py={3}
+                                                >
+                                                    Levantar Suspensión
+                                                </MenuItem>
+                                            ) : (
+                                                <MenuItem
+                                                    icon={<HiBan size={18} />}
+                                                    color="orange.500"
+                                                    onClick={() => handleSuspendClick(user)}
+                                                    fontWeight="800"
+                                                    fontSize="sm"
+                                                    py={3}
+                                                >
+                                                    Suspender Cuenta
+                                                </MenuItem>
+                                            )}
 
-                                        <MenuItem
-                                            icon={<HiTrash />}
-                                            color="red.500"
-                                            onClick={() => handleDeleteClick(user)}
-                                        >
-                                            Eliminar Permanentemente
-                                        </MenuItem>
-                                    </MenuList>
-                                </Menu>
-                            </Td>
-                        </Tr>
-                    ))}
+                                            <MenuItem
+                                                icon={<HiTrash size={18} />}
+                                                color="red.500"
+                                                onClick={() => handleDeleteClick(user)}
+                                                fontWeight="800"
+                                                fontSize="sm"
+                                                py={3}
+                                            >
+                                                Eliminar Ciudadano
+                                            </MenuItem>
+                                        </MenuList>
+                                    </Menu>
+                                </Td>
+                            </MotionTr>
+                        ))}
+                    </AnimatePresence>
                 </Tbody>
             </Table>
 

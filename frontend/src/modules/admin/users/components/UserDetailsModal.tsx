@@ -41,6 +41,9 @@ import { UserChallengesTab } from './details/UserChallengesTab';
 import { UserImpactTab } from './details/UserImpactTab';
 import { UserPostsTab } from './details/UserPostsTab';
 import { PostDetailModal } from './details/PostDetailModal';
+import { EmptyState } from '../../shared/EmptyState';
+import { LiveStatus } from '../../shared/LiveStatus';
+import { motion } from 'framer-motion';
 
 interface UserDetailsModalProps {
     isOpen: boolean;
@@ -48,13 +51,20 @@ interface UserDetailsModalProps {
     userId: string | null;
 }
 
+const MotionBox = motion(Box);
+
 export const UserDetailsModal = ({ isOpen, onClose, userId }: UserDetailsModalProps) => {
     const [selectedPost, setSelectedPost] = useState<any>(null);
     const [tabIndex, setTabIndex] = useState(0);
     const { isOpen: isPostOpen, onOpen: onPostOpen, onClose: onPostClose } = useDisclosure();
 
-    // Color mode values - MUST be at the top level
+    // Color mode values - ALL hooks must be at the top level
     const borderColor = useColorModeValue('gray.200', 'gray.700');
+    const tabSelectedColor = useColorModeValue('green.600', 'green.300');
+    const tabSelectedBorder = useColorModeValue('green.500', 'green.300');
+    const headerBg = useColorModeValue('white', 'gray.800');
+    const bodyBg = useColorModeValue('gray.50', 'gray.900');
+    const cardBg = useColorModeValue('white', 'gray.800');
 
     const { data: details, isLoading } = useQuery({
         queryKey: ['admin', 'user-details', userId],
@@ -69,90 +79,56 @@ export const UserDetailsModal = ({ isOpen, onClose, userId }: UserDetailsModalPr
 
     if (!userId) return null;
 
-
     return (
         <>
-            <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside">
-                <ModalOverlay backdropFilter="blur(5px)" />
-                <ModalContent borderRadius="3xl" minH="80vh">
-                    <ModalCloseButton borderRadius="full" />
-                    <ModalHeader borderBottom="1px solid" borderColor={borderColor}>
+            <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside" motionPreset='slideInBottom'>
+                <ModalOverlay backdropFilter="blur(16px)" bg="blackAlpha.400" />
+                <ModalContent borderRadius="3xl" minH="85vh" shadow="2xl" overflow="hidden">
+                    <ModalCloseButton borderRadius="full" mt={4} mr={4} zIndex={10} />
+                    <ModalHeader borderBottom="1px solid" borderColor={borderColor} py={6} px={8} bg={headerBg}>
                         <HStack spacing={4}>
-                            <Icon as={HiUser} boxSize={6} color="brand.500" />
-                            <Text>Expediente Completo del Usuario</Text>
+                            <Box p={3} bg="brand.50" borderRadius="2xl" color="brand.500">
+                                <Icon as={HiUser} boxSize={6} />
+                            </Box>
+                            <VStack align="start" spacing={0}>
+                                <Text fontSize="2xl" fontWeight="900">Perfil del Eco-Ciudadano</Text>
+                                <Text fontSize="xs" color="gray.500" fontWeight="bold" textTransform="uppercase" letterSpacing="widest">Expediente Administrativo Completo</Text>
+                            </VStack>
                         </HStack>
                     </ModalHeader>
-                    <ModalBody p={0}>
+                    <ModalBody p={0} bg={bodyBg}>
                         {isLoading ? (
-                            <Center py={40}>
-                                <VStack>
+                            <Center h="60vh">
+                                <VStack spacing={4}>
                                     <Spinner size="xl" color="brand.500" thickness="4px" />
-                                    <Text color="gray.500" mt={4}>Cargando información del usuario...</Text>
+                                    <Text fontWeight="bold" color="gray.500">Recuperando expediente...</Text>
                                 </VStack>
                             </Center>
                         ) : details ? (
-                            <Tabs colorScheme="brand" variant="enclosed" index={tabIndex} onChange={setTabIndex}>
-                                <TabList px={8} pt={6} borderBottom="2px solid" borderColor={borderColor}>
-                                    <Tab
-                                        fontWeight="bold"
-                                        _selected={{
-                                            color: useColorModeValue('green.600', 'green.300'),
-                                            borderColor: useColorModeValue('green.500', 'green.300'),
-                                            borderBottomWidth: '3px',
-                                            bg: useColorModeValue('green.50', 'green.900'),
-                                            borderTopRadius: 'lg'
-                                        }}
-                                    >
-                                        <Icon as={HiUser} mr={2} /> Resumen
-                                    </Tab>
-                                    <Tab
-                                        fontWeight="bold"
-                                        _selected={{
-                                            color: useColorModeValue('green.600', 'green.300'),
-                                            borderColor: useColorModeValue('green.500', 'green.300'),
-                                            borderBottomWidth: '3px',
-                                            bg: useColorModeValue('green.50', 'green.900'),
-                                            borderTopRadius: 'lg'
-                                        }}
-                                    >
-                                        <Icon as={HiLightningBolt} mr={2} /> Misiones
-                                    </Tab>
-                                    <Tab
-                                        fontWeight="bold"
-                                        _selected={{
-                                            color: useColorModeValue('green.600', 'green.300'),
-                                            borderColor: useColorModeValue('green.500', 'green.300'),
-                                            borderBottomWidth: '3px',
-                                            bg: useColorModeValue('green.50', 'green.900'),
-                                            borderTopRadius: 'lg'
-                                        }}
-                                    >
-                                        <Icon as={HiFlag} mr={2} /> Retos
-                                    </Tab>
-                                    <Tab
-                                        fontWeight="bold"
-                                        _selected={{
-                                            color: useColorModeValue('green.600', 'green.300'),
-                                            borderColor: useColorModeValue('green.500', 'green.300'),
-                                            borderBottomWidth: '3px',
-                                            bg: useColorModeValue('green.50', 'green.900'),
-                                            borderTopRadius: 'lg'
-                                        }}
-                                    >
-                                        <Icon as={HiGlobe} mr={2} /> Impacto
-                                    </Tab>
-                                    <Tab
-                                        fontWeight="bold"
-                                        _selected={{
-                                            color: useColorModeValue('green.600', 'green.300'),
-                                            borderColor: useColorModeValue('green.500', 'green.300'),
-                                            borderBottomWidth: '3px',
-                                            bg: useColorModeValue('green.50', 'green.900'),
-                                            borderTopRadius: 'lg'
-                                        }}
-                                    >
-                                        <Icon as={HiCollection} mr={2} /> Posts
-                                    </Tab>
+                            <Tabs colorScheme="brand" variant="line" index={tabIndex} onChange={setTabIndex} isLazy>
+                                <TabList px={8} pt={2} bg={headerBg} borderBottom="1px solid" borderColor={borderColor}>
+                                    {[
+                                        { label: 'Resumen', icon: HiUser },
+                                        { label: 'Misiones', icon: HiLightningBolt },
+                                        { label: 'Retos', icon: HiFlag },
+                                        { label: 'Impacto', icon: HiGlobe },
+                                        { label: 'Posts', icon: HiCollection },
+                                    ].map((tab, index) => (
+                                        <Tab
+                                            key={index}
+                                            fontWeight="800"
+                                            fontSize="sm"
+                                            py={4}
+                                            px={6}
+                                            _selected={{
+                                                color: tabSelectedColor,
+                                                borderColor: tabSelectedBorder,
+                                                borderBottomWidth: '3px',
+                                            }}
+                                        >
+                                            <Icon as={tab.icon} mr={2} boxSize={5} /> {tab.label}
+                                        </Tab>
+                                    ))}
                                 </TabList>
 
                                 <TabPanels>
@@ -160,41 +136,62 @@ export const UserDetailsModal = ({ isOpen, onClose, userId }: UserDetailsModalPr
                                     <TabPanel p={8}>
                                         <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={8} alignItems="start">
                                             <VStack spacing={6} align="stretch">
-                                                <Box textAlign="center" p={8} borderRadius="3xl" bg={useColorModeValue('gradient.primary', 'gray.800')} color="white" position="relative" overflow="hidden">
-                                                    <Box position="absolute" top={0} left={0} right={0} bottom={0} bgGradient="linear(to-br, brand.400, brand.600)" opacity={0.9} />
+                                                <MotionBox
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.5 }}
+                                                    textAlign="center"
+                                                    p={8}
+                                                    borderRadius="3xl"
+                                                    bgGradient="linear(to-br, brand.400, brand.600)"
+                                                    color="white"
+                                                    position="relative"
+                                                    overflow="hidden"
+                                                    shadow="lg"
+                                                >
+                                                    <Box position="absolute" top={0} left={0} right={0} bottom={0} bgImage="url('/patterns/noise.png')" opacity={0.1} />
                                                     <VStack spacing={4} position="relative" zIndex={1}>
                                                         <Avatar size="2xl" src={details.profile?.avatar_url} name={details.profile?.username} border="4px solid white" shadow="2xl" />
                                                         <Box>
-                                                            <Text fontSize="sm" opacity={0.9} color="gray.900">
+                                                            <Text fontSize="lg" fontWeight="900">
                                                                 @{details.profile?.username}
                                                             </Text>
+                                                            <Text fontSize="sm" opacity={0.9} fontWeight="500">
+                                                                {details.profile?.email}
+                                                            </Text>
                                                         </Box>
-                                                        <HStack>
-                                                            <Badge colorScheme="whiteAlpha" px={3} py={1} borderRadius="full" fontSize="xs" textTransform="uppercase">
+                                                        <HStack spacing={3}>
+                                                            <Badge bg="whiteAlpha.300" color="white" px={3} py={1} borderRadius="full" fontSize="xs" textTransform="uppercase" backdropFilter="blur(10px)">
                                                                 {details.profile?.rol}
                                                             </Badge>
-                                                            <Badge colorScheme={details.profile?.activo ? 'green' : 'red'} px={3} py={1} borderRadius="full" fontSize="xs">
+                                                            <LiveStatus
+                                                                isActive={details.profile?.activo}
+                                                                showLabel={false}
+                                                            />
+                                                            <Text fontSize="xs" fontWeight="bold" textTransform="uppercase">
                                                                 {details.profile?.activo ? 'Activo' : 'Inactivo'}
-                                                            </Badge>
+                                                            </Text>
                                                         </HStack>
                                                     </VStack>
-                                                </Box>
+                                                </MotionBox>
 
-                                                <Box p={6} borderRadius="2xl" border="1px solid" borderColor={borderColor}>
-                                                    <VStack align="stretch" spacing={4}>
+                                                <Box p={6} borderRadius="3xl" bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
+                                                    <VStack align="stretch" spacing={5}>
                                                         <HStack justify="space-between">
-                                                            <HStack><Icon as={HiCalendar} color="gray.400" /><Text fontSize="sm" fontWeight="medium">Miembro desde</Text></HStack>
-                                                            <Text fontSize="sm" fontWeight="bold">{new Date(details.profile?.created_at).toLocaleDateString()}</Text>
+                                                            <HStack color="gray.500"><Icon as={HiCalendar} /><Text fontSize="sm" fontWeight="700">Miembro desde</Text></HStack>
+                                                            <Text fontSize="sm" fontWeight="800">{new Date(details.profile?.created_at).toLocaleDateString()}</Text>
                                                         </HStack>
                                                         <HStack justify="space-between">
-                                                            <HStack><Icon as={HiTrendingUp} color="gray.400" /><Text fontSize="sm" fontWeight="medium">Última actividad</Text></HStack>
-                                                            <Text fontSize="sm" fontWeight="bold">{new Date(details.profile?.updated_at).toLocaleDateString()}</Text>
+                                                            <HStack color="gray.500"><Icon as={HiTrendingUp} /><Text fontSize="sm" fontWeight="700">Última actividad</Text></HStack>
+                                                            <Text fontSize="sm" fontWeight="800">{new Date(details.profile?.updated_at || details.profile?.created_at).toLocaleDateString()}</Text>
                                                         </HStack>
                                                     </VStack>
                                                 </Box>
                                             </VStack>
 
-                                            <UserStatsGrid stats={details.stats} racha={details.racha} />
+                                            <Box gridColumn={{ lg: 'span 2' }}>
+                                                <UserStatsGrid stats={details.stats} racha={details.racha} />
+                                            </Box>
                                         </SimpleGrid>
                                     </TabPanel>
 
@@ -221,7 +218,11 @@ export const UserDetailsModal = ({ isOpen, onClose, userId }: UserDetailsModalPr
                             </Tabs>
                         ) : (
                             <Center py={40}>
-                                <Text color="gray.500">No se pudo cargar la información del usuario.</Text>
+                                <EmptyState
+                                    title="Error de Carga"
+                                    description="No se pudo recuperar la información del expediente."
+                                    icon={HiUser}
+                                />
                             </Center>
                         )}
                     </ModalBody>

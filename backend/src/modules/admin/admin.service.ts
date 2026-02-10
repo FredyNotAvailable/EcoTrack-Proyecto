@@ -9,8 +9,116 @@ import { Reto, RetoTarea } from '../retos/retos.types';
 import { NivelesRepository } from '../niveles/niveles.repository';
 import { Nivel } from '../niveles/niveles.types';
 import { NivelesService } from '../niveles/niveles.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export class AdminService {
+    private notificationsService = NotificationsService.getInstance();
+    private consejosRepo = require('../consejos/consejos.repository').ConsejosRepository.getInstance();
+    // --- Daily Tips Management ---
+    async getDailyTips() {
+        return await this.consejosRepo.findAll();
+    }
+
+    async getDashboardStats() {
+        // 1. Impacto Ambiental Global y Niveles
+        const { data: statsData, error: impactError } = await supabase
+            .from('user_stats')
+            .select('kg_co2_ahorrado, puntos_totales, misiones_diarias_completadas, retos_completados, nivel');
+
+        if (impactError) throw impactError;
+
+        const totals = (statsData || []).reduce((acc, curr) => ({
+            co2Total: acc.co2Total + (Number(curr.kg_co2_ahorrado) || 0),
+            puntosTotal: acc.puntosTotal + (curr.puntos_totales || 0),
+            misionesCompletadas: acc.misionesCompletadas + (curr.misiones_diarias_completadas || 0),
+            retosCompletados: acc.retosCompletados + (curr.retos_completados || 0)
+        }), { co2Total: 0, puntosTotal: 0, misionesCompletadas: 0, retosCompletados: 0 });
+
+        const levelGroups = {
+            principiante: statsData?.filter(s => s.nivel <= 3).length || 0,
+            intermedio: statsData?.filter(s => s.nivel > 3 && s.nivel <= 6).length || 0,
+            experto: statsData?.filter(s => s.nivel > 6).length || 0
+        };
+
+        // 2. Usuarios y Crecimiento
+        const { count: totalUsers, error: usersError } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true });
+
+        if (usersError) throw usersError;
+
+        const { count: newUsersMonth, error: newUsersError } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gt('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+        // 3. Actividad de Comunidad
+        const { count: totalPosts, error: postsError } = await supabase
+            .from('posts')
+            .select('*', { count: 'exact', head: true });
+
+        const { count: reportedPosts, error: reportedError } = await supabase
+            .from('posts')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_reported', true);
+
+        // 4. Actividad Reciente (Últimos logs de CO2)
+        const { data: recentLogs, error: logsError } = await supabase
+            .from('kgco2_logs')
+            .select(`
+                id, 
+                kg_co2, 
+                origen, 
+                created_at,
+                user:profiles(username, avatar_url)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        return {
+            impacto: totals,
+            usuarios: {
+                total: totalUsers || 0,
+                nuevosMes: newUsersMonth || 0
+            },
+            comunidad: {
+                posts: totalPosts || 0,
+                reportados: reportedPosts || 0
+            },
+            niveles: levelGroups,
+            actividadReciente: recentLogs || []
+        };
+    }
+
+    async createDailyTip(tip: Partial<import('../consejos/consejos.types').DailyTip>) {
+        const { data, error } = await supabase
+            .from('consejos_diarios')
+            .insert([tip])
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+
+    async updateDailyTip(id: string, tip: Partial<import('../consejos/consejos.types').DailyTip>) {
+        const { data, error } = await supabase
+            .from('consejos_diarios')
+            .update(tip)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteDailyTip(id: string) {
+        const { error } = await supabase
+            .from('consejos_diarios')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        return { success: true };
+    }
     private static instance: AdminService;
     private profileRepo = ProfileRepository.getInstance();
     private statsRepo = new UserStatsRepository();
@@ -221,7 +329,7 @@ export class AdminService {
         const { data, error } = await supabase
             .from('posts')
             .select(`
-                id, descripcion, ubicacion, hashtags, is_public, is_reported, created_at,
+                id, descripcion, ubicacion, hashtags, is_public, is_reported, status, created_at,
                 user:profiles(username, avatar_url),
                 media:post_media(media_url, media_type),
                 likes_count:post_likes(count),
@@ -239,10 +347,38 @@ export class AdminService {
         }));
     }
 
+    async getPostDetails(id: string) {
+        const { data, error } = await supabase
+            .from('posts')
+            .select(`
+                id, descripcion, ubicacion, hashtags, is_public, is_reported, status, created_at, updated_at,
+                user:profiles(username, avatar_url),
+                media:post_media(media_url, media_type, position),
+                comments:post_comments(
+                    id,
+                    content,
+                    created_at,
+                    user:profiles(username, avatar_url)
+                ),
+                likes_count:post_likes(count)
+            `)
+            .eq('id', id)
+            .order('created_at', { foreignTable: 'post_comments', ascending: true })
+            .single();
+
+        if (error) throw error;
+
+        return {
+            ...data,
+            likes: data.likes_count?.[0]?.count || 0,
+            media: (data.media || []).sort((a: any, b: any) => a.position - b.position)
+        };
+    }
+
     async deletePost(id: string) {
         const { error } = await supabase
             .from('posts')
-            .delete()
+            .update({ status: 'blocked' })
             .eq('id', id);
 
         if (error) throw error;
@@ -250,12 +386,90 @@ export class AdminService {
     }
 
     async dismissReport(id: string) {
+        // Legacy: Update post flag
         const { error } = await supabase
             .from('posts')
             .update({ is_reported: false })
             .eq('id', id);
 
         if (error) throw error;
+        return { success: true };
+    }
+
+    async getPostReports() {
+        const { data, error } = await supabase
+            .from('post_reports')
+            .select(`
+                id,
+                post_id,
+                reporter_id,
+                reason,
+                details,
+                status,
+                created_at,
+                reporter:profiles!reporter_id(username, avatar_url),
+                post:posts!post_id(
+                    id,
+                    descripcion, 
+                    is_public,
+                    is_reported,
+                    status,
+                    media:post_media(media_url, media_type),
+                    user:profiles!user_id(username, avatar_url)
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Map to cleaner structure
+        return data.map((report: any) => ({
+            ...report,
+            post_preview: {
+                ...report.post,
+                media: report.post?.media?.[0] || null
+            }
+        }));
+    }
+
+    async resolveReport(reportId: string, action: 'dismiss' | 'delete_post' | 'review') {
+        const { data: report } = await supabase.from('post_reports').select('post_id, reason').eq('id', reportId).single();
+        if (!report) throw new Error('Reporte no encontrado');
+
+        if (action === 'delete_post') {
+            if (report.post_id) {
+                // 1. Obtener datos del post para notificar al autor
+                const { data: post } = await supabase.from('posts').select('user_id').eq('id', report.post_id).single();
+
+                // 2. Bloquear el post
+                await this.deletePost(report.post_id);
+                await supabase.from('post_reports').update({ status: 'resolved' }).eq('id', reportId);
+
+                // 3. Notificar al autor
+                if (post) {
+                    await this.notificationsService.notifyModeration(
+                        post.user_id,
+                        'Publicación Bloqueada',
+                        `Tu publicación fue retirada por nuestro equipo de moderación debido a: ${report.reason === 'other' ? 'incumplimiento de normas' : report.reason}.`,
+                        report.post_id
+                    );
+                }
+            }
+        } else if (action === 'review') {
+            await supabase.from('post_reports').update({ status: 'reviewed' }).eq('id', reportId);
+        } else {
+            await supabase.from('post_reports').update({ status: 'dismissed' }).eq('id', reportId);
+
+            const { count } = await supabase
+                .from('post_reports')
+                .select('*', { count: 'exact', head: true })
+                .eq('post_id', report.post_id)
+                .in('status', ['pending', 'reviewed']);
+
+            if (count === 0) {
+                await supabase.from('posts').update({ is_reported: false }).eq('id', report.post_id);
+            }
+        }
         return { success: true };
     }
 

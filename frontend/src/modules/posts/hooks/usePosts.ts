@@ -200,3 +200,10 @@ export const useDeletePost = () => {
         },
     });
 };
+
+export const useReportPost = () => {
+    return useMutation({
+        mutationFn: ({ postId, reason, details }: { postId: string; reason: string; details?: string }) =>
+            PostsService.reportPost(postId, reason, details),
+    });
+};

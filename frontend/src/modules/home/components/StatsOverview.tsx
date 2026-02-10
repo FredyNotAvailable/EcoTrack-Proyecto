@@ -35,8 +35,8 @@ const StatCard = ({ icon, label, value, subtext, color, bgColor, delay = 0 }: St
     borderRadius="32px"
     boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
     border="1px solid rgba(0,0,0,0.03)"
-    _hover={{ 
-      transform: "translateY(-5px)", 
+    _hover={{
+      transform: "translateY(-5px)",
       boxShadow: "0 20px 40px -10px rgba(31, 64, 55, 0.1)"
     }}
     cursor="default"
@@ -54,28 +54,28 @@ const StatCard = ({ icon, label, value, subtext, color, bgColor, delay = 0 }: St
         <Icon as={icon} boxSize={6} />
       </Flex>
       <Box>
-        <Text 
-          fontSize="xs" 
-          fontWeight="600" 
-          color="brand.textMuted" 
-          textTransform="uppercase" 
+        <Text
+          fontSize="xs"
+          fontWeight="600"
+          color="brand.textMuted"
+          textTransform="uppercase"
           letterSpacing="wide"
           mb={0.5}
         >
           {label}
         </Text>
-        <Text 
-          fontSize="xl" 
-          fontWeight="900" 
-          color="brand.secondary" 
+        <Text
+          fontSize="xl"
+          fontWeight="900"
+          color="brand.secondary"
           lineHeight="1.2"
           mb={0.5}
         >
           {value}
         </Text>
-        <Text 
-          fontSize="xs" 
-          color="brand.textMuted" 
+        <Text
+          fontSize="xs"
+          color="brand.textMuted"
           fontWeight="500"
         >
           {subtext}
@@ -116,7 +116,7 @@ export const StatsOverview = ({ stats, racha, loading }: StatsOverviewProps) => 
         bgColor="green.50"
         delay={0}
       />
-      
+
       <StatCard
         icon={FaMedal}
         label="Nivel"
@@ -126,8 +126,8 @@ export const StatsOverview = ({ stats, racha, loading }: StatsOverviewProps) => 
         bgColor="purple.50"
         delay={0.05}
       />
-      
-      <Tooltip label="CO₂ evitado gracias a tus acciones ecológicas" hasArrow placement="top">
+
+      <Tooltip label="CO₂ evitado gracias a tus acciones ecológicas" hasArrow placement="top" bg="brand.secondary" color="white" borderRadius="xl" px={4} py={3} boxShadow="xl">
         <Box>
           <StatCard
             icon={FaLeaf}
@@ -135,12 +135,12 @@ export const StatsOverview = ({ stats, racha, loading }: StatsOverviewProps) => 
             value={`${stats?.kg_co2_ahorrado || 0} kg`}
             subtext="CO₂ evitado"
             color="green.500"
-            bgColor="green.50"
+            bgColor="white"
             delay={0.1}
           />
         </Box>
       </Tooltip>
-      
+
       <StatCard
         icon={FaFire}
         label="Racha"
@@ -150,7 +150,7 @@ export const StatsOverview = ({ stats, racha, loading }: StatsOverviewProps) => 
         bgColor="orange.50"
         delay={0.15}
       />
-      
+
       {/* Progress Card - Landing Page Style */}
       <MotionBox
         initial={{ opacity: 0, y: 20 }}
@@ -161,8 +161,8 @@ export const StatsOverview = ({ stats, racha, loading }: StatsOverviewProps) => 
         borderRadius="32px"
         boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
         border="1px solid rgba(0,0,0,0.03)"
-        _hover={{ 
-          transform: "translateY(-5px)", 
+        _hover={{
+          transform: "translateY(-5px)",
           boxShadow: "0 20px 40px -10px rgba(31, 64, 55, 0.1)"
         }}
       >
@@ -178,38 +178,38 @@ export const StatsOverview = ({ stats, racha, loading }: StatsOverviewProps) => 
           >
             <Icon as={FaChartLine} boxSize={6} />
           </Flex>
-          
+
           <Box>
-            <Text 
-              fontSize="xs" 
-              fontWeight="600" 
-              color="brand.textMuted" 
-              textTransform="uppercase" 
+            <Text
+              fontSize="xs"
+              fontWeight="600"
+              color="brand.textMuted"
+              textTransform="uppercase"
               letterSpacing="wide"
               mb={1}
             >
               Progreso
             </Text>
-            
+
             <Box w="full" maxW="150px">
-              <Box 
-                h="6px" 
-                w="100%" 
-                bg="gray.100" 
-                borderRadius="full" 
+              <Box
+                h="6px"
+                w="100%"
+                bg="gray.100"
+                borderRadius="full"
                 overflow="hidden"
                 mb={1}
               >
-                <MotionBox 
-                  h="100%" 
-                  bgGradient="linear(to-r, blue.400, blue.600)" 
+                <MotionBox
+                  h="100%"
+                  bgGradient="linear(to-r, blue.400, blue.600)"
                   borderRadius="full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}
                   transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
                 />
               </Box>
-              
+
               <Text fontSize="xs" color="brand.textMuted" fontWeight="500">
                 {progressPercent}% → Nvl. {(stats?.nivel || 1) + 1}
               </Text>

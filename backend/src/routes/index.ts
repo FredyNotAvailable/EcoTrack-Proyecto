@@ -9,6 +9,7 @@ import userStatsRouter from '../modules/user-stats/user-stats.routes';
 import rachasRouter from '../modules/rachas/rachas.routes';
 import { retosRouter } from '../modules/retos/retos.routes';
 import adminRouter from '../modules/admin/admin.routes';
+import notificationsRouter from '../modules/notifications/notifications.routes';
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/user-stats', userStatsRouter);
 router.use('/user-rachas', rachasRouter);
 router.use('/retos', retosRouter);
 router.use('/admin', adminRouter);
+router.use('/notifications', notificationsRouter);
 
 export default router;

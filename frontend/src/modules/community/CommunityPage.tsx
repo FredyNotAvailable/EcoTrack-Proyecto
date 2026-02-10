@@ -14,18 +14,22 @@ import {
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { FaLeaf } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { PostsService } from "../posts/services/posts.service";
 import { PostCard } from "./components/PostCard";
 import { CreatePostForm } from "./components/CreatePostForm";
 import { EditPostModal } from "./components/EditPostModal";
 import { PostDetailModal } from "./components/PostDetailModal";
-import { usePostsFeed, useLikePost, useDeletePost } from "../posts/hooks/usePosts";
+import { usePostsFeed, useLikePost, useDeletePost, useReportPost } from "../posts/hooks/usePosts";
 import { useAuth } from "../auth/AuthContext";
 import type { Post } from "../posts/types";
 import { GlobalImpactWidget } from "./components/GlobalImpactWidget";
 import { LeaderboardWidget } from "./components/LeaderboardWidget";
 import { ConfirmationModal } from "./components/ConfirmationModal";
+import { ReportPostModal } from "./components/ReportPostModal";
 import { TrendingHashtags } from "./components/TrendingHashtags";
 import { CommunitySearch } from "./components/CommunitySearch";
 import { PostUploadProgress } from "./components/PostUploadProgress";
@@ -41,6 +45,7 @@ const MotionBox = motion(Box);
 
 const CommunityPage = () => {
     const { user } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     // Hashtag State
     const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null);
 
@@ -71,11 +76,69 @@ const CommunityPage = () => {
     // Global Background Upload State (rendered locally)
     const { uploadState, handleBackgroundSubmit } = usePostUpload();
 
+    // Report State
+    const [reportPostId, setReportPostId] = useState<string | null>(null);
+    const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
+    const reportMutation = useReportPost();
+
+
+    const handleReportClick = (postId: string) => {
+        setReportPostId(postId);
+        onReportOpen();
+    };
+
+    const handleConfirmReport = (reason: string, details?: string) => {
+        if (!reportPostId) return;
+
+        reportMutation.mutate({ postId: reportPostId, reason, details }, {
+            onSuccess: () => {
+                toast({
+                    title: 'Publicación reportada',
+                    description: 'Gracias por ayudarnos a mantener segura la comunidad.',
+                    status: 'success',
+                    duration: 3000,
+                });
+                onReportClose();
+                setReportPostId(null);
+            },
+            onError: (error: any) => {
+                const message = error.response?.data?.message || 'Error al reportar';
+                toast({
+                    title: message.includes('Ya has reportado') ? 'Información' : 'Error al reportar',
+                    description: message,
+                    status: message.includes('Ya has reportado') ? 'info' : 'error',
+                    duration: 4000,
+                });
+            }
+        });
+    };
+
     // Flatten pages to get all posts
     const allPosts = feedData?.pages.flatMap((page: { data: Post[] }) => page.data) || [];
 
+    // Fetched Post State (for deep links if not in feed)
+    const { data: fetchedPost } = useQuery({
+        queryKey: ['post', searchParams.get('post')],
+        queryFn: () => PostsService.getPostById(searchParams.get('post')!),
+        enabled: !!searchParams.get('post') && !allPosts.some(p => p.id === searchParams.get('post')),
+    });
+
     // Derived state for reactive updates
-    const detailPost = allPosts.find((p: Post) => p.id === viewPostId) || null;
+    const detailPost = allPosts.find((p: Post) => p.id === viewPostId) || (fetchedPost as Post) || null;
+
+    // Deep Linking Effect
+    useEffect(() => {
+        const postId = searchParams.get('post');
+        if (postId) {
+            const postInFeed = allPosts.find(p => p.id === postId);
+            if (postInFeed || fetchedPost) {
+                setViewPostId(postId);
+                onDetailOpen();
+                // Limpiar param para no reabrir al recargar
+                setSearchParams({}, { replace: true });
+            }
+        }
+    }, [searchParams, allPosts, fetchedPost, onDetailOpen, setSearchParams]);
 
     const handleLike = (postId: string, isLiked: boolean) => {
         likeMutation.mutate({ postId, liked: isLiked }, {
@@ -218,11 +281,13 @@ const CommunityPage = () => {
                                                         likedBy: []
                                                     }}
                                                     isLiked={post.liked_by_me}
+                                                    isReported={post.reported_by_me}
                                                     isOwner={user?.id === post.user_id}
                                                     onLike={(id) => handleLike(id, post.liked_by_me)}
                                                     onComment={() => handleCommentClick(post.id)}
                                                     onEdit={handleEdit}
                                                     onDelete={handleDeleteClick}
+                                                    onReport={handleReportClick}
                                                     onHashtagClick={(h) => setSelectedHashtag(h)}
                                                 />
                                             </MotionBox>
@@ -294,12 +359,23 @@ const CommunityPage = () => {
                     post={detailPost}
                     onEdit={() => handleEdit(detailPost.id)}
                     onDelete={() => handleDeleteClick(detailPost.id)}
+                    onReport={handleReportClick}
                     onHashtagClick={(h) => {
                         setSelectedHashtag(h);
                         onDetailClose();
                     }}
                 />
             )}
+
+            <ReportPostModal
+                isOpen={isReportOpen}
+                onClose={() => {
+                    onReportClose();
+                    setReportPostId(null);
+                }}
+                onSubmit={handleConfirmReport}
+                isLoading={reportMutation.isPending}
+            />
 
             <ConfirmationModal
                 isOpen={isDeleteOpen}

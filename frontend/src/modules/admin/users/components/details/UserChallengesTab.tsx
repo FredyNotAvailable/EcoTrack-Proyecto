@@ -15,8 +15,14 @@ import {
     AccordionButton,
     AccordionPanel,
     AccordionIcon,
+    Progress
 } from '@chakra-ui/react';
-import { HiFlag, HiCheckCircle, HiClock } from 'react-icons/hi';
+import { HiFlag, HiCheckCircle, HiClock, HiExclamation } from 'react-icons/hi';
+import { EmptyState } from '../../../shared/EmptyState';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const MotionAccordionItem = motion(AccordionItem);
+const MotionBox = motion(Box);
 
 interface UserChallengesTabProps {
     retos: {
@@ -26,171 +32,189 @@ interface UserChallengesTabProps {
 }
 
 export const UserChallengesTab = ({ retos }: UserChallengesTabProps) => {
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
+    const borderColor = useColorModeValue('gray.100', 'gray.700');
     const cardBg = useColorModeValue('white', 'gray.800');
 
-    console.log('UserChallengesTab retos:', retos);
-    console.log('Retos semanales:', retos?.semanales);
-    console.log('Retos filtrados (joined):', retos?.semanales?.filter((r: any) => r.estado === 'joined'));
-    console.log('Retos filtrados (active/in_progress/joined):', retos?.semanales?.filter((r: any) => r.estado === 'active' || r.estado === 'in_progress' || r.estado === 'joined'));
+    const activeRetos = retos.semanales.filter((r: any) =>
+        ['active', 'in_progress', 'joined'].includes(r.estado)
+    );
+
+    const pastRetos = retos.semanales.filter((r: any) =>
+        ['completed', 'failed', 'abandoned'].includes(r.estado)
+    );
+
+    const getProgress = (reto: any) => {
+        const totalTasks = reto.retos_semanales?.retos_semanales_tareas?.length || 0;
+        const completedTaskIds = retos.tareas_completadas
+            ?.filter((tc: any) => tc.user_reto_id === reto.id)
+            ?.map((tc: any) => tc.tarea_id) || [];
+        const completedCount = completedTaskIds.length;
+        return {
+            total: totalTasks,
+            completed: completedCount,
+            percent: totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0,
+            completedIds: completedTaskIds
+        };
+    };
 
     return (
-        <VStack spacing={6} align="stretch">
+        <VStack spacing={8} align="stretch">
             {/* Retos Activos - Accordion */}
-            <Accordion allowToggle defaultIndex={[0]}>
-                <AccordionItem border="none">
-                    <AccordionButton
-                        bg={useColorModeValue('green.50', 'green.900')}
-                        _hover={{ bg: useColorModeValue('green.100', 'green.800') }}
-                        borderRadius="xl"
-                        p={4}
-                    >
-                        <Box flex="1" textAlign="left">
-                            <Heading size="sm" color={useColorModeValue('green.700', 'green.200')}>
-                                <Icon as={HiFlag} mr={2} />
-                                Retos en Curso ({retos.semanales.filter((r: any) => r.estado === 'active' || r.estado === 'in_progress' || r.estado === 'joined').length})
-                            </Heading>
-                        </Box>
-                        <AccordionIcon color={useColorModeValue('green.600', 'green.300')} />
-                    </AccordionButton>
-                    <AccordionPanel pb={4} pt={6}>
-                        {retos.semanales.filter((r: any) => r.estado === 'active' || r.estado === 'in_progress' || r.estado === 'joined').length > 0 ? (
-                            <Accordion allowMultiple>
-                                {retos.semanales.filter((r: any) => r.estado === 'active' || r.estado === 'in_progress' || r.estado === 'joined').map((r: any) => {
-                                    const totalTasks = r.retos_semanales?.retos_semanales_tareas?.length || 0;
-                                    const completedTaskIds = retos.tareas_completadas
-                                        ?.filter((tc: any) => tc.user_reto_id === r.id)
-                                        ?.map((tc: any) => tc.tarea_id) || [];
-                                    const completedCount = completedTaskIds.length;
-                                    const progress = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+            <Box>
+                <Heading size="xs" textTransform="uppercase" color="gray.500" mb={4} fontWeight="900" letterSpacing="widest">
+                    Retos en Curso
+                </Heading>
 
-                                    return (
-                                        <AccordionItem key={r.id} border="1px solid" borderColor={useColorModeValue('green.200', 'green.700')} borderRadius="2xl" mb={4}>
+                {activeRetos.length > 0 ? (
+                    <Accordion allowMultiple defaultIndex={[0]}>
+                        <AnimatePresence>
+                            {activeRetos.map((r: any, index: number) => {
+                                const { total, completed, percent, completedIds } = getProgress(r);
+                                return (
+                                    <MotionAccordionItem
+                                        key={r.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                                        border="1px solid"
+                                        borderColor={borderColor}
+                                        borderRadius="3xl"
+                                        mb={4}
+                                        overflow="hidden"
+                                        shadow="sm"
+                                    >
+                                        <h2>
                                             <AccordionButton
-                                                bg={useColorModeValue('green.50', 'green.900')}
-                                                _hover={{ bg: useColorModeValue('green.100', 'green.800') }}
-                                                borderRadius="2xl"
+                                                bg={useColorModeValue('white', 'gray.800')}
+                                                _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
                                                 p={6}
                                             >
                                                 <Box flex="1" textAlign="left">
-                                                    <Flex justify="space-between" align="start" width="100%">
-                                                        <VStack align="start" spacing={1} flex={1}>
-                                                            <HStack>
-                                                                <Icon as={HiFlag} color={useColorModeValue('green.600', 'green.300')} boxSize={5} />
-                                                                <Heading size="md" color={useColorModeValue('green.700', 'green.200')}>{r.retos_semanales?.nombre}</Heading>
-                                                            </HStack>
-                                                            <Text fontSize="sm" color="gray.600">{r.retos_semanales?.descripcion}</Text>
-                                                        </VStack>
-                                                        <VStack align="end" spacing={1} ml={4}>
-                                                            <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize="xs">
-                                                                {completedCount} / {totalTasks} Tareas
+                                                    <Flex justify="space-between" align="center" width="100%" gap={4}>
+                                                        <HStack spacing={4}>
+                                                            <Center w="40px" h="40px" bg="green.50" color="green.500" borderRadius="xl">
+                                                                <Icon as={HiFlag} boxSize={5} />
+                                                            </Center>
+                                                            <Box>
+                                                                <Heading size="sm" fontWeight="800" color="gray.700">{r.retos_semanales?.nombre}</Heading>
+                                                                <Text fontSize="xs" fontWeight="600" color="gray.400" mt={1}>
+                                                                    {r.retos_semanales?.descripcion}
+                                                                </Text>
+                                                            </Box>
+                                                        </HStack>
+                                                        <VStack align="end" spacing={1} minW="120px">
+                                                            <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize="xs" fontWeight="800">
+                                                                {completed} / {total} Tareas
                                                             </Badge>
-                                                            <Text fontSize="xs" color="gray.500">{progress.toFixed(0)}% completado</Text>
+                                                            <Flex align="center" w="full" gap={2}>
+                                                                <Progress value={percent} size="xs" colorScheme="green" borderRadius="full" flex={1} />
+                                                                <Text fontSize="xs" fontWeight="bold" color="gray.500">{percent.toFixed(0)}%</Text>
+                                                            </Flex>
                                                         </VStack>
                                                     </Flex>
                                                 </Box>
-                                                <AccordionIcon ml={4} color={useColorModeValue('green.600', 'green.300')} />
+                                                <AccordionIcon ml={4} color="gray.400" />
                                             </AccordionButton>
-                                            <AccordionPanel pb={6} pt={4}>
-                                                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                                                    {r.retos_semanales?.retos_semanales_tareas?.sort((a: any, b: any) => a.dia_orden - b.dia_orden).map((tarea: any) => {
-                                                        const isDone = completedTaskIds.includes(tarea.id);
-                                                        return (
-                                                            <Box
-                                                                key={tarea.id}
-                                                                p={4}
-                                                                borderRadius="xl"
-                                                                bg={isDone ? useColorModeValue("green.50", "green.900") : useColorModeValue("white", "gray.800")}
-                                                                border="2px solid"
-                                                                borderColor={isDone ? useColorModeValue("green.300", "green.600") : useColorModeValue("gray.200", "gray.600")}
-                                                                transition="all 0.2s"
-                                                            >
-                                                                <HStack mb={2}>
-                                                                    <Icon as={isDone ? HiCheckCircle : HiClock} color={isDone ? "green.500" : "gray.400"} boxSize={5} />
-                                                                    <Text fontSize="sm" fontWeight={isDone ? "bold" : "medium"} color={isDone ? useColorModeValue("green.700", "green.300") : "gray.600"}>
-                                                                        {tarea.nombre}
-                                                                    </Text>
-                                                                </HStack>
-                                                                {tarea.descripcion && (
-                                                                    <Text fontSize="xs" color="gray.500" noOfLines={2}>{tarea.descripcion}</Text>
-                                                                )}
-                                                            </Box>
-                                                        );
-                                                    })}
-                                                </SimpleGrid>
-                                            </AccordionPanel>
-                                        </AccordionItem>
-                                    );
-                                })}
-                            </Accordion>
-                        ) : (
-                            <Center py={10}>
-                                <Text color="gray.500">No hay retos en curso.</Text>
-                            </Center>
-                        )}
-                    </AccordionPanel>
-                </AccordionItem>
-            </Accordion>
+                                        </h2>
+                                        <AccordionPanel pb={6} pt={2} bg={useColorModeValue('gray.50', 'gray.900')}>
+                                            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                                                {r.retos_semanales?.retos_semanales_tareas?.sort((a: any, b: any) => a.dia_orden - b.dia_orden).map((tarea: any) => {
+                                                    const isDone = completedIds.includes(tarea.id);
+                                                    return (
+                                                        <Box
+                                                            key={tarea.id}
+                                                            p={4}
+                                                            borderRadius="2xl"
+                                                            bg={isDone ? 'white' : 'transparent'}
+                                                            border="2px solid"
+                                                            borderColor={isDone ? 'green.400' : 'transparent'}
+                                                            shadow={isDone ? 'sm' : 'none'}
+                                                            opacity={isDone ? 1 : 0.7}
+                                                        >
+                                                            <HStack mb={2}>
+                                                                <Icon as={isDone ? HiCheckCircle : HiClock} color={isDone ? "green.500" : "gray.400"} boxSize={5} />
+                                                                <Text fontSize="sm" fontWeight={isDone ? "900" : "600"} color={isDone ? "gray.800" : "gray.500"}>
+                                                                    {tarea.nombre}
+                                                                </Text>
+                                                            </HStack>
+                                                            {tarea.descripcion && (
+                                                                <Text fontSize="xs" color="gray.500" fontWeight="500" noOfLines={2} ml={7}>{tarea.descripcion}</Text>
+                                                            )}
+                                                        </Box>
+                                                    );
+                                                })}
+                                            </SimpleGrid>
+                                        </AccordionPanel>
+                                    </MotionAccordionItem>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </Accordion>
+                ) : (
+                    <EmptyState
+                        title="Sin Retos Activos"
+                        description="El usuario no participa actualmente en ningún reto semanal."
+                        icon={HiFlag}
+                    />
+                )}
+            </Box>
 
-            {/* Historial de Retos - Accordion */}
-            <Accordion allowToggle>
-                <AccordionItem border="none">
-                    <AccordionButton
-                        bg={useColorModeValue('gray.50', 'gray.800')}
-                        _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
-                        borderRadius="xl"
-                        p={4}
-                    >
-                        <Box flex="1" textAlign="left">
-                            <Heading size="sm" color="gray.600">
-                                <Icon as={HiCheckCircle} mr={2} />
-                                Historial de Retos ({retos.semanales.filter((r: any) => r.estado === 'completed' || r.estado === 'failed' || r.estado === 'abandoned').length})
-                            </Heading>
-                        </Box>
-                        <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel pb={4} pt={6}>
-                        {retos.semanales.filter((r: any) => r.estado === 'completed' || r.estado === 'failed' || r.estado === 'abandoned').length > 0 ? (
-                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                                {retos.semanales.filter((r: any) => r.estado === 'completed' || r.estado === 'failed' || r.estado === 'abandoned').map((r: any) => {
-                                    const totalTasks = r.retos_semanales?.retos_semanales_tareas?.length || 0;
-                                    const completedTaskIds = retos.tareas_completadas
-                                        ?.filter((tc: any) => tc.user_reto_id === r.id)
-                                        ?.map((tc: any) => tc.tarea_id) || [];
-                                    const completedCount = completedTaskIds.length;
+            {/* Historial de Retos */}
+            <Box>
+                <Heading size="xs" textTransform="uppercase" color="gray.500" mb={4} fontWeight="900" letterSpacing="widest">
+                    Historial de Retos
+                </Heading>
 
-                                    return (
-                                        <Box key={r.id} p={5} bg={cardBg} borderRadius="2xl" border="1px solid" borderColor={borderColor}>
-                                            <Flex justify="space-between" align="start" mb={3}>
-                                                <VStack align="start" spacing={0} flex={1}>
-                                                    <Text fontWeight="bold" fontSize="sm">{r.retos_semanales?.nombre}</Text>
-                                                    <Text fontSize="xs" color="gray.500">{completedCount} / {totalTasks} tareas completadas</Text>
+                {pastRetos.length > 0 ? (
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                        <AnimatePresence>
+                            {pastRetos.map((r: any, index: number) => {
+                                const { total, completed } = getProgress(r);
+                                return (
+                                    <MotionBox
+                                        key={r.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                                        p={5}
+                                        bg={cardBg}
+                                        borderRadius="2xl"
+                                        border="1px solid"
+                                        borderColor={borderColor}
+                                    >
+                                        <Flex justify="space-between" align="start" mb={3}>
+                                            <HStack spacing={3}>
+                                                <Icon as={r.estado === 'completed' ? HiCheckCircle : HiExclamation} color={r.estado === 'completed' ? 'green.500' : 'red.500'} boxSize={5} />
+                                                <VStack align="start" spacing={0}>
+                                                    <Text fontWeight="800" fontSize="sm">{r.retos_semanales?.nombre}</Text>
+                                                    <Text fontSize="xs" fontWeight="600" color="gray.500">{completed} / {total} tareas completadas</Text>
                                                 </VStack>
-                                                <Badge
-                                                    colorScheme={r.estado === 'completed' ? 'green' : r.estado === 'failed' ? 'red' : 'gray'}
-                                                    px={2}
-                                                    py={1}
-                                                    borderRadius="full"
-                                                    fontSize="xs"
-                                                >
-                                                    {r.estado === 'completed' ? 'COMPLETADO' : r.estado === 'failed' ? 'FALLIDO' : 'ABANDONADO'}
-                                                </Badge>
-                                            </Flex>
-                                            <Text fontSize="xs" color="gray.400">
-                                                {r.completed_at ? new Date(r.completed_at).toLocaleDateString() : r.started_at ? new Date(r.started_at).toLocaleDateString() : 'Fecha desconocida'}
-                                            </Text>
-                                        </Box>
-                                    );
-                                })}
-                            </SimpleGrid>
-                        ) : (
-                            <Center py={10}>
-                                <Text color="gray.500">No hay historial de retos.</Text>
-                            </Center>
-                        )}
-                    </AccordionPanel>
-                </AccordionItem>
-            </Accordion>
+                                            </HStack>
+                                            <Badge
+                                                colorScheme={r.estado === 'completed' ? 'green' : r.estado === 'failed' ? 'red' : 'gray'}
+                                                px={2} py={1} borderRadius="md" fontSize="10px" fontWeight="800"
+                                            >
+                                                {r.estado === 'completed' ? 'COMPLETADO' : r.estado === 'failed' ? 'FALLIDO' : 'ABANDONADO'}
+                                            </Badge>
+                                        </Flex>
+                                        <Text fontSize="xs" fontWeight="600" color="gray.400" ml={8}>
+                                            {r.completed_at ? `Finalizado el ${new Date(r.completed_at).toLocaleDateString()}` : r.started_at ? `Iniciado el ${new Date(r.started_at).toLocaleDateString()}` : 'Fecha desconocida'}
+                                        </Text>
+                                    </MotionBox>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </SimpleGrid>
+                ) : (
+                    <EmptyState
+                        title="Sin Historial"
+                        description="No hay retos pasados registrados."
+                        icon={HiClock}
+                    />
+                )}
+            </Box>
         </VStack>
     );
 };

@@ -1,11 +1,13 @@
 import { UserStatsRepository } from './user-stats.repository';
 import { NivelesService } from '../niveles/niveles.service';
 import { UserStats } from './user-stats.types';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export class UserStatsService {
     private static instance: UserStatsService;
     private repository = new UserStatsRepository();
     private nivelesService = NivelesService.getInstance();
+    private notificationsService = NotificationsService.getInstance();
 
     constructor() { }
 
@@ -62,6 +64,15 @@ export class UserStatsService {
             ultimo_evento: new Date().toISOString(),
             ...levelData
         });
+
+        // 3. Notificar Level Up
+        if (levelData.nivel && levelData.nivel > stats.nivel) {
+            await this.notificationsService.notifyAchievement(
+                userId,
+                '¡Nuevo Nivel Alcanzado!',
+                `¡Felicidades! Has llegado al Nivel ${levelData.nivel}. Sigue así para proteger el planeta.`
+            );
+        }
     }
 
     async updatePostStats(userId: string, points: number): Promise<void> {
@@ -77,6 +88,14 @@ export class UserStatsService {
             ultimo_evento: new Date().toISOString(),
             ...levelData
         });
+
+        if (levelData.nivel && levelData.nivel > stats.nivel) {
+            await this.notificationsService.notifyAchievement(
+                userId,
+                '¡Nuevo Nivel Alcanzado!',
+                `¡Felicidades! Has llegado al Nivel ${levelData.nivel}. Sigue así para proteger el planeta.`
+            );
+        }
     }
 
     async updateCommentStats(userId: string, points: number): Promise<void> {
@@ -92,6 +111,14 @@ export class UserStatsService {
             ultimo_evento: new Date().toISOString(),
             ...levelData
         });
+
+        if (levelData.nivel && levelData.nivel > stats.nivel) {
+            await this.notificationsService.notifyAchievement(
+                userId,
+                '¡Nuevo Nivel Alcanzado!',
+                `¡Felicidades! Has llegado al Nivel ${levelData.nivel}. Sigue así para proteger el planeta.`
+            );
+        }
     }
 
     async updateLikeStats(userId: string, increment: boolean): Promise<void> {
@@ -123,5 +150,13 @@ export class UserStatsService {
             ultimo_evento: new Date().toISOString(),
             ...levelData
         });
+
+        if (levelData.nivel && levelData.nivel > stats.nivel) {
+            await this.notificationsService.notifyAchievement(
+                userId,
+                '¡Nuevo Nivel Alcanzado!',
+                `¡Felicidades! Has llegado al Nivel ${levelData.nivel}. Sigue así para proteger el planeta.`
+            );
+        }
     }
 }

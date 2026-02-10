@@ -51,6 +51,11 @@ export const AdminAPIService = {
         return response.data;
     },
 
+    async getPostDetails(postId: string): Promise<any> {
+        const response = await apiClient.get(`/admin/posts/${postId}`);
+        return response.data;
+    },
+
     async deletePost(postId: string) {
         const response = await apiClient.delete(`/admin/posts/${postId}`);
         return response.data;
@@ -58,6 +63,16 @@ export const AdminAPIService = {
 
     async dismissPostReport(postId: string) {
         const response = await apiClient.patch(`/admin/posts/${postId}/dismiss-report`);
+        return response.data;
+    },
+
+    async getPostReports(): Promise<any[]> {
+        const response = await apiClient.get('/admin/reports');
+        return response.data;
+    },
+
+    async resolvePostReport(reportId: string, action: 'dismiss' | 'delete_post') {
+        const response = await apiClient.post(`/admin/reports/${reportId}/resolve`, { action });
         return response.data;
     },
 
@@ -146,6 +161,35 @@ export const AdminAPIService = {
 
     async deleteLevel(nivel: number) {
         const response = await apiClient.delete(`/admin/levels/${nivel}`);
+        return response.data;
+    },
+
+    // --- Daily Tips Management ---
+
+    async getDailyTips(): Promise<any[]> {
+        const response = await apiClient.get('/admin/daily-tips');
+        return response.data;
+    },
+
+    async createDailyTip(tipData: any) {
+        const response = await apiClient.post('/admin/daily-tips', tipData);
+        return response.data;
+    },
+
+    async updateDailyTip(tipId: string, tipData: any) {
+        const response = await apiClient.put(`/admin/daily-tips/${tipId}`, tipData);
+        return response.data;
+    },
+
+    async deleteDailyTip(tipId: string) {
+        const response = await apiClient.delete(`/admin/daily-tips/${tipId}`);
+        return response.data;
+    },
+
+    // --- Dashboard Stats ---
+
+    async getDashboardStats(): Promise<any> {
+        const response = await apiClient.get('/admin/stats');
         return response.data;
     }
 };

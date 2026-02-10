@@ -60,6 +60,17 @@ export const completeMissionSchema = z.object({
 });
 
 // ==========================================
+// VALIDADORES DE CONSEJOS DIARIOS
+// ==========================================
+export const dailyTipSchema = z.object({
+    titulo: z.string().min(3, 'El título debe tener al menos 3 caracteres').max(100),
+    descripcion: z.string().min(5, 'La descripción debe tener al menos 5 caracteres').max(300),
+    activo: z.boolean().optional(),
+});
+
+export const updateDailyTipSchema = dailyTipSchema.partial();
+
+// ==========================================
 // VALIDADORES DE AUTH
 // ==========================================
 

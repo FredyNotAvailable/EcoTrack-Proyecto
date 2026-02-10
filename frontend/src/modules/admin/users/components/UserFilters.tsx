@@ -7,6 +7,8 @@ import {
     Button,
     HStack,
     Icon,
+    Box,
+    useColorModeValue,
 } from '@chakra-ui/react';
 import { HiSearch, HiPlus } from 'react-icons/hi';
 
@@ -19,54 +21,67 @@ interface UserFiltersProps {
 }
 
 export const UserFilters = ({ searchTerm, setSearchTerm, roleFilter, setRoleFilter, onCreateClick }: UserFiltersProps) => {
+    const bg = useColorModeValue('white', 'gray.800');
+    const borderColor = useColorModeValue('gray.100', 'gray.700');
+
     return (
-        <Flex
-            justify="space-between"
-            align="center"
-            mb={6}
-            direction={{ base: 'column', md: 'row' }}
-            gap={4}
+        <Box
+            p={4}
+            bg={bg}
+            borderRadius="2xl"
+            border="1px"
+            borderColor={borderColor}
+            shadow="sm"
         >
-            <HStack w={{ base: 'full', md: 'auto' }} flex="1" spacing={4}>
-                <InputGroup maxW="400px">
-                    <InputLeftElement pointerEvents="none" color="gray.400">
-                        <Icon as={HiSearch} />
-                    </InputLeftElement>
-                    <Input
-                        placeholder="Buscar usuarios por nombre o email..."
-                        bg="white"
-                        focusBorderColor="brand.primary"
-                        borderRadius="lg"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </InputGroup>
-
-                <Select
-                    placeholder="Todos los roles"
-                    bg="white"
-                    maxW="200px"
-                    focusBorderColor="brand.primary"
-                    borderRadius="lg"
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                >
-                    <option value="user">Usuarios</option>
-                    <option value="admin">Administradores</option>
-                </Select>
-            </HStack>
-
-            <Button
-                leftIcon={<Icon as={HiPlus} />}
-                colorScheme="brand"
-                bg="brand.primary"
-                _hover={{ bg: 'brand.hover' }}
-                borderRadius="lg"
-                px={6}
-                onClick={onCreateClick}
+            <Flex
+                justify="space-between"
+                align="center"
+                direction={{ base: 'column', md: 'row' }}
+                gap={4}
             >
-                Crear Usuario
-            </Button>
-        </Flex>
+                <HStack w={{ base: 'full', md: 'auto' }} flex="1" spacing={4}>
+                    <InputGroup maxW="400px">
+                        <InputLeftElement pointerEvents="none" color="gray.400">
+                            <Icon as={HiSearch} />
+                        </InputLeftElement>
+                        <Input
+                            placeholder="Buscar usuarios por nombre o email..."
+                            bg={useColorModeValue('gray.50', 'gray.700')}
+                            border="none"
+                            focusBorderColor="brand.primary"
+                            borderRadius="xl"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </InputGroup>
+
+                    <Select
+                        placeholder="Todos los roles"
+                        bg={useColorModeValue('gray.50', 'gray.700')}
+                        border="none"
+                        maxW="200px"
+                        focusBorderColor="brand.primary"
+                        borderRadius="xl"
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                    >
+                        <option value="user">Usuarios</option>
+                        <option value="admin">Administradores</option>
+                    </Select>
+                </HStack>
+
+                <Button
+                    leftIcon={<Icon as={HiPlus} />}
+                    colorScheme="brand"
+                    borderRadius="xl"
+                    px={8}
+                    onClick={onCreateClick}
+                    shadow="md"
+                    _hover={{ transform: 'translateY(-2px)', shadow: 'lg' }}
+                >
+                    Crear Usuario
+                </Button>
+            </Flex>
+        </Box>
     );
 };

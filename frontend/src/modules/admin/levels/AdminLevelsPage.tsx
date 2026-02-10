@@ -1,21 +1,14 @@
 import {
-    Heading,
     Container,
     VStack,
     useDisclosure,
     Button,
-    Box,
     Flex,
     Text,
-    useColorModeValue,
     useToast,
-    HStack,
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
 } from '@chakra-ui/react';
 import { useState } from 'react';
-import { HiPlus, HiChevronRight } from 'react-icons/hi';
+import { HiPlus } from 'react-icons/hi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminAPIService } from '../services/admin.service';
 import { LevelStats } from './components/LevelStats';
@@ -95,60 +88,42 @@ export const AdminLevelsPage = () => {
         }
     };
 
-    const bgContainer = useColorModeValue('gray.50', 'gray.900');
 
     return (
-        <Box minH="100vh" bg={bgContainer} py={8}>
-            <Container maxW="container.xl">
-                <VStack spacing={8} align="stretch">
-                    {/* Header Section */}
-                    <Flex justify="space-between" align="center" direction={{ base: 'column', md: 'row' }} gap={4}>
-                        <VStack align="start" spacing={1}>
-                            <Breadcrumb spacing="8px" separator={<HiChevronRight color="gray.500" />}>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink href="/admin" fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">Panel Admin</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbItem isCurrentPage>
-                                    <BreadcrumbLink href="#" fontSize="xs" fontWeight="bold" color="brand.primary" textTransform="uppercase">Niveles</BreadcrumbLink>
-                                </BreadcrumbItem>
-                            </Breadcrumb>
-                            <Heading size="lg" fontWeight="800">Escala de Niveles</Heading>
-                            <Text color="gray.500">Configura los puntos requeridos para cada rango de usuario.</Text>
-                        </VStack>
+        <Container maxW="full" py={4} px={{ base: 0, md: 4 }}>
+            <VStack spacing={8} align="stretch">
+                <LevelStats levels={levels} />
 
-                        <Button
-                            leftIcon={<HiPlus />}
-                            colorScheme="brand"
-                            size="lg"
-                            borderRadius="2xl"
-                            onClick={handleCreateNew}
-                            boxShadow="lg"
-                            _hover={{ transform: 'translateY(-2px)', boxShadow: 'xl' }}
-                        >
-                            Nuevo Nivel
-                        </Button>
-                    </Flex>
+                {/* Content Section Header & Action */}
+                <Flex
+                    justify="space-between"
+                    align="center"
+                    mb={2}
+                >
+                    <Text fontWeight="bold" color="gray.500" fontSize="sm" textTransform="uppercase" letterSpacing="wider">
+                        Niveles Configurados ({levels.length})
+                    </Text>
 
-                    {/* Stats Section */}
-                    <LevelStats levels={levels} />
+                    <Button
+                        leftIcon={<HiPlus />}
+                        colorScheme="brand"
+                        size="md"
+                        borderRadius="xl"
+                        onClick={handleCreateNew}
+                        shadow="sm"
+                        _hover={{ transform: 'translateY(-1px)', shadow: 'md' }}
+                    >
+                        Nuevo Nivel
+                    </Button>
+                </Flex>
 
-                    {/* Content Section */}
-                    <VStack align="stretch" spacing={4}>
-                        <HStack justify="space-between">
-                            <Text fontWeight="bold" color="gray.500" fontSize="sm" textTransform="uppercase" letterSpacing="wider">
-                                Niveles Configurados ({levels.length})
-                            </Text>
-                        </HStack>
-
-                        <LevelTable
-                            levels={levels}
-                            isLoading={isLoading}
-                            onEdit={handleEdit}
-                            onDelete={(nivel) => deleteMutation.mutate(nivel)}
-                        />
-                    </VStack>
-                </VStack>
-            </Container>
+                <LevelTable
+                    levels={levels}
+                    isLoading={isLoading}
+                    onEdit={handleEdit}
+                    onDelete={(nivel) => deleteMutation.mutate(nivel)}
+                />
+            </VStack>
 
             <LevelModal
                 isOpen={isOpen}
@@ -158,6 +133,6 @@ export const AdminLevelsPage = () => {
                 existingLevels={levels}
                 isLoading={createMutation.isPending || updateMutation.isPending}
             />
-        </Box>
+        </Container>
     );
 };

@@ -29,6 +29,7 @@ const RetosPage = lazy(() => import('../modules/retos/RetosPage'));
 const CommunityPage = lazy(() => import('../modules/community/CommunityPage'));
 const RankingPage = lazy(() => import('../modules/ranking/RankingPage'));
 const ProfilePage = lazy(() => import('../modules/profile/ProfilePage'));
+const NotificationsPage = lazy(() => import('../modules/notifications/pages/NotificationsPage'));
 
 // Páginas legales e informativas
 const TermsPage = lazy(() => import('../modules/landing/pages/TermsPage'));
@@ -44,6 +45,8 @@ import { AdminPostsPage } from '../modules/admin/posts/AdminPostsPage';
 import { AdminMissionsPage } from '../modules/admin/missions/AdminMissionsPage';
 import { AdminChallengesPage } from '../modules/admin/challenges/AdminChallengesPage';
 import { AdminLevelsPage } from '../modules/admin/levels/AdminLevelsPage';
+import { AdminTipsPage } from '../modules/admin/tips/AdminTipsPage';
+import ReportsPage from '../modules/admin/pages/ReportsPage';
 
 export const AppRouter = () => {
     return (
@@ -130,6 +133,11 @@ export const AppRouter = () => {
                             <ProfilePage />
                         </Suspense>
                     } />
+                    <Route path="notificaciones" element={
+                        <Suspense fallback={<PageSkeleton />}>
+                            <NotificationsPage />
+                        </Suspense>
+                    } />
                 </Route>
             </Route>
 
@@ -142,7 +150,9 @@ export const AppRouter = () => {
                     <Route path="posts" element={<AdminPostsPage />} />
                     <Route path="misiones" element={<AdminMissionsPage />} />
                     <Route path="retos" element={<AdminChallengesPage />} />
+                    <Route path="reports" element={<ReportsPage />} />
                     <Route path="niveles" element={<AdminLevelsPage />} />
+                    <Route path="consejos" element={<AdminTipsPage />} />
                 </Route>
             </Route>
 

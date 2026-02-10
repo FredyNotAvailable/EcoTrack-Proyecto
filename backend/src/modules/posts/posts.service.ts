@@ -5,6 +5,8 @@ import { ApiError } from '../../utils/ApiError';
 import { PuntosService } from '../puntos/puntos.service';
 import { RachasService } from '../rachas/rachas.service';
 import { UserStatsService } from '../user-stats/user-stats.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { ProfileRepository } from '../profile/profile.repository';
 
 export class PostsService {
     private static instance: PostsService;
@@ -13,6 +15,8 @@ export class PostsService {
     private puntosService: PuntosService;
     private rachasService: RachasService;
     private userStatsService: UserStatsService;
+    private notificationsService: NotificationsService;
+    private profileRepository: ProfileRepository;
 
     constructor() {
         this.repository = PostsRepository.getInstance();
@@ -20,6 +24,8 @@ export class PostsService {
         this.puntosService = PuntosService.getInstance();
         this.rachasService = RachasService.getInstance();
         this.userStatsService = UserStatsService.getInstance();
+        this.notificationsService = NotificationsService.getInstance();
+        this.profileRepository = ProfileRepository.getInstance();
     }
 
     static getInstance(): PostsService {
@@ -176,10 +182,24 @@ export class PostsService {
                 this.repository.addLike(postId, userId),
                 this.userStatsService.updateLikeStats(post.user_id, true)
             ]);
+
+            // --- Notificar al autor ---
+            if (post.user_id !== userId) {
+                const actor = await this.profileRepository.getById(userId);
+                await this.notificationsService.notifySocial(
+                    post.user_id,
+                    userId,
+                    'Nuevo Like',
+                    `@${actor?.username || 'Alguien'} le dio me gusta a tu publicación.`,
+                    postId,
+                    'post'
+                );
+            }
         } else {
             await Promise.all([
                 this.repository.removeLike(postId, userId),
-                this.userStatsService.updateLikeStats(post.user_id, false)
+                this.userStatsService.updateLikeStats(post.user_id, false),
+                this.notificationsService.deleteSocialNotification(post.user_id, userId, postId)
             ]);
         }
     }
@@ -208,6 +228,19 @@ export class PostsService {
             this.userStatsService.updateCommentStats(userId, 5)
         ]);
 
+        // --- Notificar al autor ---
+        if (post.user_id !== userId) {
+            const actor = await this.profileRepository.getById(userId);
+            await this.notificationsService.notifySocial(
+                post.user_id,
+                userId,
+                'Nuevo Comentario',
+                `@${actor?.username || 'Alguien'} comentó tu publicación: "${comment.content.slice(0, 30)}..."`,
+                postId,
+                'post'
+            );
+        }
+
         return comment;
     }
 
@@ -230,7 +263,12 @@ export class PostsService {
             throw new ApiError(403, 'Not authorized to delete this comment', 'FORBIDDEN');
         }
 
-        await this.repository.deleteComment(commentId);
+        const post = await this.repository.findById(comment.post_id);
+
+        await Promise.all([
+            this.repository.deleteComment(commentId),
+            post && this.notificationsService.deleteSocialNotification(post.user_id, userId, comment.id)
+        ]);
     }
 
     async getPopularHashtags(): Promise<{ hashtag: string, count: number }[]> {
@@ -240,5 +278,42 @@ export class PostsService {
     async searchHashtags(query: string): Promise<{ hashtag: string, count: number }[]> {
         if (!query || query.trim() === '') return [];
         return this.repository.searchHashtags(query);
+    }
+
+    async reportPost(userId: string, postId: string, reason: string, details?: string): Promise<void> {
+        // 0. Check if already reported
+        const alreadyReported = await this.repository.hasUserReportedPost(postId, userId);
+        if (alreadyReported) {
+            throw new ApiError(400, 'Ya has reportado esta publicación.', 'ALREADY_REPORTED');
+        }
+
+        // 1. Create Report Entry
+        await this.repository.createReport({
+            post_id: postId,
+            reporter_id: userId,
+            reason,
+            details
+        });
+
+        // 2. Mark Post as Reported (Denormalization for quick filtering)
+        await this.repository.update(postId, { is_reported: true });
+
+        // 3. Notificar al reportero (Confirmación)
+        await this.notificationsService.notifySystem(
+            userId,
+            'Reporte Recibido',
+            'Gracias por tu reporte. Nuestro equipo lo revisará pronto para mantener la comunidad segura.'
+        );
+
+        // 4. Notificar al autor (Moderación)
+        const post = await this.repository.findById(postId);
+        if (post && post.user_id !== userId) {
+            await this.notificationsService.notifyModeration(
+                post.user_id,
+                'Contenido Reportado',
+                'Una de tus publicaciones ha sido reportada por la comunidad y está bajo revisión.',
+                postId
+            );
+        }
     }
 }

@@ -23,4 +23,16 @@ export class ConsejosRepository {
         }
         return data || [];
     }
+
+    async findAll(): Promise<DailyTip[]> {
+        const { data, error } = await supabase
+            .from('consejos_diarios')
+            .select('id, titulo, descripcion, activo, created_at');
+
+        if (error) {
+            console.error('Supabase Error (Consejos):', error);
+            throw error;
+        }
+        return data || [];
+    }
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    Heading,
     Container,
     VStack,
     useDisclosure,
@@ -12,7 +11,6 @@ import {
     InputLeftElement,
     Select,
     HStack,
-    Text,
     useColorModeValue,
     useToast
 } from '@chakra-ui/react';
@@ -110,51 +108,55 @@ export const AdminChallengesPage = () => {
     const borderColor = useColorModeValue('gray.200', 'gray.700');
 
     return (
-        <Container maxW="container.xl" py={8}>
+        <Container maxW="full" py={4} px={{ base: 0, md: 4 }}>
             <VStack spacing={8} align="stretch">
-                <Flex justify="space-between" align="center">
-                    <VStack align="start" spacing={1}>
-                        <Heading size="lg" fontWeight="800">Retos Semanales</Heading>
-                        <Text color="gray.500" fontSize="sm">Configura los desafíos de mayor impacto para la comunidad.</Text>
-                    </VStack>
-                    <Button
-                        leftIcon={<HiPlus />}
-                        colorScheme="brand"
-                        onClick={handleCreateChallenge}
-                        borderRadius="xl"
-                        px={8}
-                    >
-                        Nuevo Reto
-                    </Button>
-                </Flex>
-
                 <ChallengeStats challenges={challenges} />
 
-                {/* Filtros */}
-                <Box p={4} bg={bg} borderRadius="2xl" border="1px" borderColor={borderColor}>
-                    <HStack spacing={4}>
-                        <InputGroup maxW="400px">
-                            <InputLeftElement pointerEvents="none"><HiSearch color="gray.300" /></InputLeftElement>
-                            <Input
-                                placeholder="Buscar retos..."
+                {/* Filtros y Acción */}
+                <Box p={4} bg={bg} borderRadius="2xl" border="1px" borderColor={borderColor} shadow="sm">
+                    <Flex
+                        direction={{ base: 'column', md: 'row' }}
+                        justify="space-between"
+                        align={{ base: 'stretch', md: 'center' }}
+                        gap={4}
+                    >
+                        <HStack spacing={4} flex="1">
+                            <InputGroup maxW="400px">
+                                <InputLeftElement pointerEvents="none"><HiSearch color="gray.300" /></InputLeftElement>
+                                <Input
+                                    placeholder="Buscar retos..."
+                                    borderRadius="xl"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </InputGroup>
+                            <Select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
                                 borderRadius="xl"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </InputGroup>
-                        <Select
-                            value={filterCategory}
-                            onChange={(e) => setFilterCategory(e.target.value)}
+                                maxW="200px"
+                            >
+                                <option value="all">Todas las categorías</option>
+                                <option value="energia">Energía</option>
+                                <option value="agua">Agua</option>
+                                <option value="transporte">Transporte</option>
+                                <option value="residuos">Residuos</option>
+                            </Select>
+                        </HStack>
+
+                        <Button
+                            leftIcon={<HiPlus />}
+                            colorScheme="brand"
+                            onClick={handleCreateChallenge}
                             borderRadius="xl"
-                            maxW="200px"
+                            px={8}
+                            shadow="md"
+                            _hover={{ transform: 'translateY(-2px)', shadow: 'lg' }}
+                            transition="all 0.2s"
                         >
-                            <option value="all">Todas las categorías</option>
-                            <option value="energia">Energía</option>
-                            <option value="agua">Agua</option>
-                            <option value="transporte">Transporte</option>
-                            <option value="residuos">Residuos</option>
-                        </Select>
-                    </HStack>
+                            Nuevo Reto
+                        </Button>
+                    </Flex>
                 </Box>
 
                 <ChallengeTable

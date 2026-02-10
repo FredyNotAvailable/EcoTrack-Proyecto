@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heading, Container, VStack, useToast, useDisclosure } from '@chakra-ui/react';
+import { Container, VStack, useToast, useDisclosure } from '@chakra-ui/react';
 import { UserStats } from './components/UserStats';
 import { UserFilters } from './components/UserFilters';
 import { UserTable } from './components/UserTable';
@@ -65,9 +65,8 @@ export const AdminUsersPage = () => {
     };
 
     return (
-        <Container maxW="container.xl" py={8}>
+        <Container maxW="full" py={4} px={{ base: 0, md: 4 }}>
             <VStack spacing={8} align="stretch">
-                <Heading size="lg" fontWeight="800">Gestión de Usuarios</Heading>
 
                 <UserStats users={users as AdminUser[]} />
 

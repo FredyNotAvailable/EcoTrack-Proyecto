@@ -38,14 +38,15 @@ export const ActiveChallenges = ({ challenges, loading }: ActiveChallengesProps)
 
   return (
     <Box
-      p={{ base: 6, md: 8 }}
+      p={{ base: 5, md: 6 }}
       bg="white"
-      borderRadius="32px"
-      boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
-      border="1px solid rgba(0,0,0,0.03)"
-      _hover={{ 
-        transform: 'translateY(-5px)', 
-        boxShadow: '0 20px 40px -10px rgba(31, 64, 55, 0.1)' 
+      borderRadius="2xl"
+      boxShadow="sm"
+      border="1px solid"
+      borderColor="gray.100"
+      _hover={{
+        transform: 'translateY(-5px)',
+        boxShadow: '0 20px 40px -10px rgba(31, 64, 55, 0.1)'
       }}
       transition="all 0.3s"
     >
@@ -111,8 +112,8 @@ export const ActiveChallenges = ({ challenges, loading }: ActiveChallengesProps)
                 cursor="pointer"
                 position="relative"
                 overflow="hidden"
-                _hover={{ 
-                  bg: "white", 
+                _hover={{
+                  bg: "white",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
                   transform: "translateY(-2px)"
                 }}
@@ -127,7 +128,7 @@ export const ActiveChallenges = ({ challenges, loading }: ActiveChallengesProps)
                       <Text fontSize="sm" fontWeight="700" color="brand.secondary" noOfLines={1}>
                         {reto.titulo}
                       </Text>
-                      <Badge 
+                      <Badge
                         colorScheme={reto.categoria === 'energia' ? 'orange' : reto.categoria === 'agua' ? 'cyan' : 'green'}
                         fontSize="0.6rem"
                         borderRadius="full"
@@ -137,18 +138,18 @@ export const ActiveChallenges = ({ challenges, loading }: ActiveChallengesProps)
                         {reto.categoria}
                       </Badge>
                     </Flex>
-                    
+
                     {/* Progress Bar */}
                     <Box h="6px" w="100%" bg="gray.200" borderRadius="full" overflow="hidden" mb={1.5}>
-                      <Box 
-                        h="100%" 
-                        w={`${reto.progress}%`} 
+                      <Box
+                        h="100%"
+                        w={`${reto.progress}%`}
                         bg={style.color}
-                        borderRadius="full" 
+                        borderRadius="full"
                         transition="width 0.3s ease"
                       />
                     </Box>
-                    
+
                     <Flex justify="space-between" align="center">
                       <Text fontSize="xs" color="brand.textMuted" fontWeight="500">
                         <Text as="span" color={style.color} fontWeight="700">{Math.round(reto.progress)}%</Text> completado
@@ -164,11 +165,11 @@ export const ActiveChallenges = ({ challenges, loading }: ActiveChallengesProps)
           })}
         </VStack>
       ) : (
-        <Flex 
-          direction="column" 
-          align="center" 
-          py={8} 
-          bg="gray.50" 
+        <Flex
+          direction="column"
+          align="center"
+          py={8}
+          bg="gray.50"
           borderRadius="16px"
           border="2px dashed"
           borderColor="gray.200"

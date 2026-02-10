@@ -30,14 +30,11 @@ interface MissionCardProps {
   index: number;
 }
 
-const MissionCard = ({ mission, onClick, index }: MissionCardProps) => {
+const MissionCard = ({ mission, onClick }: Omit<MissionCardProps, 'index'>) => {
   const style = getCategoryStyle(mission.categoria);
-  
+
   return (
     <MotionBox
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
       p={3}
       bg={mission.completed ? "green.50" : "gray.50"}
       borderRadius="16px"
@@ -56,8 +53,8 @@ const MissionCard = ({ mission, onClick, index }: MissionCardProps) => {
       opacity={mission.completed ? 0.95 : 1}
     >
       <Flex align="center" gap={2}>
-        <Circle 
-          size="36px" 
+        <Circle
+          size="36px"
           bg={mission.completed ? "green.100" : style.bg}
           border="2px solid"
           borderColor={mission.completed ? "green.300" : style.color}
@@ -82,7 +79,7 @@ const MissionCard = ({ mission, onClick, index }: MissionCardProps) => {
             <Icon as={style.icon} color={style.color} fontSize="md" />
           )}
         </Circle>
-        
+
         <Box flex={1} minW={0}>
           <Text
             fontSize="sm"
@@ -95,9 +92,9 @@ const MissionCard = ({ mission, onClick, index }: MissionCardProps) => {
             {mission.titulo}
           </Text>
           <Flex align="center" gap={3} mt={1}>
-            <Text 
-              fontSize="xs" 
-              fontWeight="800" 
+            <Text
+              fontSize="xs"
+              fontWeight="800"
               color={mission.completed ? "green.600" : "brand.primary"}
               bg={mission.completed ? "green.100" : "blue.50"}
               px={2}
@@ -106,9 +103,9 @@ const MissionCard = ({ mission, onClick, index }: MissionCardProps) => {
             >
               +{mission.puntos} XP
             </Text>
-            <Text 
-              fontSize="xs" 
-              color="brand.textMuted" 
+            <Text
+              fontSize="xs"
+              color="brand.textMuted"
               textTransform="capitalize"
               fontWeight="600"
             >
@@ -139,15 +136,16 @@ export const DailyMissionsWidget = ({
 
   return (
     <Box
-      p={{ base: 6, md: 8 }}
+      p={{ base: 5, md: 6 }}
       bg="white"
-      borderRadius="32px"
-      boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
-      border="1px solid rgba(0,0,0,0.03)"
+      borderRadius="2xl"
+      boxShadow="sm"
+      border="1px solid"
+      borderColor="gray.100"
       h="full"
-      _hover={{ 
-        transform: 'translateY(-5px)', 
-        boxShadow: '0 20px 40px -10px rgba(31, 64, 55, 0.1)' 
+      _hover={{
+        transform: 'translateY(-5px)',
+        boxShadow: 'md'
       }}
       transition="all 0.3s"
     >
@@ -174,18 +172,18 @@ export const DailyMissionsWidget = ({
             </Text>
           </Box>
         </Flex>
-        <Flex 
-          align="center" 
-          bg={allCompleted ? "green.50" : "gray.50"} 
-          px={4} 
-          py={2} 
+        <Flex
+          align="center"
+          bg={allCompleted ? "green.50" : "gray.50"}
+          px={4}
+          py={2}
           borderRadius="full"
           border="1px solid"
           borderColor={allCompleted ? "green.200" : "gray.200"}
         >
-          <Text 
-            fontSize="sm" 
-            fontWeight="800" 
+          <Text
+            fontSize="sm"
+            fontWeight="800"
             color={allCompleted ? "green.700" : "brand.secondary"}
           >
             {completedCount}/{totalCount}
@@ -195,20 +193,20 @@ export const DailyMissionsWidget = ({
 
       {/* Progress Bar */}
       <Box mb={5}>
-        <Box 
-          h="10px" 
-          w="100%" 
-          bg="gray.100" 
-          borderRadius="full" 
+        <Box
+          h="10px"
+          w="100%"
+          bg="gray.100"
+          borderRadius="full"
           overflow="hidden"
           border="1px solid"
           borderColor="gray.200"
         >
-          <Box 
-            h="100%" 
-            w={`${progress}%`} 
-            bgGradient={allCompleted ? "linear(to-r, green.400, green.600)" : "linear(to-r, purple.400, purple.600, brand.primary)"} 
-            borderRadius="full" 
+          <Box
+            h="100%"
+            w={`${progress}%`}
+            bgGradient={allCompleted ? "linear(to-r, green.400, green.600)" : "linear(to-r, purple.400, purple.600, brand.primary)"}
+            borderRadius="full"
             transition="width 0.8s cubic-bezier(0.4, 0, 0.2, 1)"
             position="relative"
             _after={!allCompleted ? {
@@ -239,12 +237,11 @@ export const DailyMissionsWidget = ({
             <Skeleton height="60px" borderRadius="14px" />
           </>
         ) : missions.length > 0 ? (
-          missions.map((mission, index) => (
+          missions.map((mission) => (
             <MissionCard
               key={mission.id}
               mission={mission}
               onClick={() => onMissionClick(mission)}
-              index={index}
             />
           ))
         ) : (
