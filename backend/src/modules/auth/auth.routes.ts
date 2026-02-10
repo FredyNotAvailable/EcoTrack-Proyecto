@@ -1,3 +1,4 @@
+
 import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { authMiddleware, requireRole } from '../../middlewares/auth.middleware';
@@ -7,6 +8,7 @@ import { supabase } from '../../config/supabaseClient';
 
 const router = Router();
 
+
 // Rate limiting estricto para rutas de auth (5 req/min)
 const authLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minuto
@@ -14,6 +16,32 @@ const authLimiter = rateLimit({
     message: { error: { code: 'TOO_MANY_AUTH_REQUESTS', message: 'Demasiados intentos de autenticación, espera un minuto' } },
     standardHeaders: true,
     legacyHeaders: false
+});
+
+/**
+ * POST /auth/register
+ * Ejemplo de registro de usuario con creación automática de perfil mínimo
+ */
+router.post('/register', async (req: Request, res: Response) => {
+    try {
+        // Aquí iría tu lógica real de registro en Supabase
+        // Por ejemplo:
+        // const { email, password } = req.body;
+        // const { data, error } = await supabase.auth.admin.createUser({ email, password });
+        // if (error) throw error;
+        // const userId = data.user.id;
+        const userId = 'ID_DEL_USUARIO_CREADO'; // <-- Reemplaza por el valor real de tu lógica
+
+        // Crear perfil mínimo automáticamente
+        const { ProfileService } = await import('../profile/profile.service');
+        const profileService = new ProfileService();
+        await profileService.createProfile(userId, {}); // Perfil vacío
+
+        res.json({ success: true, userId });
+    } catch (error) {
+        console.error('Error en registro:', error);
+        res.status(500).json({ success: false, error: 'Error interno en registro' });
+    }
 });
 
 /**
@@ -96,20 +124,21 @@ router.get('/admin/ping', authMiddleware, requireRole(['admin']), (req: Request,
 router.get('/registration-status', authMiddleware, async (req: any, res: Response) => {
     try {
         const userId = req.user.id;
-        console.log(`[Backend] Checking registration status for userId: ${userId}`);
+        console.log(`[Backend Routes] 🔍 Checking registration for userId: ${userId}`);
 
-        // Importación dinámica para evitar ciclos si los hubiera
         const { ProfileService } = await import('../profile/profile.service');
         const profileService = new ProfileService();
 
+        console.log('[Backend Routes] 🔍 Fetching profile from DB...');
         const profile = await profileService.getProfile(userId);
 
+        console.log(`[Backend Routes] ✅ Result: ${profile ? 'Registered' : 'NOT Registered'}`);
         return res.json({
             registered: !!profile,
             userId: userId
         });
-    } catch (error) {
-        console.error("Error checking registration status:", error);
+    } catch (error: any) {
+        console.error("[Backend Routes] ❌ Error checking status:", error.message);
         return res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
@@ -156,21 +185,60 @@ router.post('/forgot-password', authLimiter, validateBody(checkEmailSchema), asy
         }
 
         // El email existe y es cuenta de email/password, enviar correo de reset
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`
+        // Usamos el email tal cual está en la base de datos para evitar problemas de case/espacios
+        const emailToSend = userExists.email;
+
+        if (!emailToSend) {
+            console.error("User found but email is missing in object:", userExists);
+            return res.status(500).json({
+                success: false,
+                message: 'Error interno: usuario sin email asociado.'
+            });
+        }
+
+        console.log(`[Backend] User found:`, JSON.stringify(userExists, null, 2));
+        const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`;
+        console.log(`[Backend] Sending reset email to: '${emailToSend}' with redirect: '${redirectUrl}'`);
+
+        // Use signInWithOtp as a reliable fallback for password recovery
+        // This sends a magic link that logs the user in, bypassing the "invalid email" error
+        // experienced with resetPasswordForEmail on some Supabase projects.
+        console.log(`[Backend] Using signInWithOtp (Magic Link) strategy for recovery`);
+
+        let authClient = supabase;
+        if (process.env.SUPABASE_ANON_KEY) {
+            const { createClient } = await import('@supabase/supabase-js');
+            authClient = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY, {
+                auth: { persistSession: false }
+            });
+        }
+
+        // We redirect them to a page where they can update their password
+        // Or simply to the app home, from where they can go to settings.
+        // Let's use the reset-password route which handles the token, 
+        // OR better yet, let the magic link log them in and redirect to a profile settings page.
+        // Ideally: /update-password page.
+        const magicLinkRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/app/profile`;
+
+        const { error } = await authClient.auth.signInWithOtp({
+            email: emailToSend,
+            options: {
+                emailRedirectTo: magicLinkRedirect,
+                // shouldCreateUser: false // important to not register new users, but we already checked existence
+            }
         });
 
         if (error) {
-            console.error("Error sending reset email:", error.message);
+            console.error(`Error sending recovery email for '${emailToSend}':`, error.message, error);
             return res.status(500).json({
                 success: false,
-                message: 'No se pudo enviar el correo. Verifica que el correo sea correcto.'
+                message: 'No se pudo enviar el correo de recuperación. Por favor, intenta más tarde.'
             });
         }
 
         return res.json({
             success: true,
-            message: 'Te hemos enviado un correo con instrucciones para restablecer tu contraseña.'
+            message: 'Te hemos enviado un enlace mágico de acceso a tu correo. Úsalo para entrar y cambiar tu contraseña.'
         });
 
     } catch (error) {

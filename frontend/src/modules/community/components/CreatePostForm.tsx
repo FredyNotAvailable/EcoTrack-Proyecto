@@ -96,19 +96,19 @@ export const CreatePostForm = ({ onBackgroundSubmit }: CreatePostFormProps) => {
 
 
     return (
-        <Box 
-            p={5} 
-            bg="white" 
-            borderRadius="32px" 
-            mb={6} 
+        <Box
+            p={5}
+            bg="white"
+            borderRadius="32px"
+            mb={6}
             boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
             border="1px solid rgba(0,0,0,0.03)"
         >
-            <Button 
-                onClick={onOpen} 
-                width="100%" 
-                borderRadius="2xl" 
-                py={6} 
+            <Button
+                onClick={onOpen}
+                width="100%"
+                borderRadius="2xl"
+                py={6}
                 colorScheme="green"
                 variant="ghost"
                 justifyContent="flex-start"
@@ -120,16 +120,16 @@ export const CreatePostForm = ({ onBackgroundSubmit }: CreatePostFormProps) => {
                 ¿Qué estás pensando hoy? 🌿
             </Button>
 
-            <Modal 
-                isOpen={isOpen} 
-                onClose={onClose} 
-                size="xl" 
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
+                size="2xl"
                 isCentered
                 blockScrollOnMount={true}
                 preserveScrollBarGap
             >
-                <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
-                <ModalContent bg="transparent" boxShadow="none" maxH="85vh" my={4}>
+                <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
+                <ModalContent bg="transparent" boxShadow="none" my={0} display="flex" alignItems="center" justifyContent="center">
                     <PostEditor
                         key={isOpen ? 'open' : 'closed'}
                         onSubmit={handleSubmit}

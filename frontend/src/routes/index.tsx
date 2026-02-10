@@ -75,15 +75,14 @@ export const AppRouter = () => {
                 </Suspense>
             } />
 
-            {/* Onboarding: Pública porque recibe usuarios diferidos (sin auth) y usuarios auth sin perfil */}
-            <Route path="/onboarding" element={
-                <Suspense fallback={<PageSkeleton />}>
-                    <OnboardingPage />
-                </Suspense>
-            } />
 
             {/* Rutas Privadas: Solo accesibles si ESTÁ autenticado */}
             <Route element={<PrivateRoute />}>
+                <Route path="/onboarding" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                        <OnboardingPage />
+                    </Suspense>
+                } />
                 <Route path="/app" element={<MainLayout />}>
                     <Route index element={<Navigate to="inicio" replace />} />
                     <Route path="inicio" element={

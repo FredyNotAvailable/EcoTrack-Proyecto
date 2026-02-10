@@ -63,7 +63,7 @@ export const completeMissionSchema = z.object({
 // ==========================================
 
 export const checkEmailSchema = z.object({
-    email: z.string().email('Email inválido')
+    email: z.string().trim().toLowerCase().email('Email inválido')
 });
 
 // ==========================================

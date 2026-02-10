@@ -73,19 +73,17 @@ export const AuthService = {
      * Verifica si el usuario actual tiene un perfil registrado en el backend
      */
     async checkRegistrationStatus(token: string): Promise<{ registered: boolean }> {
+        console.log('[AuthService] 🛰️ CALLING: /auth/registration-status...');
         try {
-            // we ignore the passed token and let apiClient handle it via session
-            // or we can pass it manually if needed, but apiClient is cleaner.
-            // If token is specifically needed (onboarding), we can use headers.
             const response = await apiClient.get('/auth/registration-status', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-
+            console.log('[AuthService] 🛰️ RESPONSE RECEIVED:', response.data);
             return { registered: response.data.registered };
-        } catch (error) {
-            console.error("Error al verificar estado de registro:", error);
+        } catch (error: any) {
+            console.error("[AuthService] 🛰️ FAILED:", error.message, error.response?.status);
             return { registered: false };
         }
     },
@@ -97,7 +95,7 @@ export const AuthService = {
         try {
             console.log(`[AuthService] Requesting password reset for: ${email}`);
             const response = await apiClient.post('/auth/forgot-password', { email });
-            
+
             return {
                 success: response.data.success,
                 message: response.data.message

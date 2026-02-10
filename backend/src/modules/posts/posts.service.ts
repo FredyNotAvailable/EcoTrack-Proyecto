@@ -44,12 +44,22 @@ export class PostsService {
     }
 
     async createPost(userId: string, data: CreatePostDTO): Promise<{ post: Post }> {
+        // Extraer hashtags de la descripción automáticamente
+        const descriptionHashtags = data.descripcion.match(/#(\w+)/g)?.map(h => h.substring(1).toLowerCase()) || [];
+
+        // Mezclar con los hashtags recibidos del modal y eliminar duplicados
+        const providedHashtags = data.hashtags || [];
+        const combinedHashtags = Array.from(new Set([
+            ...providedHashtags.map(h => h.toLowerCase().replace(/^#/, '')),
+            ...descriptionHashtags
+        ])).filter(h => h.length > 0).slice(0, 10);
+
         const initialPostData: Partial<Post> = {
             user_id: userId,
             descripcion: data.descripcion,
-            is_public: data.is_public ?? true, // Default to true
+            is_public: data.is_public ?? true,
             ubicacion: data.ubicacion,
-            hashtags: data.hashtags
+            hashtags: combinedHashtags
         };
 
         const createdPost = await this.repository.create(initialPostData);
@@ -65,20 +75,28 @@ export class PostsService {
 
             await this.repository.addMedia(mediaItems);
 
-            // Attach media to returned object for immediate UI update (mocking the DB return)
+            // Attach media to returned object for immediate UI update
             createdPost.media = mediaItems.map(m => ({
-                id: 'temp-id', // We don't have the UUID unless we fetch back, but mostly fine for UI feedback
+                id: 'temp-id',
                 ...m
             }));
         }
 
-        // Log points, update streak, and stats in parallel
-        await Promise.all([
-            this.puntosService.logPoints(userId, 15, 'post', createdPost.id),
-            this.rachasService.updateStreak(userId),
-            this.userStatsService.updatePostStats(userId, 15)
-        ]);
-
+        // --- SIDE EFFECTS (NON-BLOCKING) ---
+        // Corremos esto en segundo plano para no demorar la respuesta al usuario
+        (async () => {
+            try {
+                console.log(`[PostsService] ⚡ Processing side effects for user ${userId}...`);
+                await Promise.all([
+                    this.puntosService.logPoints(userId, 15, 'post', createdPost.id),
+                    this.rachasService.updateStreak(userId),
+                    this.userStatsService.updatePostStats(userId, 15)
+                ]);
+                console.log(`[PostsService] ✅ Side effects completed for post ${createdPost.id}`);
+            } catch (err) {
+                console.error(`[PostsService] ❌ Error in background side effects:`, err);
+            }
+        })();
 
         return {
             post: createdPost
@@ -108,11 +126,24 @@ export class PostsService {
             }
         }
 
+        // Extraer hashtags si hay descripción o hashtags nuevos
+        let combinedHashtags = data.hashtags;
+        if (data.descripcion !== undefined || data.hashtags !== undefined) {
+            const currentDesc = data.descripcion ?? post.descripcion;
+            const currentHashtags = data.hashtags ?? post.hashtags ?? [];
+
+            const descriptionHashtags = currentDesc.match(/#(\w+)/g)?.map(h => h.substring(1).toLowerCase()) || [];
+            combinedHashtags = Array.from(new Set([
+                ...currentHashtags.map((h: string) => h.toLowerCase().replace(/^#/, '')),
+                ...descriptionHashtags
+            ])).filter(h => h.length > 0).slice(0, 10);
+        }
+
         const updateData: Partial<Post> = {
             descripcion: data.descripcion,
             is_public: data.is_public,
             ubicacion: data.ubicacion,
-            hashtags: data.hashtags,
+            hashtags: combinedHashtags,
             updated_at: new Date().toISOString()
         };
 

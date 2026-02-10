@@ -13,7 +13,8 @@ export interface Profile {
 export const ProfileAPIService = {
     async getMe() {
         const response = await apiClient.get('/profile/me');
-        return response.data;
+        // Backend returns wrapped object { success: true, profile: {...}, registered: boolean }
+        return response.data.profile || response.data;
     },
 
     async getProfileById(userId: string) {

@@ -22,7 +22,8 @@ const AuthCallbackPage = () => {
             try {
                 // Verificar si venimos del proceso de Onboarding
                 const onboardingDataStr = localStorage.getItem('onboarding_data');
-                console.log("AuthCallbackPage: Checking onboarding_data:", onboardingDataStr);
+                console.log("[AuthCallbackPage] session:", session);
+                console.log("[AuthCallbackPage] Checking onboarding_data:", onboardingDataStr);
 
                 if (onboardingDataStr) {
                     // --- FLUJO DE REGISTRO ---
@@ -99,29 +100,26 @@ const AuthCallbackPage = () => {
 
                 } else {
                     // --- FLUJO DE LOGIN / CALLBACK GOOGLE ---
-                    console.log("AuthCallbackPage: Callback Google / Login flow");
+                    console.log("[AuthCallbackPage] Callback Google / Login flow");
 
-                    // 1. Obtener el ID del usuario
-                    const userId = session.user.id;
+                    // 1. Obtener el perfil y el estado 'registered' desde el backend
+                    let registered = false;
+                    try {
+                        const backendResponse = await ProfileAPIService.getMe();
+                        console.log("[AuthCallbackPage] Backend /profile/me response:", backendResponse);
+                        registered = !!backendResponse.registered;
+                        console.log("[AuthCallbackPage] Registered status from backend:", registered);
+                    } catch (err) {
+                        console.error("[AuthCallbackPage] Error consultando el perfil en backend:", err);
+                    }
 
-                    // 2. Consultar Supabase directamente para ver si tiene perfil
-                    console.log("AuthCallbackPage: Checking profile for userId:", userId);
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('id')
-                        .eq('id', userId)
-                        .single();
-
-                    const registered = !!profile && !profileError;
-                    console.log("AuthCallbackPage: Registered status from Supabase:", registered);
-
-                    // 3. Verificar origen
+                    // 2. Verificar origen
                     const authOrigin = localStorage.getItem('auth_origin');
                     localStorage.removeItem('auth_origin'); // Limpiar
 
                     if (registered) {
                         if (authOrigin === 'register') {
-                            console.log("AuthCallbackPage: Account exists but origin was register. Signing out and warning.");
+                            console.log("[AuthCallbackPage] Account exists but origin was register. Signing out and warning.");
                             await AuthService.signOut();
                             toast({
                                 title: "Cuenta ya registrada",
@@ -137,7 +135,7 @@ const AuthCallbackPage = () => {
                             navigate('/app/inicio');
                         }
                     } else {
-                        console.log("Usuario sin perfil. Redirigiendo a onboarding.");
+                        console.log("[AuthCallbackPage] Usuario sin perfil completo. Redirigiendo a onboarding.");
                         toast({
                             title: "¡Ya casi estás!",
                             description: "Completa tu información para empezar.",
@@ -147,6 +145,7 @@ const AuthCallbackPage = () => {
                             position: "top"
                         });
                         navigate('/onboarding');
+                        return; // Forzar corte del flujo para evitar navegación previa
                     }
                 }
             } catch (error: any) {

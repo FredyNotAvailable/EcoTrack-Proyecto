@@ -10,11 +10,14 @@ export class ProfileController {
             console.log(`[ProfileController] getMe requested for userId: ${userId}`);
             const profile = await this.service.getProfile(userId);
             if (!profile) {
-                console.log(`[ProfileController] Profile not found for userId: ${userId}`);
-                res.status(404).json({ success: false, message: 'Perfil no encontrado' });
+                console.log(`[ProfileController] [NO PROFILE] Usuario con userId: ${userId} inició sesión pero NO tiene perfil.`);
+                res.status(404).json({ success: false, message: 'Perfil no encontrado', registered: false });
                 return;
             }
-            res.json(profile);
+            // Considera registrado solo si username existe y no está vacío
+            const registered = !!profile.username && profile.username.trim() !== '';
+            console.log(`[ProfileController] getMe result for userId: ${userId} | username: '${profile.username}' | registered: ${registered}`);
+            res.json({ success: true, profile, registered });
         } catch (error) {
             console.error(`[ProfileController] Error in getMe:`, error);
             next(error);

@@ -1,9 +1,12 @@
-import { Navigate, Outlet } from 'react-router-dom';
+
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../modules/auth/AuthContext';
 import { Center, Spinner } from '@chakra-ui/react';
 
+
 export const PrivateRoute = () => {
-    const { session, loading } = useAuth();
+    const { session, loading, isRegistered } = useAuth();
+    const location = useLocation();
 
     if (loading) {
         return (
@@ -15,6 +18,11 @@ export const PrivateRoute = () => {
 
     if (!session) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Si no tiene perfil y no está ya en /onboarding, forzar onboarding
+    if (!isRegistered && location.pathname !== '/onboarding') {
+        return <Navigate to="/onboarding" replace />;
     }
 
     return <Outlet />;

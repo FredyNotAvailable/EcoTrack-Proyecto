@@ -21,7 +21,7 @@ import {
     Badge,
     Flex
 } from "@chakra-ui/react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { convertToWebP, fileToBase64 } from "../../../utils/ImageConverter";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -33,12 +33,19 @@ import { validateUsername, validateBio } from "../../profile/utils/profileValida
 import { getProfileErrorMessage, isRecoverableError, getRetryDelay } from "../../profile/utils/profileErrors";
 
 const OnboardingPage = () => {
-    const { signInWithGoogle, user, signUp } = useAuth();
+    const { signInWithGoogle, user, signUp, isRegistered } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
     const location = useLocation();
     const bg = useColorModeValue("brand.bgBody", "gray.900");
     const cardBg = useColorModeValue("white", "gray.800");
+
+    // Redirigir si ya está registrado (por ejemplo, si la verificación falló inicialmente pero luego tuvo éxito)
+    useEffect(() => {
+        if (isRegistered) {
+            navigate('/app/inicio', { replace: true });
+        }
+    }, [isRegistered, navigate]);
 
     const [formData, setFormData] = useState({
         username: "",
@@ -194,6 +201,18 @@ const OnboardingPage = () => {
 
         } catch (error: any) {
             console.error('[Onboarding] Error creating profile:', error);
+
+            // Si el perfil ya existe (409), redirigir al dashboard
+            if (error?.response?.status === 409 || error?.message?.includes('ya existe') || error?.code === 'DUPLICATE_USERNAME') {
+                toast({
+                    title: "¡Ya estás registrado!",
+                    description: "Tu perfil ya existe. Redirigiendo a tu inicio...",
+                    status: "success",
+                    duration: 3000,
+                });
+                navigate("/app/inicio");
+                return;
+            }
 
             // Limpiar localStorage si hay error
             localStorage.removeItem('onboarding_data');

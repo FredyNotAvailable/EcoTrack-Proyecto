@@ -10,8 +10,10 @@ export const authMiddleware = async (
     next: NextFunction
 ) => {
     const authHeader = req.headers.authorization;
+    console.log(`[Backend Auth] 🛡️ Incoming request to: ${req.path}`);
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('[Backend Auth] ❌ No Bearer token provided');
         return res.status(401).json({
             error: {
                 code: 'UNAUTHORIZED',
@@ -21,11 +23,14 @@ export const authMiddleware = async (
     }
 
     const token = authHeader.split(' ')[1];
+    console.log('[Backend Auth] 🔑 Token received (length):', token.length);
 
     try {
+        console.log('[Backend Auth] 🛰️ Validating token with Supabase...');
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
+            console.log('[Backend Auth] ❌ Token invalid or expired:', error?.message);
             return res.status(401).json({
                 error: {
                     code: 'UNAUTHORIZED',
@@ -34,6 +39,7 @@ export const authMiddleware = async (
             });
         }
 
+        console.log('[Backend Auth] ✅ Token valid for user:', user.email);
         // Adjuntar en req.user un objeto tipado
         req.user = {
             id: user.id,
@@ -42,13 +48,8 @@ export const authMiddleware = async (
         };
 
         next();
-    } catch (error) {
-        return res.status(401).json({
-            error: {
-                code: 'UNAUTHORIZED',
-                message: 'Ocurrió un error al validar la identidad'
-            }
-        });
+    } catch (error: any) {
+        console.error('[Backend Auth] 💥 Fatal error validating identity:', error.message);
     }
 };
 

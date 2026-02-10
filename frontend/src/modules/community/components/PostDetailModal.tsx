@@ -51,6 +51,7 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
     const toast = useToast();
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const [isMediaLoaded, setIsMediaLoaded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const heartBeat = keyframes`
       0% { transform: scale(1); }
@@ -281,6 +282,18 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                                 <Text fontWeight="bold" fontSize="sm">
                                     {post.user?.username || 'usuario'}
                                 </Text>
+                                <HStack spacing={2} fontSize="xs" color="gray.500">
+                                    <Text>{getTimeAgo(post.created_at)}</Text>
+                                    {post.ubicacion && (
+                                        <>
+                                            <Text>•</Text>
+                                            <HStack spacing={1} cursor="pointer" onClick={(e) => { e.stopPropagation(); onLocationOpen(); }} _hover={{ color: 'brand.primary' }}>
+                                                <FaMapMarkerAlt size={10} />
+                                                <Text isTruncated maxW="150px">{post.ubicacion}</Text>
+                                            </HStack>
+                                        </>
+                                    )}
+                                </HStack>
                             </VStack>
                         </HStack>
 
@@ -303,51 +316,49 @@ export const PostDetailModal = ({ isOpen, onClose, post, onEdit, onDelete, onHas
                     {/* Comments List */}
                     <VStack flex="1" overflowY="auto" p={4} align="stretch" spacing={4}>
                         {/* Caption as first comment */}
-                        <HStack align="start" spacing={3}>
-                            <Avatar size="xs" src={post.user?.avatar_url} name={post.user?.username} cursor="pointer" onClick={() => handleUserClick(post.user?.username)} />
-                            <Box>
-                                <Text fontSize="sm">
-                                    <Text as="span" fontWeight="bold" mr={2} cursor="pointer" onClick={() => handleUserClick(post.user?.username)}>{post.user?.username}</Text>
-                                    {post.descripcion}
-                                    {post.hashtags && post.hashtags.length > 0 && (
-                                        <Text as="span" ml={2}>
-                                            {post.hashtags.map((tag, idx) => (
-                                                <Text
-                                                    key={`${tag}-${idx}`}
-                                                    as="span"
-                                                    color="blue.500"
-                                                    cursor="pointer"
-                                                    _hover={{ textDecoration: 'underline', color: 'blue.600' }}
-                                                    onClick={() => onHashtagClick && onHashtagClick(tag)}
-                                                    mr={1}
-                                                >
-                                                    #{tag}
-                                                </Text>
-                                            ))}
-                                        </Text>
-                                    )}
+                        <Box pb={2}>
+                            <Text
+                                fontSize="sm"
+                                color="brand.text"
+                                fontWeight="normal"
+                                noOfLines={isExpanded ? undefined : 2}
+                            >
+                                {post.descripcion}
+                            </Text>
+                            {post.descripcion.length > 80 && (
+                                <Text
+                                    as="span"
+                                    fontSize="xs"
+                                    color="gray.500"
+                                    cursor="pointer"
+                                    fontWeight="bold"
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                    _hover={{ color: 'brand.primary' }}
+                                >
+                                    {isExpanded ? ' Ver menos' : '... ver más'}
                                 </Text>
-                                <Text fontSize="xs" color="gray.500" mt={1}>{getTimeAgo(post.created_at)}</Text>
-                            </Box>
-                        </HStack>
+                            )}
+                            {post.hashtags && post.hashtags.length > 0 && (
+                                <Flex flexWrap="wrap" gap={2} mt={2}>
+                                    {post.hashtags.map((tag, idx) => (
+                                        <Text
+                                            key={`${tag}-${idx}`}
+                                            fontSize="xs"
+                                            color="blue.500"
+                                            fontWeight="600"
+                                            cursor="pointer"
+                                            _hover={{ textDecoration: 'underline', color: 'blue.600' }}
+                                            onClick={() => onHashtagClick && onHashtagClick(tag)}
+                                        >
+                                            #{tag}
+                                        </Text>
+                                    ))}
+                                </Flex>
+                            )}
+                        </Box>
 
                         <Divider />
-                                {post.ubicacion && (
-                                    <HStack 
-                                        spacing={1} 
-                                        mt={1}
-                                        cursor="pointer"
-                                        onClick={onLocationOpen}
-                                        _hover={{ opacity: 0.7 }}
-                                        transition="opacity 0.2s"
-                                    >
-                                        <FaMapMarkerAlt size={12} color="gray" />
-                                        <Text fontSize="xs" color="gray.600" fontWeight="500">
-                                            {post.ubicacion}
-                                        </Text>
-                                    </HStack>
-                                )}
-                                
+
                         {/* Real Comments */}
                         {comments.map((comment: Comment) => (
                             <HStack key={comment.id} align="start" spacing={3}>

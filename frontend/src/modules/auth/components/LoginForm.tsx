@@ -70,89 +70,91 @@ export const LoginForm = () => {
     };
 
     return (
-        <VStack spacing={4} as="form" onSubmit={handleLogin} animation={`${fadeInUp} 0.5s ease`}>
-            <FormControl isRequired>
-                <FormLabel fontWeight="600" fontSize="sm" mb={1}>Correo Electrónico</FormLabel>
-                <InputGroup size="md">
-                    <InputLeftElement pointerEvents="none" color="brand.textMuted">
-                        <Icon as={FaEnvelope} boxSize={4} />
-                    </InputLeftElement>
-                    <Input
-                        type="email"
-                        placeholder="ejemplo@email.com"
-                        bg="brand.bgBody"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        focusBorderColor="brand.primary"
-                        borderRadius="xl"
-                    />
-                </InputGroup>
-            </FormControl>
+        <>
+            <VStack spacing={4} as="form" onSubmit={handleLogin} animation={`${fadeInUp} 0.5s ease`}>
+                <FormControl isRequired>
+                    <FormLabel fontWeight="600" fontSize="sm" mb={1}>Correo Electrónico</FormLabel>
+                    <InputGroup size="md">
+                        <InputLeftElement pointerEvents="none" color="brand.textMuted">
+                            <Icon as={FaEnvelope} boxSize={4} />
+                        </InputLeftElement>
+                        <Input
+                            type="email"
+                            placeholder="ecocuenta@email.com"
+                            bg="brand.bgBody"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            focusBorderColor="brand.primary"
+                            borderRadius="xl"
+                        />
+                    </InputGroup>
+                </FormControl>
 
-            <FormControl isRequired>
-                <FormLabel fontWeight="600" fontSize="sm" mb={1}>Contraseña</FormLabel>
-                <InputGroup size="md">
-                    <InputLeftElement pointerEvents="none" color="brand.textMuted">
-                        <Icon as={FaLock} boxSize={4} />
-                    </InputLeftElement>
-                    <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        bg="brand.bgBody"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        focusBorderColor="brand.primary"
-                        borderRadius="xl"
-                    />
-                    <InputRightElement width="3rem">
-                        <Button h="1.5rem" size="xs" onClick={() => setShowPassword(!showPassword)} variant="ghost">
-                            <Icon as={showPassword ? FaEyeSlash : FaEye} color="brand.textMuted" boxSize={3} />
-                        </Button>
-                    </InputRightElement>
-                </InputGroup>
-            </FormControl>
+                <FormControl isRequired>
+                    <FormLabel fontWeight="600" fontSize="sm" mb={1}>Contraseña</FormLabel>
+                    <InputGroup size="md">
+                        <InputLeftElement pointerEvents="none" color="brand.textMuted">
+                            <Icon as={FaLock} boxSize={4} />
+                        </InputLeftElement>
+                        <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            bg="brand.bgBody"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            focusBorderColor="brand.primary"
+                            borderRadius="xl"
+                        />
+                        <InputRightElement width="3rem">
+                            <Button h="1.5rem" size="xs" onClick={() => setShowPassword(!showPassword)} variant="ghost">
+                                <Icon as={showPassword ? FaEyeSlash : FaEye} color="brand.textMuted" boxSize={3} />
+                            </Button>
+                        </InputRightElement>
+                    </InputGroup>
+                </FormControl>
 
-            <Flex justify="flex-end" w="full" mt={-1}>
-                <Link
-                    color="brand.primary"
-                    fontSize="xs"
-                    fontWeight="600"
-                    onClick={onForgotOpen}
-                    cursor="pointer"
-                    _hover={{ textDecoration: "underline" }}
+                <Flex justify="flex-end" w="full" mt={-1}>
+                    <Link
+                        color="brand.primary"
+                        fontSize="xs"
+                        fontWeight="600"
+                        onClick={onForgotOpen}
+                        cursor="pointer"
+                        _hover={{ textDecoration: "underline" }}
+                    >
+                        ¿Olvidaste tu contraseña?
+                    </Link>
+                </Flex>
+
+                <Button
+                    w="full"
+                    variant="solid"
+                    size="md"
+                    h="44px"
+                    type="submit"
+                    isLoading={isLoading}
+                    borderRadius="xl"
+                    fontWeight="700"
                 >
-                    ¿Olvidaste tu contraseña?
-                </Link>
-            </Flex>
+                    Entrar
+                </Button>
 
-            <Button
-                w="full"
-                variant="solid"
-                size="md"
-                h="44px"
-                type="submit"
-                isLoading={isLoading}
-                borderRadius="xl"
-                fontWeight="700"
-            >
-                Entrar
-            </Button>
+                <HStack w="full" spacing={3} my={1}>
+                    <Divider />
+                    <Text fontSize="xs" color="brand.textMuted" whiteSpace="nowrap">
+                        O continúa con
+                    </Text>
+                    <Divider />
+                </HStack>
 
-            <HStack w="full" spacing={3} my={1}>
-                <Divider />
-                <Text fontSize="xs" color="brand.textMuted" whiteSpace="nowrap">
-                    O continúa con
-                </Text>
-                <Divider />
-            </HStack>
-
-            <OAuthButtons origin="login" />
+                <OAuthButtons origin="login" />
+            </VStack>
 
             <ForgotPasswordModal
                 isOpen={isForgotOpen}
                 onClose={onForgotClose}
                 initialEmail={email}
             />
-        </VStack>
+        </>
     );
 };

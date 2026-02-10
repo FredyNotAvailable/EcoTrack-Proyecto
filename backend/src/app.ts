@@ -10,6 +10,12 @@ import { env } from './config/env';
 
 const app: Application = express();
 
+// LOGGER GLOBAL - Ver todo lo que llega
+app.use((req, res, next) => {
+    console.log(`[Express] 📢 Hit: ${req.method} ${req.url} | Origin: ${req.headers.origin}`);
+    next();
+});
+
 // Rate Limiting - 100 requests per 15 minutes per IP
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -22,11 +28,33 @@ const limiter = rateLimit({
 // Middlewares
 app.use(compression()); // Gzip compression
 app.use(helmet());
+
+// Configuración de CORS dinámica
+const allowedOrigins = [
+    'https://ecotrack.vercel.app',
+    'https://ecotrack.app',
+    'https://eco-track-proyecto.vercel.app',
+    'https://ecotrackproyecto.vercel.app'
+];
+
+// Si existe una URL de frontend en el env, la agregamos
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-    origin: env.NODE_ENV === 'production' 
-        ? ['https://ecotrack.vercel.app', 'https://ecotrack.app'] 
-        : '*',
-    credentials: true
+    origin: (origin, callback) => {
+        // En desarrollo o si no hay origen (como móvil/Postman), permitir todo
+        if (!origin || env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.warn(`[CORS] Intento de acceso bloqueado desde origen no permitido: ${origin}`);
+            callback(null, false);
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 app.use(limiter);
 app.use(etagMiddleware); // ETags para caching condicional
