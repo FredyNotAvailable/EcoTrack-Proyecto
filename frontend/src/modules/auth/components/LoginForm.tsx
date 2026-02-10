@@ -19,7 +19,6 @@ import {
 } from "@chakra-ui/react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { keyframes } from "@emotion/react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { OAuthButtons } from "./OAuthButtons";
 import { getAuthErrorMessage } from "../utils/authErrors";

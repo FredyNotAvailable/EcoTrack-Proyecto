@@ -16,7 +16,7 @@ export const PrivateRoute = () => {
             return res.data;
         },
         enabled: !!session,
-        staleTime: 1000 * 60 * 5,
+        staleTime: 0,
         retry: false
     });
 
@@ -30,6 +30,11 @@ export const PrivateRoute = () => {
 
     if (!session) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Si el usuario no está activo o está suspendido
+    if (userData && userData.status && userData.status !== 'active') {
+        return <Navigate to="/status" replace />;
     }
 
     // Si es administrador, lo enviamos a su panel y no permitimos ver /app

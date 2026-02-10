@@ -4,13 +4,10 @@ import { UserStats } from './user-stats.types';
 
 export class UserStatsService {
     private static instance: UserStatsService;
-    private repository: UserStatsRepository;
-    private nivelesService: NivelesService;
+    private repository = new UserStatsRepository();
+    private nivelesService = NivelesService.getInstance();
 
-    constructor() {
-        this.repository = new UserStatsRepository();
-        this.nivelesService = new NivelesService();
-    }
+    constructor() { }
 
     static getInstance(): UserStatsService {
         if (!UserStatsService.instance) {

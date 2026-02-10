@@ -1,15 +1,22 @@
 -- ======================================================
 -- 1. CREAR TABLA PROFILES
 -- ======================================================
-create table public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY
+    REFERENCES auth.users(id) ON DELETE CASCADE,
 
-  username text unique,
+  username text UNIQUE,
   avatar_url text,
   bio text,
 
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
+  role text NOT NULL DEFAULT 'user'
+    CHECK (role IN ('user', 'admin')),
+
+  status text NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'inactive', 'suspended')),
+
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
 -- ======================================================

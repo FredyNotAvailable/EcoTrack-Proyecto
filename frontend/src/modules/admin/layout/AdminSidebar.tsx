@@ -11,7 +11,7 @@ import {
     Divider,
 } from '@chakra-ui/react';
 import { NavLink as RouterLink, useNavigate } from 'react-router-dom';
-import { HiHome, HiUsers, HiDocumentReport, HiCog, HiLogout } from 'react-icons/hi';
+import { HiHome, HiUsers, HiDocumentReport, HiCog, HiLogout, HiCollection, HiLightningBolt, HiFlag, HiTrendingUp } from 'react-icons/hi';
 import { useAuth } from '../../auth/AuthContext';
 
 interface SidebarItemProps {
@@ -110,6 +110,18 @@ export const AdminSidebar = ({ isOpen }: { isOpen: boolean; onClose: () => void 
                 </Text>
                 <SidebarItem to="/admin/usuarios" icon={HiUsers}>
                     Usuarios
+                </SidebarItem>
+                <SidebarItem to="/admin/posts" icon={HiCollection}>
+                    Comunidad
+                </SidebarItem>
+                <SidebarItem to="/admin/misiones" icon={HiLightningBolt}>
+                    Misiones
+                </SidebarItem>
+                <SidebarItem to="/admin/retos" icon={HiFlag}>
+                    Retos
+                </SidebarItem>
+                <SidebarItem to="/admin/niveles" icon={HiTrendingUp}>
+                    Niveles
                 </SidebarItem>
                 <SidebarItem to="/admin/reportes" icon={HiDocumentReport}>
                     Reportes

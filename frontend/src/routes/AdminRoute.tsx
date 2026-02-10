@@ -14,7 +14,8 @@ export const AdminRoute = () => {
             return res.data;
         },
         enabled: !!session,
-        staleTime: 1000 * 60 * 5 // 5 min
+        staleTime: 0,
+        retry: false
     });
 
     if (authLoading || (session && userLoading)) {
@@ -27,6 +28,11 @@ export const AdminRoute = () => {
 
     if (!session) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Si el administrador no está activo o está suspendido
+    if (userData && userData.status && userData.status !== 'active') {
+        return <Navigate to="/status" replace />;
     }
 
     const isAdmin = userData?.isAdmin || userData?.role === 'admin' || user?.app_metadata?.role === 'admin';

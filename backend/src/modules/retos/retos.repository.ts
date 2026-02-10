@@ -330,5 +330,104 @@ export class RetosRepository {
             created_at: r.created_at
         };
     }
+
+    // --- Admin CRUD ---
+
+    async createChallenge(reto: Partial<Reto>): Promise<any> {
+        const { data, error } = await supabase
+            .from('retos_semanales')
+            .insert({
+                nombre: reto.titulo,
+                descripcion: reto.descripcion,
+                categoria: reto.categoria,
+                puntos_totales: reto.recompensa_puntos,
+                kgco2_total: reto.recompensa_kg_co2,
+                fecha_inicio: reto.fecha_inicio,
+                fecha_fin: reto.fecha_fin,
+                activo: (reto as any).activo ?? true
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async updateChallenge(id: string, reto: Partial<Reto>): Promise<any> {
+        const updates: any = {};
+        if (reto.titulo) updates.nombre = reto.titulo;
+        if (reto.descripcion) updates.descripcion = reto.descripcion;
+        if (reto.categoria) updates.categoria = reto.categoria;
+        if (reto.recompensa_puntos !== undefined) updates.puntos_totales = reto.recompensa_puntos;
+        if (reto.recompensa_kg_co2 !== undefined) updates.kgco2_total = reto.recompensa_kg_co2;
+        if (reto.fecha_inicio) updates.fecha_inicio = reto.fecha_inicio;
+        if (reto.fecha_fin) updates.fecha_fin = reto.fecha_fin;
+        if ((reto as any).activo !== undefined) updates.activo = (reto as any).activo;
+
+        const { data, error } = await supabase
+            .from('retos_semanales')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteChallenge(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('retos_semanales')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    }
+
+    async createTask(task: Partial<RetoTarea>): Promise<any> {
+        const { data, error } = await supabase
+            .from('retos_semanales_tareas')
+            .insert({
+                reto_semanal_id: task.reto_id,
+                nombre: task.titulo,
+                descripcion: task.descripcion,
+                puntos: task.recompensa_puntos,
+                kgco2: task.recompensa_kg_co2,
+                dia_orden: task.dia_orden
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async updateTask(id: string, task: Partial<RetoTarea>): Promise<any> {
+        const updates: any = {};
+        if (task.titulo) updates.nombre = task.titulo;
+        if (task.descripcion) updates.descripcion = task.descripcion;
+        if (task.recompensa_puntos !== undefined) updates.puntos = task.recompensa_puntos;
+        if (task.recompensa_kg_co2 !== undefined) updates.kgco2 = task.recompensa_kg_co2;
+        if (task.dia_orden !== undefined) updates.dia_orden = task.dia_orden;
+
+        const { data, error } = await supabase
+            .from('retos_semanales_tareas')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteTask(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('retos_semanales_tareas')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    }
 }
 

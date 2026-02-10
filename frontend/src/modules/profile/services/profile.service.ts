@@ -8,6 +8,7 @@ export interface Profile {
     level?: number;
     xp?: number;
     role?: 'user' | 'admin';
+    status?: 'active' | 'inactive' | 'suspended';
     // Add other fields as needed
 }
 

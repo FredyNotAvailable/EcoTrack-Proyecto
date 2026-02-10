@@ -4,7 +4,7 @@ import { NivelesService } from '../modules/niveles/niveles.service';
 async function syncUserStats() {
     console.log('Starting User Stats Synchronization...');
 
-    const nivelesService = new NivelesService();
+    const nivelesService = NivelesService.getInstance();
 
     // 1. Fetch all users (from profiles as proxy for users)
     const { data: profiles, error: profilesError } = await supabase

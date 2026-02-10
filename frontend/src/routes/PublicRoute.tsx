@@ -14,7 +14,7 @@ export const PublicRoute = () => {
             return res.data;
         },
         enabled: !!session,
-        staleTime: 1000 * 60 * 5,
+        staleTime: 0,
         retry: false
     });
 
@@ -27,6 +27,11 @@ export const PublicRoute = () => {
     }
 
     if (session) {
+        // Redirigir si el estado no es activo
+        if (userData && userData.status && userData.status !== 'active') {
+            return <Navigate to="/status" replace />;
+        }
+
         const isAdmin = userData?.isAdmin || userData?.role === 'admin';
         return <Navigate to={isAdmin ? "/admin/dashboard" : "/app/inicio"} replace />;
     }

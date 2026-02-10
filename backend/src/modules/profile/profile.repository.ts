@@ -10,10 +10,20 @@ export class ProfileRepository {
         return ProfileRepository.instance;
     }
 
+    async getAllProfiles() {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
+
     async getById(id: string) {
         const { data, error } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url, bio, role, created_at, updated_at')
+            .select('id, username, avatar_url, bio, role, status, created_at, updated_at')
             .eq('id', id)
             .single();
 
@@ -24,7 +34,7 @@ export class ProfileRepository {
     async getByUsername(username: string) {
         const { data, error } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url, bio, created_at, updated_at')
+            .select('id, username, avatar_url, bio, role, status, created_at, updated_at')
             .eq('username', username)
             .single();
 

@@ -59,4 +59,48 @@ export class MisionesRepository {
 
         return data?.map(row => row.mision_id) || [];
     }
+
+    // --- Admin CRUD ---
+
+    async findAll(): Promise<DailyMission[]> {
+        const { data, error } = await supabase
+            .from('misiones_diarias')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw new ApiError(500, 'Error fetching all missions');
+        return data || [];
+    }
+
+    async create(mission: Partial<DailyMission>): Promise<DailyMission> {
+        const { data, error } = await supabase
+            .from('misiones_diarias')
+            .insert(mission)
+            .select()
+            .single();
+
+        if (error) throw new ApiError(500, 'Error creating mission');
+        return data;
+    }
+
+    async update(id: string, mission: Partial<DailyMission>): Promise<DailyMission> {
+        const { data, error } = await supabase
+            .from('misiones_diarias')
+            .update(mission)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw new ApiError(500, 'Error updating mission');
+        return data;
+    }
+
+    async delete(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('misiones_diarias')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw new ApiError(500, 'Error deleting mission');
+    }
 }

@@ -2,13 +2,19 @@ import { NivelesRepository } from './niveles.repository';
 import { Nivel, LevelProgress } from './niveles.types';
 
 export class NivelesService {
-    private repository: NivelesRepository;
+    private static instance: NivelesService;
+    private repository = NivelesRepository.getInstance();
     private cachedLevels: Nivel[] | null = null;
     private lastCacheTime: number = 0;
     private CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
-    constructor() {
-        this.repository = new NivelesRepository();
+    constructor() { }
+
+    static getInstance(): NivelesService {
+        if (!NivelesService.instance) {
+            NivelesService.instance = new NivelesService();
+        }
+        return NivelesService.instance;
     }
 
     async getAllLevels(): Promise<Nivel[]> {
@@ -21,6 +27,11 @@ export class NivelesService {
         this.cachedLevels = levels;
         this.lastCacheTime = now;
         return levels;
+    }
+
+    clearCache(): void {
+        this.cachedLevels = null;
+        this.lastCacheTime = 0;
     }
 
     async calculateProgress(currentPoints: number): Promise<LevelProgress> {

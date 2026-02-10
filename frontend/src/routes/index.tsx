@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { PrivateRoute } from './PrivateRoute';
 import { PublicRoute } from './PublicRoute';
+import { AuthGuard } from './AuthGuard';
 
 // Carga inmediata - críticas para primera interacción
 import { LandingPage } from '../modules/landing';
@@ -22,6 +23,7 @@ import {
 const AuthCallbackPage = lazy(() => import('../modules/auth/pages/AuthCallbackPage'));
 const ResetPasswordPage = lazy(() => import('../modules/auth/pages/ResetPasswordPage'));
 const OnboardingPage = lazy(() => import('../modules/onboarding/pages/OnboardingPage'));
+const AccountStatusPage = lazy(() => import('../modules/auth/pages/AccountStatusPage').then(m => ({ default: m.AccountStatusPage })));
 const InicioPage = lazy(() => import('../modules/home/InicioPage'));
 const RetosPage = lazy(() => import('../modules/retos/RetosPage'));
 const CommunityPage = lazy(() => import('../modules/community/CommunityPage'));
@@ -37,6 +39,11 @@ const AboutPage = lazy(() => import('../modules/landing/pages/AboutPage'));
 import { AdminRoute } from './AdminRoute'; // Admin Guard
 import { AdminLayout } from '../modules/admin/layout/AdminLayout';
 import { AdminDashboard } from '../modules/admin/pages/AdminDashboard';
+import { AdminUsersPage } from '../modules/admin/users/AdminUsersPage';
+import { AdminPostsPage } from '../modules/admin/posts/AdminPostsPage';
+import { AdminMissionsPage } from '../modules/admin/missions/AdminMissionsPage';
+import { AdminChallengesPage } from '../modules/admin/challenges/AdminChallengesPage';
+import { AdminLevelsPage } from '../modules/admin/levels/AdminLevelsPage';
 
 export const AppRouter = () => {
     return (
@@ -80,8 +87,16 @@ export const AppRouter = () => {
                 </Suspense>
             } />
 
+            {/* Rutas Autenticadas pero que no requieren estar activo (como la página de estado) */}
+            <Route element={<AuthGuard />}>
+                <Route path="/status" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                        <AccountStatusPage />
+                    </Suspense>
+                } />
+            </Route>
 
-            {/* Rutas Privadas: Solo accesibles si ESTÁ autenticado */}
+            {/* Rutas Privadas: Solo accesibles si ESTÁ autenticado Y ACTIVO */}
             <Route element={<PrivateRoute />}>
                 <Route path="/onboarding" element={
                     <Suspense fallback={<PageSkeleton />}>
@@ -123,6 +138,11 @@ export const AppRouter = () => {
                 <Route element={<AdminLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="usuarios" element={<AdminUsersPage />} />
+                    <Route path="posts" element={<AdminPostsPage />} />
+                    <Route path="misiones" element={<AdminMissionsPage />} />
+                    <Route path="retos" element={<AdminChallengesPage />} />
+                    <Route path="niveles" element={<AdminLevelsPage />} />
                 </Route>
             </Route>
 
