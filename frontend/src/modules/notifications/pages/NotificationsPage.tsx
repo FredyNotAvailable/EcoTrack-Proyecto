@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { supabase } from '../../../config/supabase';
 import { NotificationsAPIService, type Notification } from '../services/notifications.service';
+import { useAuth } from '../../auth/AuthContext';
 
 const timeAgo = (date: string) => {
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -43,6 +44,8 @@ const NotificationsPage: React.FC = () => {
     const navigate = useNavigate();
     const bgCard = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
+    const unreadBg = useColorModeValue('brand.50', 'whiteAlpha.50');
+    const hoverBg = useColorModeValue('gray.50', 'whiteAlpha.100');
 
     const { data: notifications, isLoading } = useQuery({
         queryKey: ['notifications-all'],
@@ -50,15 +53,44 @@ const NotificationsPage: React.FC = () => {
     });
 
     // Real-time subscription
+    const { user } = useAuth();
+
+    // Real-time subscription optimized
+    // Real-time subscription optimized
     useEffect(() => {
+        if (!user) return;
+
         const channel = supabase
             .channel('public:notifications-full')
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'notifications' },
-                () => {
-                    queryClient.invalidateQueries({ queryKey: ['notifications-all'] });
-                    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications'
+                },
+                (payload) => {
+                    const newNotification = payload.new as Notification;
+
+                    // Filter client-side
+                    if (newNotification.user_id === user.id) {
+                        // Optimistic update for the full list
+                        queryClient.setQueryData(['notifications-all'], (oldData: Notification[] | undefined) => {
+                            if (!oldData) return [newNotification];
+                            if (oldData.some(n => n.id === newNotification.id)) return oldData;
+                            return [newNotification, ...oldData].slice(0, 50);
+                        });
+
+                        // Also update the bell cache to keep them in sync
+                        queryClient.setQueryData(['notifications'], (oldData: Notification[] | undefined) => {
+                            if (!oldData) return [newNotification];
+                            if (oldData.some(n => n.id === newNotification.id)) return oldData;
+                            return [newNotification, ...oldData].slice(0, 10);
+                        });
+
+                        queryClient.invalidateQueries({ queryKey: ['notifications-all'] });
+                        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                    }
                 }
             )
             .subscribe();
@@ -66,7 +98,7 @@ const NotificationsPage: React.FC = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [queryClient]);
+    }, [queryClient, user]);
 
     const markAllReadMutation = useMutation({
         mutationFn: NotificationsAPIService.markAllAsRead,
@@ -109,13 +141,12 @@ const NotificationsPage: React.FC = () => {
             markReadMutation.mutate(notif.id);
         }
 
-        // Navegación inteligente
-        if (notif.reference_type === 'post' && notif.reference_id) {
+        // Solo redirigir si es reporte (moderation) o like/comentario (social) vinculado a un post
+        const isReport = notif.type === 'moderation' && notif.reference_type === 'post';
+        const isSocial = notif.type === 'social' && notif.reference_type === 'post';
+
+        if ((isReport || isSocial) && notif.reference_id) {
             navigate(`/app/comunidad?post=${notif.reference_id}`);
-        } else if (notif.reference_type === 'challenge' || notif.reference_type === 'mision') {
-            navigate('/app/retos');
-        } else if (notif.type === 'achievement') {
-            navigate('/app/perfil');
         }
     };
 
@@ -171,9 +202,9 @@ const NotificationsPage: React.FC = () => {
                                     <Box
                                         p={6}
                                         transition="all 0.2s"
-                                        bg={notif.is_read ? 'transparent' : useColorModeValue('brand.50', 'whiteAlpha.50')}
+                                        bg={notif.is_read ? 'transparent' : unreadBg}
                                         cursor="pointer"
-                                        _hover={{ bg: useColorModeValue('gray.50', 'whiteAlpha.100') }}
+                                        _hover={{ bg: hoverBg }}
                                         onClick={() => handleNotificationClick(notif)}
                                     >
                                         <HStack spacing={4} align="start">

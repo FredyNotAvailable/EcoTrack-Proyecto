@@ -111,6 +111,8 @@ const ReportsPage = () => {
     const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'dismissed' | 'resolved'>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [processingAction, setProcessingAction] = useState<'dismiss' | 'delete_post' | null>(null);
+
     const { data: reports, isLoading } = useQuery({
         queryKey: ['admin-reports'],
         queryFn: AdminAPIService.getPostReports
@@ -141,8 +143,20 @@ const ReportsPage = () => {
     const resolveMutation = useMutation({
         mutationFn: ({ id, action }: { id: string, action: 'dismiss' | 'delete_post' }) =>
             AdminAPIService.resolvePostReport(id, action),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
+        onSuccess: (_, variables) => {
+            queryClient.setQueryData(['admin-reports'], (oldReports: Report[] | undefined) => {
+                if (!oldReports) return [];
+                return oldReports.map(report => {
+                    if (report.id === variables.id) {
+                        return {
+                            ...report,
+                            status: variables.action === 'dismiss' ? 'dismissed' : 'resolved'
+                        };
+                    }
+                    return report;
+                });
+            });
+
             toast({
                 title: 'Acción realizada con éxito',
                 status: 'success',
@@ -158,6 +172,9 @@ const ReportsPage = () => {
                 status: 'error',
                 duration: 3000,
             });
+        },
+        onSettled: () => {
+            setProcessingAction(null);
         }
     });
 
@@ -168,6 +185,7 @@ const ReportsPage = () => {
 
     const handleResolve = (action: 'dismiss' | 'delete_post') => {
         if (selectedReport) {
+            setProcessingAction(action);
             resolveMutation.mutate({ id: selectedReport.id, action });
         }
     };
@@ -473,7 +491,7 @@ const ReportsPage = () => {
                                     variant="solid"
                                     colorScheme="gray"
                                     onClick={() => handleResolve('dismiss')}
-                                    isLoading={resolveMutation.isPending}
+                                    isLoading={resolveMutation.isPending && processingAction === 'dismiss'}
                                     borderRadius="xl"
                                     fontWeight="900"
                                 >
@@ -483,7 +501,7 @@ const ReportsPage = () => {
                                     w="full"
                                     colorScheme="red"
                                     onClick={() => handleResolve('delete_post')}
-                                    isLoading={resolveMutation.isPending}
+                                    isLoading={resolveMutation.isPending && processingAction === 'delete_post'}
                                     borderRadius="xl"
                                     fontWeight="900"
                                     leftIcon={<FaTrash />}

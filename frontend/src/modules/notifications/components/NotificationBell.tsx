@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { supabase } from '../../../config/supabase';
 import { NotificationsAPIService, type Notification } from '../services/notifications.service';
+import { useAuth } from '../../auth/AuthContext';
 
 const timeAgo = (date: string) => {
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -47,6 +48,8 @@ export const NotificationBell: React.FC = () => {
     const navigate = useNavigate();
     const bgHeader = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
+    const unreadBg = useColorModeValue('brand.50', 'whiteAlpha.50');
+    const hoverBg = useColorModeValue('gray.50', 'whiteAlpha.100');
 
     // Fetch notifications
     const { data: notifications, isLoading } = useQuery({
@@ -56,14 +59,36 @@ export const NotificationBell: React.FC = () => {
     });
 
     // Real-time subscription
+    const { user } = useAuth();
+
+    // Real-time subscription optimized
     useEffect(() => {
+        if (!user) return;
+
         const channel = supabase
             .channel('public:notifications')
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'notifications' },
-                () => {
-                    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications'
+                },
+                (payload) => {
+                    const newNotification = payload.new as Notification;
+
+                    // Filter client-side to ensure we only process our own notifications
+                    if (newNotification.user_id === user.id) {
+                        // Optimistic update
+                        queryClient.setQueryData(['notifications'], (oldData: Notification[] | undefined) => {
+                            if (!oldData) return [newNotification];
+                            // Check if already exists to prevent duplicates
+                            if (oldData.some(n => n.id === newNotification.id)) return oldData;
+                            return [newNotification, ...oldData].slice(0, 10);
+                        });
+
+                        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                    }
                 }
             )
             .subscribe();
@@ -71,7 +96,7 @@ export const NotificationBell: React.FC = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [queryClient]);
+    }, [queryClient, user]);
 
     const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
 
@@ -96,13 +121,12 @@ export const NotificationBell: React.FC = () => {
             markReadMutation.mutate(notif.id);
         }
 
-        // Navegación inteligente
-        if (notif.reference_type === 'post' && notif.reference_id) {
+        // Solo redirigir si es reporte (moderation) o like/comentario (social) vinculado a un post
+        const isReport = notif.type === 'moderation' && notif.reference_type === 'post';
+        const isSocial = notif.type === 'social' && notif.reference_type === 'post';
+
+        if ((isReport || isSocial) && notif.reference_id) {
             navigate(`/app/comunidad?post=${notif.reference_id}`);
-        } else if (notif.reference_type === 'challenge' || notif.reference_type === 'mision') {
-            navigate('/app/retos');
-        } else if (notif.type === 'achievement') {
-            navigate('/app/perfil');
         }
     };
 
@@ -198,9 +222,9 @@ export const NotificationBell: React.FC = () => {
                                     key={notif.id}
                                     p={4}
                                     transition="all 0.2s"
-                                    bg={notif.is_read ? 'transparent' : useColorModeValue('brand.50', 'whiteAlpha.50')}
+                                    bg={notif.is_read ? 'transparent' : unreadBg}
                                     cursor="pointer"
-                                    _hover={{ bg: useColorModeValue('gray.50', 'whiteAlpha.100') }}
+                                    _hover={{ bg: hoverBg }}
                                     onClick={() => handleNotificationClick(notif)}
                                     position="relative"
                                 >

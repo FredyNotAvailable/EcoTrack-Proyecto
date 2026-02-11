@@ -39,10 +39,6 @@ export const ReportPostModal = ({ isOpen, onClose, onSubmit, isLoading }: Report
 
     const handleSubmit = () => {
         onSubmit(reason, details);
-        // Reset state after submit
-        setReason('spam');
-        setDetails('');
-        setStep('select');
     };
 
     const handleClose = () => {

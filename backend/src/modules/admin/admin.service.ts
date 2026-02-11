@@ -468,6 +468,17 @@ export class AdminService {
 
             if (count === 0) {
                 await supabase.from('posts').update({ is_reported: false }).eq('id', report.post_id);
+
+                // Notificar al autor que su reporte fue desestimado y su post sigue visible
+                const { data: post } = await supabase.from('posts').select('user_id').eq('id', report.post_id).single();
+                if (post) {
+                    await this.notificationsService.notifyModeration(
+                        post.user_id,
+                        'Reporte Revisado',
+                        'Un reporte sobre tu publicación fue revisado y desestimado. Tu contenido cumple con nuestras normas.',
+                        report.post_id
+                    );
+                }
             }
         }
         return { success: true };

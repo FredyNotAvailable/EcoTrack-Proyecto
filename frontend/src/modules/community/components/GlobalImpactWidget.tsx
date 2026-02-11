@@ -35,9 +35,9 @@ export const GlobalImpactWidget = () => {
             boxShadow="0 10px 30px -10px rgba(31, 64, 55, 0.05)"
             border="1px solid rgba(0,0,0,0.03)"
         >
-            <Flex 
-                align="center" 
-                gap={3} 
+            <Flex
+                align="center"
+                gap={3}
                 mb={5}
             >
                 <Icon as={FaEarthAmericas} fontSize="xl" color="green.500" />
@@ -68,14 +68,14 @@ export const GlobalImpactWidget = () => {
                 </Box>
 
                 {/* Challenges */}
-                <Box>
+                {/* <Box>
                     <Text fontSize="xl" fontWeight="700" color="brand.secondary" lineHeight="1">
                         {stats?.total_users ? Math.floor((stats.total_users * 0.3)) : 0}
                     </Text>
                     <Text fontSize="xs" color="brand.textMuted" fontWeight="500" mt={1}>
                         Logros
                     </Text>
-                </Box>
+                </Box> */}
             </SimpleGrid>
         </MotionBox>
     );

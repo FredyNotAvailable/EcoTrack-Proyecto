@@ -25,16 +25,17 @@ interface LocationViewModalProps {
     locationName: string;
 }
 
-export const LocationViewModal = ({ 
-    isOpen, 
-    onClose, 
-    locationName 
+export const LocationViewModal = ({
+    isOpen,
+    onClose,
+    locationName
 }: LocationViewModalProps) => {
     const [viewport, setViewport] = useState({
         latitude: -3.9910,
         longitude: -79.2050,
         zoom: 12
     });
+    const [markerCoords, setMarkerCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Geocodificar el nombre de ubicación para obtener coordenadas
@@ -45,7 +46,7 @@ export const LocationViewModal = ({
                 `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${MAPBOX_TOKEN}&language=es&country=EC&limit=1`
             );
             const data = await response.json();
-            
+
             if (data.features && data.features.length > 0) {
                 const [lng, lat] = data.features[0].center;
                 setViewport({
@@ -53,6 +54,7 @@ export const LocationViewModal = ({
                     longitude: lng,
                     zoom: 14
                 });
+                setMarkerCoords({ lat, lng });
             }
         } catch (error) {
             console.error('Error al geocodificar ubicación:', error);
@@ -73,14 +75,14 @@ export const LocationViewModal = ({
             <ModalContent maxH="90vh">
                 <ModalHeader>Ubicación</ModalHeader>
                 <ModalCloseButton />
-                
+
                 <ModalBody pb={6}>
                     <VStack spacing={4} align="stretch">
                         {/* Mapa */}
-                        <Box 
-                            position="relative" 
-                            h="450px" 
-                            borderRadius="xl" 
+                        <Box
+                            position="relative"
+                            h="450px"
+                            borderRadius="xl"
                             overflow="hidden"
                             border="2px solid"
                             borderColor="gray.200"
@@ -100,50 +102,35 @@ export const LocationViewModal = ({
                                         interactive={true}
                                     >
                                         <NavigationControl position="top-right" />
-                                        <Marker 
-                                            longitude={viewport.longitude} 
-                                            latitude={viewport.latitude} 
-                                            anchor="bottom"
-                                        >
-                                            <Icon 
-                                                as={FaMapMarkerAlt} 
-                                                fontSize="3xl" 
-                                                color="red.500"
-                                                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
-                                            />
-                                        </Marker>
+                                        {markerCoords && (
+                                            <Marker
+                                                longitude={markerCoords.lng}
+                                                latitude={markerCoords.lat}
+                                                anchor="bottom"
+                                            >
+                                                <Icon
+                                                    as={FaMapMarkerAlt}
+                                                    fontSize="3xl"
+                                                    color="red.500"
+                                                    filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+                                                />
+                                            </Marker>
+                                        )}
                                     </Map>
-
-                                    {/* Marcador fijo en el centro */}
-                                    <Box
-                                        position="absolute"
-                                        top="50%"
-                                        left="50%"
-                                        transform="translate(-50%, -100%)"
-                                        zIndex={1}
-                                        pointerEvents="none"
-                                    >
-                                        <Icon 
-                                            as={FaMapMarkerAlt} 
-                                            fontSize="4xl" 
-                                            color="red.500"
-                                            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
-                                        />
-                                    </Box>
                                 </>
                             )}
                         </Box>
 
                         {/* Nombre de ubicación */}
-                        <Box 
-                            p={4} 
-                            bg="gray.50" 
+                        <Box
+                            p={4}
+                            bg="gray.50"
                             borderRadius="lg"
                             textAlign="center"
                         >
-                            <Text 
-                                fontSize="sm" 
-                                fontWeight="600" 
+                            <Text
+                                fontSize="sm"
+                                fontWeight="600"
                                 color="brand.secondary"
                             >
                                 {locationName}
