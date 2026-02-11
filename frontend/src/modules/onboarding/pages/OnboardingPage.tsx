@@ -33,7 +33,7 @@ import { validateUsername, validateBio } from "../../profile/utils/profileValida
 import { getProfileErrorMessage, isRecoverableError, getRetryDelay } from "../../profile/utils/profileErrors";
 
 const OnboardingPage = () => {
-    const { signInWithGoogle, user, signUp, isRegistered, refreshRegistration } = useAuth();
+    const { signInWithGoogle, user, signUp, isRegistered, refreshRegistration, signOut } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
     const location = useLocation();
@@ -281,7 +281,10 @@ const OnboardingPage = () => {
                 position="absolute"
                 top={4}
                 left={4}
-                onClick={() => navigate('/login')}
+                onClick={async () => {
+                    await signOut();
+                    navigate('/login');
+                }}
                 variant="ghost"
                 color="brand.textMuted"
                 _hover={{ bg: 'whiteAlpha.500' }}
@@ -401,7 +404,8 @@ const OnboardingPage = () => {
                                     <Checkbox
                                         colorScheme="green"
                                         isChecked={formData.acceptedTerms}
-                                        onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
+                                        isReadOnly
+                                        pointerEvents="none"
                                         mt={0.5}
                                     />
                                     <Box>
