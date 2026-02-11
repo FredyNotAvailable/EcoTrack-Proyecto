@@ -79,6 +79,7 @@ export const PostsService = {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
+            timeout: 300000, // 5 minutos para subida de medios
         });
 
         return data.data.urls[0]; // Backend returns array of URLs, we take the first one since we upload one by one

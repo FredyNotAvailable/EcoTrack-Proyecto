@@ -14,7 +14,7 @@ console.log(`[apiClient] 🌍 Target URL: ${API_URL}`);
 
 const apiClient = axios.create({
     baseURL: API_URL,
-    timeout: 15000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
     async (error) => {
         const url = error.config?.url;
         if (error.code === 'ECONNABORTED') {
-            console.error(`[apiClient] ⏰ TIMEOUT: La petición a ${url} tardó demasiado (>8s)`);
+            console.error(`[apiClient] ⏰ TIMEOUT: La petición a ${url} tardó demasiado (>30s)`);
         } else if (error.response) {
             console.error(`[apiClient] 🔴 ERROR ${error.response.status}: ${url}`, error.response.data);
             if (error.response.status === 401) {

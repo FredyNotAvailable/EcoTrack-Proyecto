@@ -39,24 +39,24 @@ interface SearchResult {
     center: [number, number];
 }
 
-export const LocationPickerModal = ({ 
-    isOpen, 
-    onClose, 
+export const LocationPickerModal = ({
+    isOpen,
+    onClose,
     onSelectLocation,
-    initialLocation 
+    initialLocation
 }: LocationPickerModalProps) => {
     const [viewport, setViewport] = useState({
         latitude: -3.9910,
         longitude: -79.2050, // Loja, Ecuador
         zoom: 12
     });
-    
+
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [currentLocation, setCurrentLocation] = useState<string>('');
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-    
+
     const mapRef = useRef<any>(null);
     const debounceTimerRef = useRef<number | null>(null);
     const toast = useToast();
@@ -68,7 +68,7 @@ export const LocationPickerModal = ({
                 `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&language=es&types=place,locality,neighborhood,address`
             );
             const data = await response.json();
-            
+
             if (data.features && data.features.length > 0) {
                 // Obtener el nombre más relevante
                 const placeName = data.features[0].place_name;
@@ -175,10 +175,10 @@ export const LocationPickerModal = ({
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="2xl" isCentered>
             <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
-            <ModalContent maxH="90vh">
+            <ModalContent maxH={{ base: "95vh", md: "90vh" }} margin={{ base: "0", md: "auto" }} borderRadius={{ base: "none", md: "xl" }}>
                 <ModalHeader>Seleccionar Ubicación</ModalHeader>
                 <ModalCloseButton />
-                
+
                 <ModalBody>
                     <VStack spacing={4} align="stretch">
                         {/* Buscador */}
@@ -193,7 +193,7 @@ export const LocationPickerModal = ({
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </InputGroup>
-                            
+
                             {/* Resultados de búsqueda */}
                             {searchResults.length > 0 && (
                                 <List
@@ -223,7 +223,7 @@ export const LocationPickerModal = ({
                                     ))}
                                 </List>
                             )}
-                            
+
                             {isSearching && (
                                 <Box position="absolute" right={3} top={3}>
                                     <Spinner size="sm" color="green.500" />
@@ -232,10 +232,10 @@ export const LocationPickerModal = ({
                         </Box>
 
                         {/* Mapa */}
-                        <Box 
-                            position="relative" 
-                            h="400px" 
-                            borderRadius="xl" 
+                        <Box
+                            position="relative"
+                            h={{ base: "250px", md: "400px" }}
+                            borderRadius="xl"
                             overflow="hidden"
                             border="2px solid"
                             borderColor="gray.200"
@@ -261,9 +261,9 @@ export const LocationPickerModal = ({
                                 zIndex={1}
                                 pointerEvents="none"
                             >
-                                <Icon 
-                                    as={FaMapMarkerAlt} 
-                                    fontSize="3xl" 
+                                <Icon
+                                    as={FaMapMarkerAlt}
+                                    fontSize="3xl"
                                     color="red.500"
                                     filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
                                 />
@@ -271,9 +271,9 @@ export const LocationPickerModal = ({
                         </Box>
 
                         {/* Ubicación actual */}
-                        <Box 
-                            p={3} 
-                            bg="gray.50" 
+                        <Box
+                            p={3}
+                            bg="gray.50"
                             borderRadius="lg"
                             h="80px"
                             display="flex"
@@ -289,9 +289,9 @@ export const LocationPickerModal = ({
                                     <Text fontSize="xs" color="gray.500" mb={1}>
                                         Ubicación seleccionada:
                                     </Text>
-                                    <Text 
-                                        fontSize="sm" 
-                                        fontWeight="600" 
+                                    <Text
+                                        fontSize="sm"
+                                        fontWeight="600"
                                         color="brand.secondary"
                                         transition="opacity 0.2s"
                                         opacity={currentLocation ? 1 : 0.5}
@@ -308,14 +308,15 @@ export const LocationPickerModal = ({
                     </VStack>
                 </ModalBody>
 
-                <ModalFooter>
-                    <Button variant="ghost" mr={3} onClick={onClose}>
+                <ModalFooter pb={{ base: 8, md: 4 }}>
+                    <Button variant="ghost" mr={3} onClick={onClose} size={{ base: "sm", md: "md" }}>
                         Cancelar
                     </Button>
-                    <Button 
-                        colorScheme="green" 
+                    <Button
+                        colorScheme="green"
                         onClick={handleConfirm}
                         isDisabled={!currentLocation}
+                        size={{ base: "sm", md: "md" }}
                     >
                         Confirmar Ubicación
                     </Button>
